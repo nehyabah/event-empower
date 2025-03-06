@@ -1,5 +1,5 @@
 
-import { Calendar, Landmark, Users, MapPin, CheckCircle2, Clock, ListChecks, BarChart4 } from "lucide-react";
+import { Calendar, Users, MapPin, CheckCircle2, Clock, ListChecks, BarChart4 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CSSProperties } from "react";
 
@@ -23,35 +23,37 @@ const FeatureCard = ({
   return (
     <div 
       className={cn(
-        "glass rounded-xl p-6 transition-all hover:shadow-elegant hover:translate-y-[-2px]",
+        "glass rounded-xl p-6 transition-all hover:shadow-elegant hover:translate-y-[-3px] duration-300",
         className
       )}
       style={style}
     >
       <div className={cn(
-        "w-12 h-12 rounded-lg flex items-center justify-center bg-primary/10 text-primary mb-4",
+        "w-12 h-12 rounded-lg flex items-center justify-center bg-primary/10 text-primary mb-5",
         iconClassName
       )}>
         {icon}
       </div>
-      <h3 className="text-xl font-medium font-serif mb-2">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
+      <h3 className="text-xl font-medium font-serif mb-3 tracking-tight">{title}</h3>
+      <p className="text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 };
 
 const Features = () => {
   return (
-    <section className="py-20 bg-secondary/50">
+    <section className="py-24 bg-gradient-to-b from-background to-secondary/30">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-serif mb-4">Everything You Need For Your Nigerian Wedding</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-3xl md:text-4xl font-serif mb-5 font-medium tracking-tight">
+            Curated Features for Your <span className="text-gradient">Nigerian Wedding</span>
+          </h2>
+          <p className="text-muted-foreground leading-relaxed">
             Our platform is designed with Nigerian cultural nuances in mind, providing tools that respect tradition while embracing modern planning approaches.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           <FeatureCard
             icon={<MapPin className="w-6 h-6" />}
             title="Region-Specific Planning"
