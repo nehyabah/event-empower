@@ -1,20 +1,25 @@
 
 import { cn } from "@/lib/utils";
 import { Quote } from "lucide-react";
+import { CSSProperties } from "react";
 
 interface TestimonialProps {
   quote: string;
   author: string;
   role: string;
   className?: string;
+  style?: CSSProperties;
 }
 
-const Testimonial = ({ quote, author, role, className }: TestimonialProps) => {
+const Testimonial = ({ quote, author, role, className, style }: TestimonialProps) => {
   return (
-    <div className={cn(
-      "glass rounded-xl p-6 md:p-8 transition-all",
-      className
-    )}>
+    <div 
+      className={cn(
+        "glass rounded-xl p-6 md:p-8 transition-all",
+        className
+      )}
+      style={style}
+    >
       <Quote className="w-10 h-10 text-wedding-gold opacity-30 mb-4" />
       <p className="text-lg mb-6 font-medium italic">"{quote}"</p>
       <div>

@@ -1,6 +1,7 @@
 
 import { Calendar, Landmark, Users, MapPin, CheckCircle2, Clock, ListChecks, BarChart4 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CSSProperties } from "react";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -8,6 +9,7 @@ interface FeatureCardProps {
   description: string;
   className?: string;
   iconClassName?: string;
+  style?: CSSProperties;
 }
 
 const FeatureCard = ({ 
@@ -15,13 +17,17 @@ const FeatureCard = ({
   title, 
   description, 
   className, 
-  iconClassName 
+  iconClassName,
+  style
 }: FeatureCardProps) => {
   return (
-    <div className={cn(
-      "glass rounded-xl p-6 transition-all hover:shadow-elegant hover:translate-y-[-2px]",
-      className
-    )}>
+    <div 
+      className={cn(
+        "glass rounded-xl p-6 transition-all hover:shadow-elegant hover:translate-y-[-2px]",
+        className
+      )}
+      style={style}
+    >
       <div className={cn(
         "w-12 h-12 rounded-lg flex items-center justify-center bg-primary/10 text-primary mb-4",
         iconClassName

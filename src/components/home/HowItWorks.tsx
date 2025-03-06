@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { AuthModal } from '@/components/auth/AuthModal';
+import AuthModal from '@/components/auth/AuthModal';
 
 const HowItWorks = () => {
   return (
