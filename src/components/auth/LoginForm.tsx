@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Facebook, Mail, Smartphone, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -29,6 +29,7 @@ interface LoginFormProps {
 
 const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -48,11 +49,17 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Set auth state
+      localStorage.setItem("authenticated", "true");
+      
       toast.success("Login successful!", {
         description: "Welcome back to EventEmpower!",
       });
       
       if (onSuccess) onSuccess();
+      
+      // Redirect to dashboard
+      navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed", {
