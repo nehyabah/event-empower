@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Calendar, Heart, Users, Home, Menu, X } from "lucide-react";
+import AuthModal from "@/components/auth/AuthModal";
 
 interface NavLinkProps {
   to: string;
@@ -79,12 +80,22 @@ const Navbar = () => {
 
         {/* Auth Buttons */}
         <div className="hidden md:flex items-center gap-4">
-          <Button variant="ghost" className="button-hover">
-            Log in
-          </Button>
-          <Button className="button-hover">
-            Get Started
-          </Button>
+          <AuthModal 
+            defaultTab="login" 
+            trigger={
+              <Button variant="ghost" className="button-hover">
+                Log in
+              </Button>
+            }
+          />
+          <AuthModal 
+            defaultTab="register" 
+            trigger={
+              <Button className="button-hover">
+                Get Started
+              </Button>
+            }
+          />
         </div>
 
         {/* Mobile Menu Button */}
@@ -131,12 +142,22 @@ const Navbar = () => {
               </div>
             </NavLink>
             <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
-              <Button variant="ghost" className="w-full justify-start">
-                Log in
-              </Button>
-              <Button className="w-full justify-start">
-                Get Started
-              </Button>
+              <AuthModal 
+                defaultTab="login" 
+                trigger={
+                  <Button variant="ghost" className="w-full justify-start">
+                    Log in
+                  </Button>
+                }
+              />
+              <AuthModal 
+                defaultTab="register" 
+                trigger={
+                  <Button className="w-full justify-start">
+                    Get Started
+                  </Button>
+                }
+              />
             </div>
           </div>
         </div>

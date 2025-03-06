@@ -4,6 +4,7 @@ import Features from "@/components/home/Features";
 import Footer from "@/components/home/Footer";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AuthModal from "@/components/auth/AuthModal";
 
 const FeaturesPage = () => {
   return (
@@ -20,9 +21,14 @@ const FeaturesPage = () => {
               more organized, and culturally appropriate with our thoughtfully designed features.
             </p>
             <div className="mt-8">
-              <Button className="button-hover group">
-                Start Planning <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <AuthModal 
+                defaultTab="register" 
+                trigger={
+                  <Button className="button-hover group">
+                    Start Planning <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                }
+              />
             </div>
           </div>
         </div>
