@@ -11,7 +11,7 @@ interface TodoItemProps {
 
 const TodoItemComponent = ({ item, onToggle, onDelete }: TodoItemProps) => {
   return (
-    <div className="flex items-center space-x-2 group">
+    <div className="flex items-center space-x-2 group p-2 hover:bg-background border rounded-md">
       <Checkbox 
         id={item.id} 
         checked={item.completed} 
@@ -26,6 +26,7 @@ const TodoItemComponent = ({ item, onToggle, onDelete }: TodoItemProps) => {
       <button 
         onClick={onDelete}
         className="opacity-0 group-hover:opacity-100 transition text-muted-foreground hover:text-destructive"
+        aria-label="Delete todo"
       >
         <X className="h-4 w-4" />
       </button>

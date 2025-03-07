@@ -22,7 +22,7 @@ interface AuthModalProps {
 const AuthModal = ({ 
   defaultTab = "login", 
   trigger, 
-  triggerClassName 
+  triggerClassName = "" 
 }: AuthModalProps) => {
   const [open, setOpen] = useState(false);
   
@@ -30,7 +30,10 @@ const AuthModal = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className={triggerClassName}>
+          <Button 
+            className={`${triggerClassName} ${defaultTab === "login" ? "bg-accent" : "bg-primary"}`}
+            variant={defaultTab === "login" ? "outline" : "default"}
+          >
             {defaultTab === "login" ? "Log in" : "Get Started"}
           </Button>
         )}
