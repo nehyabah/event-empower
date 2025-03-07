@@ -5,6 +5,8 @@ import Navbar from "@/components/layout/Navbar";
 import TaskCard from "@/components/dashboard/TaskCard";
 import ProjectStats from "@/components/dashboard/ProjectStats";
 import TaskAssignForm from "@/components/dashboard/TaskAssignForm";
+import InvitationGenerator from "@/components/invitations/InvitationGenerator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 // Initial tasks data
@@ -98,7 +100,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 pt-24">
+      <main className="container mx-auto px-4 pt-24 pb-16">
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-serif mb-2">Wedding Planning Dashboard</h1>
@@ -107,33 +109,53 @@ const Dashboard = () => {
           
           <ProjectStats />
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="md:col-span-3">
-              <h2 className="text-xl font-medium mb-4">Current Tasks</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {tasks.map((task) => (
-                  <div key={task.title} onClick={() => handleProgressUpdate(task.title, Math.min(100, task.progress + 5))}>
-                    <TaskCard {...task} />
-                  </div>
-                ))}
-              </div>
-            </div>
+          <Tabs defaultValue="tasks" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="tasks">Planning Tasks</TabsTrigger>
+              <TabsTrigger value="invitations">AI Invitations</TabsTrigger>
+            </TabsList>
             
-            <div>
-              <h2 className="text-xl font-medium mb-4">Manage Tasks</h2>
-              <div className="space-y-4">
-                <TaskAssignForm onTaskAssigned={handleTaskAssigned} />
-                <div className="bg-muted p-4 rounded-lg">
-                  <h3 className="font-medium mb-2">Task Tips</h3>
-                  <ul className="text-sm space-y-2 text-muted-foreground">
-                    <li>• Click on a task to update progress by 5%</li>
-                    <li>• Assign clear deadlines for better tracking</li>
-                    <li>• Break large tasks into smaller ones</li>
-                  </ul>
+            <TabsContent value="tasks">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3">
+                  <h2 className="text-xl font-medium mb-4">Current Tasks</h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {tasks.map((task) => (
+                      <div key={task.title} onClick={() => handleProgressUpdate(task.title, Math.min(100, task.progress + 5))}>
+                        <TaskCard {...task} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h2 className="text-xl font-medium mb-4">Manage Tasks</h2>
+                  <div className="space-y-4">
+                    <TaskAssignForm onTaskAssigned={handleTaskAssigned} />
+                    <div className="bg-muted p-4 rounded-lg">
+                      <h3 className="font-medium mb-2">Task Tips</h3>
+                      <ul className="text-sm space-y-2 text-muted-foreground">
+                        <li>• Click on a task to update progress by 5%</li>
+                        <li>• Assign clear deadlines for better tracking</li>
+                        <li>• Break large tasks into smaller ones</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
+            
+            <TabsContent value="invitations">
+              <div className="space-y-4">
+                <h2 className="text-xl font-medium mb-4">Create AI-Generated Invitations</h2>
+                <p className="text-muted-foreground mb-6">
+                  Use our AI to help you create beautiful wedding invitations. Fill in your details and let 
+                  the AI generate personalized content for your special day.
+                </p>
+                <InvitationGenerator />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
