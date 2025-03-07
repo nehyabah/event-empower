@@ -23,24 +23,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/features" element={<Features />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/vendors" element={<Vendors />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route 
-            path="/couple-story" 
-            element={
-              <TodoProvider>
-                <CoupleStory />
-              </TodoProvider>
-            } 
-          />
-          <Route path="/expense-tracker" element={<ExpenseTracker />} />
-          <Route path="/todo-lists" element={<TodoLists />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <TodoProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/vendors" element={<Vendors />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/couple-story" element={<CoupleStory />} />
+            <Route path="/expense-tracker" element={<ExpenseTracker />} />
+            <Route path="/todo-lists" element={<TodoLists />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TodoProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
