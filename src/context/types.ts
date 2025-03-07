@@ -22,3 +22,14 @@ export interface WishlistItem {
   priority: "high" | "medium" | "low";
   purchasedBy?: string;
 }
+
+export interface BankDetail {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  sortCode?: string;
+  iban?: string;
+  swift?: string;
+  description?: string;
+}
+

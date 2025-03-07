@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,14 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/layout/Navbar";
 import WishlistItem from "@/components/wishlist/WishlistItem";
+import BankDetailCard from "@/components/wishlist/BankDetailCard";
 import { useTodo } from "@/context/TodoContext";
 import { 
   Heart, Gift, ShoppingBag, Image, Edit, 
   DollarSign, Plus, Calendar, MapPin, 
-  Share2, Eye, EyeOff, Copy, Check, UploadCloud
+  Share2, Eye, EyeOff, Copy, Check, UploadCloud,
+  Building
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 interface StorySection {
   title: string;
@@ -45,10 +50,10 @@ interface WellWish {
 const CoupleStory = () => {
   const location = useLocation();
   const [isPreviewMode, setIsPreviewMode] = useState(true);
-  const [isPublicView, setIsPublicView] = useState(false); // Default to false
+  const [isPublicView, setIsPublicView] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showWellWishForm, setShowWellWishForm] = useState(false);
-  const { wishlistItems, addWishlistItem } = useTodo();
+  const { wishlistItems, addWishlistItem, bankDetails, addBankDetail, removeBankDetail } = useTodo();
   
   const [coupleNames, setCoupleNames] = useState("Sarah & Michael");
   const [weddingDate, setWeddingDate] = useState("August 15, 2024");
@@ -110,7 +115,7 @@ const CoupleStory = () => {
     if (params.get('view') === 'public') {
       setIsPublicView(true);
     } else {
-      setIsPublicView(false); // Fixed: Set to false if not public view
+      setIsPublicView(false);
     }
   }, [location]);
 
@@ -201,6 +206,61 @@ const CoupleStory = () => {
     });
   };
 
+  const bankDetailsSchema = z.object({
+    bankName: z.string().min(2, "Bank name is required"),
+    accountName: z.string().min(2, "Account name is required"),
+    accountNumber: z.string().min(4, "Account number is required"),
+    sortCode: z.string().optional(),
+    iban: z.string().optional(),
+    swift: z.string().optional(),
+    description: z.string().optional(),
+  });
+
+  const bankDetailsForm = useForm<z.infer<typeof bankDetailsSchema>>({
+    resolver: zodResolver(bankDetailsSchema),
+    defaultValues: {
+      bankName: "",
+      accountName: "",
+      accountNumber: "",
+      sortCode: "",
+      iban: "",
+      swift: "",
+      description: "",
+    },
+  });
+
+  const onBankDetailsSubmit = (values: z.infer<typeof bankDetailsSchema>) => {
+    addBankDetail(values);
+    bankDetailsForm.reset();
+  };
+
+  const wishlistItemSchema = z.object({
+    name: z.string().min(2, "Item name is required"),
+    price: z.string().optional(),
+    link: z.string().url().optional().or(z.literal("")),
+    priority: z.enum(["high", "medium", "low"]).default("medium"),
+  });
+
+  const wishlistItemForm = useForm<z.infer<typeof wishlistItemSchema>>({
+    resolver: zodResolver(wishlistItemSchema),
+    defaultValues: {
+      name: "",
+      price: "",
+      link: "",
+      priority: "medium",
+    },
+  });
+
+  const onWishlistItemSubmit = (values: z.infer<typeof wishlistItemSchema>) => {
+    addWishlistItem({
+      name: values.name,
+      price: values.price || undefined,
+      link: values.link || undefined,
+      priority: values.priority,
+    });
+    wishlistItemForm.reset();
+  };
+
   if (isPublicView && !isPreviewMode) {
     return (
       <div className="min-h-screen bg-background">
@@ -215,7 +275,6 @@ const CoupleStory = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Always render the Navbar, regardless of view mode */}
       <Navbar />
       
       {!isPublicView && (
@@ -361,7 +420,7 @@ const CoupleStory = () => {
                       <div className="space-y-2">
                         <label htmlFor="sectionImage" className="block text-sm font-medium">Section Image</label>
                         <div id="sectionImagePreview" className="hidden h-32 bg-cover bg-center rounded-md mb-2"></div>
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md border-primary/30 cursor-pointer bg-muted/20 hover:bg-muted/30 transition-colors">
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary/30 cursor-pointer bg-muted/20 hover:bg-muted/30 transition-colors">
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
                             <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
@@ -511,45 +570,202 @@ const CoupleStory = () => {
                       <DialogHeader>
                         <DialogTitle>Add Wishlist Item</DialogTitle>
                       </DialogHeader>
-                      <form className="space-y-4" onSubmit={(e) => {
-                        e.preventDefault();
-                        const formData = new FormData(e.currentTarget);
-                        handleAddWishlistItem(formData);
-                        (e.target as HTMLFormElement).reset();
-                      }}>
-                        <div className="space-y-2">
-                          <label htmlFor="name" className="block text-sm font-medium">Item Name</label>
-                          <Input id="name" name="name" placeholder="e.g., KitchenAid Mixer" required />
-                        </div>
-                        <div className="space-y-2">
-                          <label htmlFor="price" className="block text-sm font-medium">Price (optional)</label>
-                          <Input id="price" name="price" placeholder="e.g., $150" />
-                        </div>
-                        <div className="space-y-2">
-                          <label htmlFor="link" className="block text-sm font-medium">Link (optional)</label>
-                          <Input id="link" name="link" placeholder="e.g., https://example.com/product" />
-                        </div>
-                        <div className="space-y-2">
-                          <label htmlFor="priority" className="block text-sm font-medium">Priority</label>
-                          <select 
-                            id="priority" 
-                            name="priority" 
-                            className="w-full rounded-md border border-input bg-background px-3 py-2"
-                            defaultValue="medium"
-                          >
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                          </select>
-                        </div>
-                        <Button type="submit" className="w-full">Add Item</Button>
-                      </form>
+                      <Form {...wishlistItemForm}>
+                        <form onSubmit={wishlistItemForm.handleSubmit(onWishlistItemSubmit)} className="space-y-4">
+                          <FormField
+                            control={wishlistItemForm.control}
+                            name="name"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Item Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., KitchenAid Mixer" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={wishlistItemForm.control}
+                            name="price"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Price (optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., $150" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={wishlistItemForm.control}
+                            name="link"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Link (optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., https://example.com/product" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={wishlistItemForm.control}
+                            name="priority"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Priority</FormLabel>
+                                <FormControl>
+                                  <select 
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                                    {...field}
+                                  >
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                  </select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="submit" className="w-full">Add Item</Button>
+                        </form>
+                      </Form>
                     </DialogContent>
                   </Dialog>
                 </div>
               </TabsContent>
               
               <TabsContent value="gifts" className="pt-4 space-y-6">
+                <h3 className="text-xl font-medium mb-4">Bank Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {bankDetails.map((detail, index) => (
+                    <BankDetailCard 
+                      key={index} 
+                      detail={detail} 
+                      index={index}
+                      onRemove={removeBankDetail}
+                      isEditable={true}
+                    />
+                  ))}
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="flex items-center justify-center p-6 rounded-lg border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors h-full">
+                        <div className="text-center">
+                          <Building className="h-12 w-12 text-primary/60 mx-auto mb-3" />
+                          <span className="text-sm font-medium">Add Bank Details</span>
+                        </div>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Bank Details</DialogTitle>
+                      </DialogHeader>
+                      <Form {...bankDetailsForm}>
+                        <form onSubmit={bankDetailsForm.handleSubmit(onBankDetailsSubmit)} className="space-y-4">
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="bankName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bank Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., Chase Bank" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="accountName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Account Holder Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., John & Jane Smith" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="accountNumber"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Account Number</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., 12345678" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="sortCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Sort Code (optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., 12-34-56" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="iban"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>IBAN (optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., GB29NWBK60161331926819" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="swift"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>SWIFT/BIC (optional)</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., NWBKGB2L" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={bankDetailsForm.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Description (optional)</FormLabel>
+                                <FormControl>
+                                  <Textarea placeholder="e.g., For honeymoon fund" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="submit" className="w-full">Add Bank Details</Button>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                <h3 className="text-xl font-medium mb-4">Gift Options</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {giftOptions.map((option, index) => (
                     <Card key={index} className="overflow-hidden border-none shadow-lg">
@@ -677,6 +893,22 @@ const CoupleStory = () => {
                   <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
                 </div>
                 
+                {bankDetails.length > 0 && (
+                  <div className="mb-12">
+                    <h3 className="text-2xl font-serif mb-6">Bank Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                      {bankDetails.map((detail, index) => (
+                        <BankDetailCard 
+                          key={index} 
+                          detail={detail} 
+                          index={index}
+                          isEditable={false}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
                   {giftOptions.map((option, index) => (
                     <Card key={index} className="overflow-hidden border-none shadow-xl hover:shadow-2xl transition-all duration-300">
@@ -780,3 +1012,4 @@ const CoupleStory = () => {
 };
 
 export default CoupleStory;
+

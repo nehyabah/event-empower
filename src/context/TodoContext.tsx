@@ -1,6 +1,6 @@
 
 import { createContext, useContext, ReactNode } from "react";
-import { TodoItem, TodoListItem, WishlistItem } from "./types";
+import { TodoItem, TodoListItem, WishlistItem, BankDetail } from "./types";
 import { useTodoLists, TodoListsHook } from "./useTodoLists";
 import { useWishlist, WishlistHook } from "./useWishlist";
 
@@ -35,4 +35,4 @@ export const useTodo = () => {
 };
 
 // Re-export the types for easier imports elsewhere
-export type { TodoItem, TodoListItem, WishlistItem };
+export type { TodoItem, TodoListItem, WishlistItem, BankDetail };

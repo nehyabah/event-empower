@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { WishlistItem } from "./types";
+import { WishlistItem, BankDetail } from "./types";
 import { toast } from "sonner";
 
 // Initial data
@@ -25,15 +25,29 @@ const initialWishlistItems: WishlistItem[] = [
   }
 ];
 
+// Initial bank details
+const initialBankDetails: BankDetail[] = [
+  {
+    bankName: "Chase Bank",
+    accountName: "Sarah & Michael Johnson",
+    accountNumber: "1234567890",
+    description: "For honeymoon contributions"
+  }
+];
+
 export interface WishlistHook {
   wishlistItems: WishlistItem[];
+  bankDetails: BankDetail[];
   addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
+  addBankDetail: (detail: Omit<BankDetail, "id">) => void;
   markItemAsPurchased: (itemId: string, purchaserName: string) => void;
   removeItemPurchaser: (itemId: string) => void;
+  removeBankDetail: (index: number) => void;
 }
 
 export const useWishlist = (): WishlistHook => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(initialWishlistItems);
+  const [bankDetails, setBankDetails] = useState<BankDetail[]>(initialBankDetails);
 
   const addWishlistItem = (item: Omit<WishlistItem, "id">) => {
     const newItem: WishlistItem = {
@@ -42,6 +56,11 @@ export const useWishlist = (): WishlistHook => {
     };
     setWishlistItems([...wishlistItems, newItem]);
     toast.success("Item added to wishlist!");
+  };
+
+  const addBankDetail = (detail: Omit<BankDetail, "id">) => {
+    setBankDetails([...bankDetails, detail]);
+    toast.success("Bank details added successfully!");
   };
 
   const markItemAsPurchased = (itemId: string, purchaserName: string) => {
@@ -74,10 +93,20 @@ export const useWishlist = (): WishlistHook => {
     });
   };
 
+  const removeBankDetail = (index: number) => {
+    const newBankDetails = [...bankDetails];
+    newBankDetails.splice(index, 1);
+    setBankDetails(newBankDetails);
+    toast.success("Bank details removed");
+  };
+
   return {
     wishlistItems,
+    bankDetails,
     addWishlistItem,
+    addBankDetail,
     markItemAsPurchased,
-    removeItemPurchaser
+    removeItemPurchaser,
+    removeBankDetail
   };
 };
