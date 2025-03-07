@@ -11,6 +11,7 @@ import Vendors from "./pages/Vendors";
 import Dashboard from "./pages/Dashboard";
 import CoupleStory from "./pages/CoupleStory";
 import ExpenseTracker from "./pages/ExpenseTracker";
+import TodoLists from "./pages/TodoLists";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/couple-story" element={<CoupleStory />} />
           <Route path="/expense-tracker" element={<ExpenseTracker />} />
+          <Route path="/todo-lists" element={<TodoLists />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
