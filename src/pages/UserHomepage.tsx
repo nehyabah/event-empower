@@ -72,10 +72,11 @@ const UserHomepage = () => {
             </div>
           </section>
           
-          {/* Important Dates - Sleeker Timeline */}
-          <section className="py-6">
-            <h2 className="text-2xl font-serif mb-6">Your Wedding Timeline</h2>
-            <div className="relative pl-10 md:pl-12 space-y-8 max-w-2xl before:absolute before:left-4 before:top-2 before:bottom-4 before:w-0.5 before:bg-gradient-to-b before:from-primary/20 before:to-primary/60">
+          {/* Elegant Wedding Timeline */}
+          <section className="py-8">
+            <h2 className="text-2xl font-serif mb-8">Your Wedding Timeline</h2>
+            <div className="relative pl-12 space-y-10 max-w-3xl before:absolute before:left-4 before:top-3 before:bottom-10 before:w-[2px] 
+              before:bg-gradient-to-b before:from-primary/10 before:via-primary/50 before:to-primary/20">
               <TimelineItem 
                 date="8 weeks before" 
                 title="Final Venue Visit" 
@@ -137,22 +138,24 @@ interface TimelineItemProps {
 }
 
 const TimelineItem = ({ date, title, description, active = false }: TimelineItemProps) => (
-  <div className="relative group">
-    <div className={`absolute w-7 h-7 rounded-full -left-[14px] top-0 flex items-center justify-center 
+  <div className="relative transition-all duration-300 hover:translate-x-1 group">
+    <div className={`absolute w-8 h-8 rounded-full -left-[21px] top-0 flex items-center justify-center 
       ${active 
-        ? "bg-primary shadow-md shadow-primary/20" 
-        : "bg-background border border-primary/30"
+        ? "bg-gradient-to-br from-primary to-primary/80 shadow-md shadow-primary/20" 
+        : "bg-white border-2 border-primary/30"
       } transition-all duration-300 group-hover:scale-110`}>
-      {active && <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>}
+      {active && <div className="w-2 h-2 rounded-full bg-white animate-pulse-soft"></div>}
     </div>
-    <div className="pl-4">
-      <div className={`${active ? "text-primary font-medium" : "text-muted-foreground"} text-sm mb-1`}>
+    <div className="pl-6">
+      <div className={`${active ? "text-primary font-medium" : "text-muted-foreground"} text-sm mb-2 transition-colors group-hover:text-primary/80`}>
         {date}
       </div>
-      <h3 className={`font-medium text-lg mb-1 ${active ? "text-primary" : ""}`}>{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
+      <h3 className={`font-medium text-lg mb-2 transition-colors ${active ? "text-primary" : ""} group-hover:text-primary/90`}>
+        {title}
+      </h3>
+      <p className="text-muted-foreground text-sm mb-3">{description}</p>
       {active && (
-        <Button variant="link" className="p-0 h-auto text-primary mt-1 hover:text-primary/80">
+        <Button variant="outline" size="sm" className="text-xs text-primary border-primary/30 hover:bg-primary/5 hover:text-primary hover:border-primary/50">
           Update status
         </Button>
       )}
