@@ -72,27 +72,27 @@ const UserHomepage = () => {
             </div>
           </section>
           
-          {/* Important Dates */}
+          {/* Important Dates - Redesigned Timeline for better mobile experience */}
           <section className="py-6">
             <h2 className="text-2xl font-serif mb-6">Your Wedding Timeline</h2>
-            <div className="relative pl-10 space-y-6 max-w-2xl before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-primary/30">
-              <TimelineItem 
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <TimelineCard 
                 date="8 weeks before" 
                 title="Final Venue Visit" 
                 description="Confirm all venue details and arrangements" 
               />
-              <TimelineItem 
+              <TimelineCard 
                 date="6 weeks before" 
                 title="Traditional Outfits" 
                 description="Final fittings for traditional attire" 
                 active={true}
               />
-              <TimelineItem 
+              <TimelineCard 
                 date="4 weeks before" 
                 title="Guest Confirmation" 
                 description="Finalize guest count and seating arrangements" 
               />
-              <TimelineItem 
+              <TimelineCard 
                 date="2 weeks before" 
                 title="Wedding Rehearsal" 
                 description="Practice ceremony with wedding party" 
@@ -129,31 +129,37 @@ const QuickActionCard = ({ title, description, icon: Icon, to }: QuickActionCard
   </Link>
 );
 
-interface TimelineItemProps {
+interface TimelineCardProps {
   date: string;
   title: string;
   description: string;
   active?: boolean;
 }
 
-const TimelineItem = ({ date, title, description, active = false }: TimelineItemProps) => (
-  <div className="relative">
-    <div className={`absolute w-6 h-6 rounded-full border-2 -left-11 top-0 ${
-      active 
-        ? "bg-primary border-primary" 
-        : "bg-background border-primary/30"
-    }`} />
-    <div className={`${active ? "text-primary font-medium" : "text-muted-foreground"} text-sm mb-1`}>
-      {date}
-    </div>
-    <h3 className="font-medium text-lg">{title}</h3>
-    <p className="text-muted-foreground">{description}</p>
-    {active && (
-      <Button variant="link" className="p-0 h-auto text-primary mt-1">
-        Update status
-      </Button>
-    )}
-  </div>
+// New card-based timeline item for better mobile display
+const TimelineCard = ({ date, title, description, active = false }: TimelineCardProps) => (
+  <Card className={`transition-all overflow-hidden ${active ? 'border-primary shadow-md' : 'hover:shadow-sm'}`}>
+    <CardContent className="p-5">
+      <div className={`text-sm mb-2 ${active ? "text-primary font-medium" : "text-muted-foreground"}`}>
+        {date}
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${active ? "bg-primary" : "bg-muted"}`}></div>
+          <h3 className="font-medium">{title}</h3>
+        </div>
+        <p className="text-sm text-muted-foreground pl-5">{description}</p>
+        {active && (
+          <div className="pt-2 pl-5">
+            <Button variant="link" className="p-0 h-auto text-primary">
+              Update status
+            </Button>
+          </div>
+        )}
+      </div>
+    </CardContent>
+  </Card>
 );
 
 export default UserHomepage;
+
