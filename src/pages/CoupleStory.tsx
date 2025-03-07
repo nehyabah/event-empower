@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/layout/Navbar";
+import WishlistItem from "@/components/wishlist/WishlistItem";
+import { useTodo } from "@/context/TodoContext";
 import { 
   Heart, Gift, ShoppingBag, Image, Edit, 
   DollarSign, Plus, Calendar, MapPin, 
@@ -27,13 +29,6 @@ interface Vendor {
   contact?: string;
 }
 
-interface WishlistItem {
-  name: string;
-  price?: string;
-  link?: string;
-  priority: "high" | "medium" | "low";
-}
-
 interface GiftOption {
   title: string;
   description: string;
@@ -52,6 +47,7 @@ const CoupleStory = () => {
   const [isPublicView, setIsPublicView] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showWellWishForm, setShowWellWishForm] = useState(false);
+  const { wishlistItems, addWishlistItem } = useTodo();
   
   const [coupleNames, setCoupleNames] = useState("Sarah & Michael");
   const [weddingDate, setWeddingDate] = useState("August 15, 2024");
@@ -80,12 +76,6 @@ const CoupleStory = () => {
     { name: "Elegant Venues", category: "Venue", website: "www.elegantvenues.com" },
     { name: "Floral Fantasy", category: "Florist", contact: "floralfantasy@example.com" },
     { name: "Delicious Bites Catering", category: "Catering", website: "www.deliciousbites.com" }
-  ]);
-  
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([
-    { name: "KitchenAid Stand Mixer", price: "$350", priority: "high", link: "https://www.kitchenaid.com" },
-    { name: "Honeymoon Fund Contribution", priority: "high" },
-    { name: "Dyson Vacuum Cleaner", price: "$400", priority: "medium" }
   ]);
   
   const [giftOptions, setGiftOptions] = useState<GiftOption[]>([
@@ -130,11 +120,6 @@ const CoupleStory = () => {
   const handleAddVendor = (newVendor: Vendor) => {
     setVendors([...vendors, newVendor]);
     toast.success("Vendor added to your list!");
-  };
-
-  const handleAddWishlistItem = (newItem: WishlistItem) => {
-    setWishlist([...wishlist, newItem]);
-    toast.success("Item added to your wishlist!");
   };
 
   const handleAddGiftOption = (newOption: GiftOption) => {
@@ -203,6 +188,15 @@ const CoupleStory = () => {
     setCopied(true);
     toast.success("URL copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAddWishlistItem = (formData: FormData) => {
+    addWishlistItem({
+      name: formData.get('name') as string,
+      price: (formData.get('price') as string) || undefined,
+      link: (formData.get('link') as string) || undefined,
+      priority: (formData.get('priority') as "high" | "medium" | "low") || "medium"
+    });
   };
 
   if (isPublicView && !isPreviewMode) {
@@ -398,9 +392,9 @@ const CoupleStory = () => {
                       />
                     </div>
                   ))}
-                  <label className="aspect-square flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors shadow-sm">
-                    <div className="flex flex-col items-center justify-center p-6 text-center">
-                      <Image className="h-12 w-12 text-primary/60 mb-3" />
+                  <label className="aspect-square flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors h-full">
+                    <div className="text-center">
+                      <Image className="h-12 w-12 text-primary/60 mx-auto mb-3" />
                       <span className="text-sm font-medium">Upload Photo</span>
                       <span className="text-xs text-muted-foreground mt-1">Click to browse</span>
                     </div>
@@ -492,47 +486,13 @@ const CoupleStory = () => {
               
               <TabsContent value="wishlist" className="pt-4 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {wishlist.map((item, index) => (
-                    <Card key={index} className={`overflow-hidden hover:shadow-md transition-shadow`}>
-                      <div className={`h-2 ${
-                        item.priority === 'high' 
-                          ? 'bg-red-400' 
-                          : item.priority === 'medium' 
-                          ? 'bg-amber-400' 
-                          : 'bg-blue-400'
-                      }`}></div>
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start">
-                          <h3 className="text-lg font-medium">{item.name}</h3>
-                          {item.price && (
-                            <span className="text-sm font-medium px-2 py-1 bg-secondary rounded-full">
-                              {item.price}
-                            </span>
-                          )}
-                        </div>
-                        {item.link && (
-                          <a 
-                            href={item.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary hover:underline mt-2 inline-block"
-                          >
-                            View Item
-                          </a>
-                        )}
-                        <div className="mt-3">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            item.priority === 'high' 
-                              ? 'bg-red-100 text-red-800' 
-                              : item.priority === 'medium' 
-                              ? 'bg-amber-100 text-amber-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} Priority
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  {wishlistItems.map((item) => (
+                    <WishlistItem 
+                      key={item.id} 
+                      item={item} 
+                      isPreviewMode={isPreviewMode} 
+                      isPublicView={isPublicView} 
+                    />
                   ))}
                   
                   <Dialog>
@@ -551,12 +511,7 @@ const CoupleStory = () => {
                       <form className="space-y-4" onSubmit={(e) => {
                         e.preventDefault();
                         const formData = new FormData(e.currentTarget);
-                        handleAddWishlistItem({
-                          name: formData.get('name') as string,
-                          price: (formData.get('price') as string) || undefined,
-                          link: (formData.get('link') as string) || undefined,
-                          priority: (formData.get('priority') as "high" | "medium" | "low") || "medium"
-                        });
+                        handleAddWishlistItem(formData);
                         (e.target as HTMLFormElement).reset();
                       }}>
                         <div className="space-y-2">
@@ -739,36 +694,13 @@ const CoupleStory = () => {
                 <div className="mt-16">
                   <h3 className="text-2xl font-serif mb-8">Our Wishlist</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {wishlist.map((item, index) => (
-                      <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow backdrop-blur-sm bg-white/90">
-                        <div className={`h-2 ${
-                          item.priority === 'high' 
-                            ? 'bg-gradient-to-r from-red-300 to-red-500' 
-                            : item.priority === 'medium' 
-                            ? 'bg-gradient-to-r from-amber-300 to-amber-500' 
-                            : 'bg-gradient-to-r from-blue-300 to-blue-500'
-                        }`}></div>
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <h3 className="text-lg font-medium">{item.name}</h3>
-                            {item.price && (
-                              <span className="text-sm font-medium px-3 py-1 bg-secondary/50 backdrop-blur-sm rounded-full">
-                                {item.price}
-                              </span>
-                            )}
-                          </div>
-                          {item.link && (
-                            <a 
-                              href={item.link} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline mt-2 inline-block"
-                            >
-                              View Item
-                            </a>
-                          )}
-                        </CardContent>
-                      </Card>
+                    {wishlistItems.map((item) => (
+                      <WishlistItem 
+                        key={item.id} 
+                        item={item} 
+                        isPreviewMode={isPreviewMode} 
+                        isPublicView={isPublicView} 
+                      />
                     ))}
                   </div>
                 </div>

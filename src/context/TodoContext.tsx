@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -17,6 +16,15 @@ export interface TodoListItem {
   isCompleted: boolean;
 }
 
+export interface WishlistItem {
+  id: string;
+  name: string;
+  price?: string;
+  link?: string;
+  priority: "high" | "medium" | "low";
+  purchasedBy?: string;
+}
+
 interface TodoContextType {
   todoLists: TodoListItem[];
   createTodoList: (title: string, description?: string) => void;
@@ -26,11 +34,15 @@ interface TodoContextType {
   toggleTodoItem: (listId: string, itemId: string) => void;
   deleteTodoItem: (listId: string, itemId: string) => void;
   getTodoList: (id: string) => TodoListItem | undefined;
+  
+  wishlistItems: WishlistItem[];
+  addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
+  markItemAsPurchased: (itemId: string, purchaserName: string) => void;
+  removeItemPurchaser: (itemId: string) => void;
 }
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
-// Sample initial data
 const initialTodoLists: TodoListItem[] = [
   {
     id: "list-1",
@@ -60,8 +72,30 @@ const initialTodoLists: TodoListItem[] = [
   }
 ];
 
+const initialWishlistItems: WishlistItem[] = [
+  {
+    id: "wish-1",
+    name: "KitchenAid Stand Mixer",
+    price: "$350",
+    priority: "high",
+    link: "https://www.kitchenaid.com"
+  },
+  {
+    id: "wish-2",
+    name: "Honeymoon Fund Contribution",
+    priority: "high"
+  },
+  {
+    id: "wish-3",
+    name: "Dyson Vacuum Cleaner",
+    price: "$400",
+    priority: "medium"
+  }
+];
+
 export const TodoProvider = ({ children }: { children: ReactNode }) => {
   const [todoLists, setTodoLists] = useState<TodoListItem[]>(initialTodoLists);
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(initialWishlistItems);
 
   const createTodoList = (title: string, description?: string) => {
     const newList: TodoListItem = {
@@ -149,6 +183,45 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
     return todoLists.find(list => list.id === id);
   };
 
+  const addWishlistItem = (item: Omit<WishlistItem, "id">) => {
+    const newItem: WishlistItem = {
+      ...item,
+      id: `wish-${Date.now()}`
+    };
+    setWishlistItems([...wishlistItems, newItem]);
+    toast.success("Item added to wishlist!");
+  };
+
+  const markItemAsPurchased = (itemId: string, purchaserName: string) => {
+    setWishlistItems(
+      wishlistItems.map(item =>
+        item.id === itemId
+          ? { ...item, purchasedBy: purchaserName }
+          : item
+      )
+    );
+    
+    const itemName = wishlistItems.find(item => item.id === itemId)?.name;
+    toast.success(`Thank you for getting the ${itemName}!`, {
+      description: "Your selection has been saved"
+    });
+  };
+
+  const removeItemPurchaser = (itemId: string) => {
+    setWishlistItems(
+      wishlistItems.map(item =>
+        item.id === itemId
+          ? { ...item, purchasedBy: undefined }
+          : item
+      )
+    );
+    
+    const itemName = wishlistItems.find(item => item.id === itemId)?.name;
+    toast.success(`Selection removed`, {
+      description: `${itemName} is now available again`
+    });
+  };
+
   return (
     <TodoContext.Provider value={{
       todoLists,
@@ -158,7 +231,11 @@ export const TodoProvider = ({ children }: { children: ReactNode }) => {
       addTodoItem,
       toggleTodoItem,
       deleteTodoItem,
-      getTodoList
+      getTodoList,
+      wishlistItems,
+      addWishlistItem,
+      markItemAsPurchased,
+      removeItemPurchaser
     }}>
       {children}
     </TodoContext.Provider>
