@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import ProjectStats from "@/components/dashboard/ProjectStats";
@@ -14,8 +15,14 @@ const UserHomepage = () => {
   const firstName = userEmail.split('@')[0].split('.')[0];
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   
-  // Mock wedding date - in a real app, this would come from your database
-  const weddingDate = "2024-12-31";
+  // Wedding date state - in a real app, this would be stored in your database
+  const [weddingDate, setWeddingDate] = useState(localStorage.getItem("weddingDate") || "2024-12-31");
+  
+  // Handle wedding date updates
+  const handleDateChange = (newDate: string) => {
+    setWeddingDate(newDate);
+    localStorage.setItem("weddingDate", newDate);
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -33,7 +40,7 @@ const UserHomepage = () => {
           </section>
           
           {/* Countdown Timer */}
-          <WeddingCountdown weddingDate={weddingDate} />
+          <WeddingCountdown weddingDate={weddingDate} onDateChange={handleDateChange} />
           
           {/* Quick Stats */}
           <section className="py-6">
