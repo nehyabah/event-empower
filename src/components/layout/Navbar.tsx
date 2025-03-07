@@ -93,6 +93,7 @@ const Navbar = () => {
               <NavLink to="/dashboard">Dashboard</NavLink>
               <NavLink to="/todo-lists">To-Do Lists</NavLink>
               <NavLink to="/expense-tracker">Expenses</NavLink>
+              <NavLink to="/vendors">Vendors</NavLink>
               <NavLink to="/couple-story">Our Story</NavLink>
             </>
           )}
@@ -196,6 +197,12 @@ const Navbar = () => {
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5" />
                     <span>Expenses</span>
+                  </div>
+                </NavLink>
+                <NavLink to="/vendors" className="px-4 py-2">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5" />
+                    <span>Vendors</span>
                   </div>
                 </NavLink>
               </>
