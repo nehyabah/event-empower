@@ -99,7 +99,7 @@ export const useWishlist = () => {
 };
 
 // Type for the useWishlist hook return value
-export interface WishlistContextType {
+export interface WishlistHook {
   wishlistItems: WishlistItem[];
   bankDetails: BankDetail[];
   addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
