@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
@@ -104,6 +105,19 @@ const UserHomepage = () => {
     const link = getGenericRsvpLink();
     navigator.clipboard.writeText(link);
     toast.success("RSVP link copied to clipboard!");
+  };
+
+  // Add the missing functions
+  const generateGuestInviteLink = (guest: Guest) => {
+    setSelectedGuest(guest);
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/invitation?name=${encodeURIComponent(guest.name)}&email=${encodeURIComponent(guest.email)}`;
+    setGuestInviteLink(link);
+  };
+  
+  const copyGuestInviteLink = () => {
+    navigator.clipboard.writeText(guestInviteLink);
+    toast.success("Guest invitation link copied to clipboard!");
   };
   
   const filteredGuests = guests.filter(guest => 
