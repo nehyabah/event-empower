@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,13 +45,10 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      // This would be where you'd handle login via your auth service
       console.log("Login data:", data);
       
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Set auth state and user type
       localStorage.setItem("authenticated", "true");
       localStorage.setItem("userType", data.userType);
       localStorage.setItem("userEmail", data.email);
@@ -67,12 +63,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       
       if (onSuccess) onSuccess();
       
-      // Redirect based on user type
-      if (data.userType === "vendor") {
-        navigate("/vendor-profile");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/home");
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed", {
