@@ -1,35 +1,104 @@
-
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import ProjectStats from "@/components/dashboard/ProjectStats";
 import WeddingCountdown from "@/components/dashboard/WeddingCountdown";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, ListTodo, CreditCard, Users, Pencil } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  CalendarDays, 
+  ListTodo, 
+  CreditCard, 
+  Users, 
+  Pencil,
+  UserPlus,
+  Search,
+  MoreHorizontal 
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+
+interface Guest {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  status: 'pending' | 'confirmed' | 'declined' | 'maybe';
+  group?: string;
+}
 
 const UserHomepage = () => {
-  // Retrieve user information (in a real app, this would come from your auth context)
   const userEmail = localStorage.getItem("userEmail") || "user@example.com";
   const firstName = userEmail.split('@')[0].split('.')[0];
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   
-  // Wedding date state - in a real app, this would be stored in your database
   const [weddingDate, setWeddingDate] = useState(localStorage.getItem("weddingDate") || "2024-12-31");
   
-  // Handle wedding date updates
+  const [guests, setGuests] = useState<Guest[]>(() => {
+    const savedGuests = localStorage.getItem("weddingGuests");
+    return savedGuests ? JSON.parse(savedGuests) : [
+      { id: '1', name: 'John Smith', email: 'john@example.com', status: 'confirmed', group: 'Family' },
+      { id: '2', name: 'Sarah Johnson', email: 'sarah@example.com', status: 'pending', group: 'Friends' },
+      { id: '3', name: 'Michael Brown', email: 'michael@example.com', status: 'declined', group: 'Work' }
+    ];
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [newGuestName, setNewGuestName] = useState("");
+  const [newGuestEmail, setNewGuestEmail] = useState("");
+  const [newGuestGroup, setNewGuestGroup] = useState("Family");
+  
   const handleDateChange = (newDate: string) => {
     setWeddingDate(newDate);
     localStorage.setItem("weddingDate", newDate);
   };
+  
+  const addGuest = () => {
+    if (newGuestName && newGuestEmail) {
+      const newGuest: Guest = {
+        id: Date.now().toString(),
+        name: newGuestName,
+        email: newGuestEmail,
+        status: 'pending',
+        group: newGuestGroup
+      };
+      
+      const updatedGuests = [...guests, newGuest];
+      setGuests(updatedGuests);
+      localStorage.setItem("weddingGuests", JSON.stringify(updatedGuests));
+      
+      setNewGuestName("");
+      setNewGuestEmail("");
+    }
+  };
+  
+  const filteredGuests = guests.filter(guest => 
+    guest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    guest.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (guest.group && guest.group.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+  
+  const confirmedCount = guests.filter(g => g.status === 'confirmed').length;
+  const pendingCount = guests.filter(g => g.status === 'pending').length;
+  const declinedCount = guests.filter(g => g.status === 'declined').length;
   
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4 space-y-10">
-          {/* Welcome Section */}
           <section className="text-center md:text-left">
             <h1 className="font-serif text-3xl md:text-4xl mb-2">
               Welcome back, <span className="text-primary">{capitalizedName}</span>!
@@ -39,16 +108,265 @@ const UserHomepage = () => {
             </p>
           </section>
           
-          {/* Countdown Timer */}
           <WeddingCountdown weddingDate={weddingDate} onDateChange={handleDateChange} />
           
-          {/* Quick Stats */}
+          <section className="py-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-serif">Guest List</h2>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Add Guest
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Guest</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <label htmlFor="name" className="text-sm font-medium">Guest Name</label>
+                      <Input 
+                        id="name" 
+                        value={newGuestName} 
+                        onChange={(e) => setNewGuestName(e.target.value)} 
+                        placeholder="Full Name" 
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <label htmlFor="email" className="text-sm font-medium">Email Address</label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        value={newGuestEmail} 
+                        onChange={(e) => setNewGuestEmail(e.target.value)} 
+                        placeholder="Email" 
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <label htmlFor="group" className="text-sm font-medium">Group</label>
+                      <select 
+                        id="group" 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={newGuestGroup} 
+                        onChange={(e) => setNewGuestGroup(e.target.value)}
+                      >
+                        <option value="Family">Family</option>
+                        <option value="Friends">Friends</option>
+                        <option value="Work">Work</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <Button onClick={addGuest} className="w-full mt-2">Save Guest</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <CardTitle>Your Wedding Guests</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Manage and track your guest list
+                    </p>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Search guests..."
+                        className="pl-8 w-full md:w-[200px]"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="all" className="w-full">
+                  <TabsList className="w-full md:w-auto mb-4">
+                    <TabsTrigger value="all">All ({guests.length})</TabsTrigger>
+                    <TabsTrigger value="confirmed">Confirmed ({confirmedCount})</TabsTrigger>
+                    <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+                    <TabsTrigger value="declined">Declined ({declinedCount})</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="all" className="mt-0">
+                    <div className="rounded-md border">
+                      <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
+                        <div className="col-span-5">Name</div>
+                        <div className="col-span-3">Group</div>
+                        <div className="col-span-3">Status</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      <div className="divide-y">
+                        {filteredGuests.length > 0 ? (
+                          filteredGuests.map((guest) => (
+                            <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
+                              <div className="col-span-5">
+                                <div className="font-medium">{guest.name}</div>
+                                <div className="text-muted-foreground text-xs">{guest.email}</div>
+                              </div>
+                              <div className="col-span-3">{guest.group}</div>
+                              <div className="col-span-3">
+                                <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  guest.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                  guest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {guest.status.charAt(0).toUpperCase() + guest.status.slice(1)}
+                                </div>
+                              </div>
+                              <div className="col-span-1 text-right">
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No guests match your search
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="confirmed" className="mt-0">
+                    <div className="rounded-md border">
+                      <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
+                        <div className="col-span-5">Name</div>
+                        <div className="col-span-3">Group</div>
+                        <div className="col-span-3">Status</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      <div className="divide-y">
+                        {filteredGuests.filter(g => g.status === 'confirmed').length > 0 ? (
+                          filteredGuests
+                            .filter(g => g.status === 'confirmed')
+                            .map((guest) => (
+                              <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
+                                <div className="col-span-5">
+                                  <div className="font-medium">{guest.name}</div>
+                                  <div className="text-muted-foreground text-xs">{guest.email}</div>
+                                </div>
+                                <div className="col-span-3">{guest.group}</div>
+                                <div className="col-span-3">
+                                  <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+                                    Confirmed
+                                  </div>
+                                </div>
+                                <div className="col-span-1 text-right">
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No confirmed guests
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="pending" className="mt-0">
+                    <div className="rounded-md border">
+                      <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
+                        <div className="col-span-5">Name</div>
+                        <div className="col-span-3">Group</div>
+                        <div className="col-span-3">Status</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      <div className="divide-y">
+                        {filteredGuests.filter(g => g.status === 'pending').length > 0 ? (
+                          filteredGuests
+                            .filter(g => g.status === 'pending')
+                            .map((guest) => (
+                              <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
+                                <div className="col-span-5">
+                                  <div className="font-medium">{guest.name}</div>
+                                  <div className="text-muted-foreground text-xs">{guest.email}</div>
+                                </div>
+                                <div className="col-span-3">{guest.group}</div>
+                                <div className="col-span-3">
+                                  <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                    Pending
+                                  </div>
+                                </div>
+                                <div className="col-span-1 text-right">
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No pending guests
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="declined" className="mt-0">
+                    <div className="rounded-md border">
+                      <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
+                        <div className="col-span-5">Name</div>
+                        <div className="col-span-3">Group</div>
+                        <div className="col-span-3">Status</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      <div className="divide-y">
+                        {filteredGuests.filter(g => g.status === 'declined').length > 0 ? (
+                          filteredGuests
+                            .filter(g => g.status === 'declined')
+                            .map((guest) => (
+                              <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
+                                <div className="col-span-5">
+                                  <div className="font-medium">{guest.name}</div>
+                                  <div className="text-muted-foreground text-xs">{guest.email}</div>
+                                </div>
+                                <div className="col-span-3">{guest.group}</div>
+                                <div className="col-span-3">
+                                  <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800">
+                                    Declined
+                                  </div>
+                                </div>
+                                <div className="col-span-1 text-right">
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            No declined guests
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </section>
+          
           <section className="py-6">
             <h2 className="text-2xl font-serif mb-6">Wedding Planning Progress</h2>
             <ProjectStats />
           </section>
           
-          {/* Quick Actions */}
           <section className="py-6">
             <h2 className="text-2xl font-serif mb-6">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -79,7 +397,6 @@ const UserHomepage = () => {
             </div>
           </section>
           
-          {/* Elegant Wedding Timeline */}
           <section className="py-8">
             <h2 className="text-2xl font-serif mb-8">Your Wedding Timeline</h2>
             <div className="relative pl-12 space-y-10 max-w-3xl before:absolute before:left-4 before:top-3 before:bottom-10 before:w-[2px] 
@@ -114,7 +431,6 @@ const UserHomepage = () => {
   );
 };
 
-// Helper Components
 interface QuickActionCardProps {
   title: string;
   description: string;
