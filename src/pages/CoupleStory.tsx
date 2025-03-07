@@ -43,8 +43,8 @@ interface WellWish {
 
 const CoupleStory = () => {
   const location = useLocation();
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [isPublicView, setIsPublicView] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(true);
+  const [isPublicView, setIsPublicView] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showWellWishForm, setShowWellWishForm] = useState(false);
   const { wishlistItems, addWishlistItem } = useTodo();
@@ -108,7 +108,8 @@ const CoupleStory = () => {
     const params = new URLSearchParams(location.search);
     if (params.get('view') === 'public') {
       setIsPublicView(true);
-      setIsPreviewMode(true);
+    } else {
+      setIsPublicView(true);
     }
   }, [location]);
 
@@ -490,8 +491,8 @@ const CoupleStory = () => {
                     <WishlistItem 
                       key={item.id} 
                       item={item} 
-                      isPreviewMode={isPreviewMode} 
-                      isPublicView={isPublicView} 
+                      isPreviewMode={false}
+                      isPublicView={true}
                     />
                   ))}
                   
@@ -698,8 +699,8 @@ const CoupleStory = () => {
                       <WishlistItem 
                         key={item.id} 
                         item={item} 
-                        isPreviewMode={isPreviewMode} 
-                        isPublicView={isPublicView} 
+                        isPreviewMode={false}
+                        isPublicView={true}
                       />
                     ))}
                   </div>

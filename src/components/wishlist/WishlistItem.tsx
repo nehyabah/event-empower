@@ -77,56 +77,56 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
           )}
         </div>
         
-        {isPublicView && !isPreviewMode && (
-          <div className="mt-4">
-            {!item.purchasedBy ? (
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <Gift className="mr-2 h-4 w-4" />
-                    I'll get this!
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Confirm Gift Selection</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Great! Let the couple know who's getting the {item.name}.
-                    </p>
-                    <Input
-                      placeholder="Your name or family name"
-                      value={purchaserName}
-                      onChange={(e) => setPurchaserName(e.target.value)}
-                      required
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        Confirm
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            ) : (
-              item.purchasedBy && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full text-muted-foreground"
-                  onClick={handleRemovePurchaser}
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Remove selection
+        {/* Modified logic to show buttons regardless of preview mode - 
+            the button should always be visible on the public view */}
+        <div className="mt-4">
+          {!item.purchasedBy ? (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full">
+                  <Gift className="mr-2 h-4 w-4" />
+                  I'll get this!
                 </Button>
-              )
-            )}
-          </div>
-        )}
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Confirm Gift Selection</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Great! Let the couple know who's getting the {item.name}.
+                  </p>
+                  <Input
+                    placeholder="Your name or family name"
+                    value={purchaserName}
+                    onChange={(e) => setPurchaserName(e.target.value)}
+                    required
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      Confirm
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            item.purchasedBy && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-muted-foreground"
+                onClick={handleRemovePurchaser}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remove selection
+              </Button>
+            )
+          )}
+        </div>
       </CardContent>
     </Card>
   );
