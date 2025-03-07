@@ -37,11 +37,11 @@ const Hero = () => {
             <AuthModal 
               defaultTab="register" 
               triggerClassName="px-7 py-3 shadow-elegant text-base font-medium group"
-              triggerContent={
-                <>
+              trigger={
+                <Button className="px-7 py-3 shadow-elegant text-base font-medium group">
                   Get Started 
                   <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </>
+                </Button>
               }
             />
             <Link to="/features">
@@ -70,7 +70,7 @@ const Hero = () => {
             <div className="glass p-4 rounded-2xl shadow-elegant overflow-hidden">
               <div className="aspect-[16/7] overflow-hidden rounded-xl">
                 <img 
-                  src="https://images.unsplash.com/photo-1545232979-8bf68ee9b1af?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=85" 
+                  src="https://res.cloudinary.com/dfjv35kht/image/upload/v1741387649/pexels-ashleyrae-697740_osqcbb.jpg" 
                   alt="Nigerian wedding celebration"
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
                 />

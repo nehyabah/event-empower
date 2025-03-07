@@ -79,11 +79,11 @@ const HowItWorks = () => {
                 <AuthModal 
                   defaultTab="register" 
                   triggerClassName="px-7 py-3 shadow-elegant text-base font-medium group"
-                  triggerContent={
-                    <>
+                  trigger={
+                    <Button className="px-7 py-3 shadow-elegant text-base font-medium group">
                       Start Planning Now
                       <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </>
+                    </Button>
                   }
                 />
                 <Link to="/features">
