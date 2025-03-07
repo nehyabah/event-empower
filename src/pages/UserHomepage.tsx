@@ -4,7 +4,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import ProjectStats from "@/components/dashboard/ProjectStats";
 import WeddingCountdown from "@/components/dashboard/WeddingCountdown";
-import InvitationGenerator from "@/components/invitations/InvitationGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -16,7 +15,9 @@ import {
   UserPlus,
   Search,
   MoreHorizontal,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Copy,
+  Phone
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { 
@@ -25,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -50,20 +52,22 @@ const UserHomepage = () => {
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   
   const [weddingDate, setWeddingDate] = useState(localStorage.getItem("weddingDate") || "2024-12-31");
-  const [showInvitationGenerator, setShowInvitationGenerator] = useState(false);
-  const [invitationLink, setInvitationLink] = useState("");
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [guestInviteLink, setGuestInviteLink] = useState("");
   
   const [guests, setGuests] = useState<Guest[]>(() => {
     const savedGuests = localStorage.getItem("weddingGuests");
     return savedGuests ? JSON.parse(savedGuests) : [
-      { id: '1', name: 'John Smith', email: 'john@example.com', status: 'confirmed', group: 'Family' },
-      { id: '2', name: 'Sarah Johnson', email: 'sarah@example.com', status: 'pending', group: 'Friends' },
+      { id: '1', name: 'John Smith', email: 'john@example.com', phone: '123-456-7890', status: 'confirmed', group: 'Family' },
+      { id: '2', name: 'Sarah Johnson', email: 'sarah@example.com', phone: '234-567-8901', status: 'pending', group: 'Friends' },
       { id: '3', name: 'Michael Brown', email: 'michael@example.com', status: 'declined', group: 'Work' }
     ];
   });
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [newGuestName, setNewGuestName] = useState("");
   const [newGuestEmail, setNewGuestEmail] = useState("");
+  const [newGuestPhone, setNewGuestPhone] = useState("");
   const [newGuestGroup, setNewGuestGroup] = useState("Family");
   
   const handleDateChange = (newDate: string) => {
@@ -77,6 +81,7 @@ const UserHomepage = () => {
         id: Date.now().toString(),
         name: newGuestName,
         email: newGuestEmail,
+        phone: newGuestPhone,
         status: 'pending',
         group: newGuestGroup
       };
@@ -87,16 +92,18 @@ const UserHomepage = () => {
       
       setNewGuestName("");
       setNewGuestEmail("");
+      setNewGuestPhone("");
     }
   };
   
-  const generateInvitationLink = () => {
-    // Create a unique code for the invitation
-    const inviteCode = Math.random().toString(36).substring(2, 10);
+  const generateGuestInviteLink = (guest: Guest) => {
+    // Create a unique code for the invitation that includes the guest ID
+    const inviteCode = `${guest.id}-${Math.random().toString(36).substring(2, 8)}`;
     
     // In a real app, this would save to a database
     // For this demo, we'll save to localStorage
     const invitationData = {
+      guest: guest,
       couple: capitalizedName + " & Partner",
       date: weddingDate,
       code: inviteCode
@@ -108,19 +115,22 @@ const UserHomepage = () => {
     const baseUrl = window.location.origin;
     const url = `${baseUrl}/invitation/${inviteCode}`;
     
-    setInvitationLink(url);
+    setSelectedGuest(guest);
+    setGuestInviteLink(url);
     return url;
   };
   
-  const copyInvitationLink = () => {
-    const link = invitationLink || generateInvitationLink();
-    navigator.clipboard.writeText(link);
-    toast.success("Invitation link copied to clipboard!");
+  const copyGuestInviteLink = () => {
+    if (guestInviteLink) {
+      navigator.clipboard.writeText(guestInviteLink);
+      toast.success("Invitation link copied to clipboard!");
+    }
   };
   
   const filteredGuests = guests.filter(guest => 
     guest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     guest.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (guest.phone && guest.phone.includes(searchQuery)) ||
     (guest.group && guest.group.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
@@ -146,73 +156,6 @@ const UserHomepage = () => {
           
           <section className="py-4 md:py-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
-              <h2 className="text-xl md:text-2xl font-serif">Wedding Invitations</h2>
-              <div className="flex flex-wrap gap-2">
-                <Button 
-                  variant="outline" 
-                  className="text-sm gap-2"
-                  onClick={() => setShowInvitationGenerator(true)}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Create Invitation
-                </Button>
-                <Button 
-                  className="text-sm gap-2"
-                  onClick={copyInvitationLink}
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  Generate URL
-                </Button>
-              </div>
-            </div>
-            
-            <Dialog open={showInvitationGenerator} onOpenChange={setShowInvitationGenerator}>
-              <DialogContent className="max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create Wedding Invitation</DialogTitle>
-                </DialogHeader>
-                <InvitationGenerator />
-              </DialogContent>
-            </Dialog>
-            
-            {invitationLink && (
-              <Card className="mb-6">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="w-full md:flex-1">
-                      <p className="text-sm font-medium mb-2">Your Invitation Link:</p>
-                      <div className="flex items-center gap-2 w-full">
-                        <Input 
-                          value={invitationLink} 
-                          readOnly 
-                          className="font-mono text-xs text-ellipsis"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          className="shrink-0"
-                          onClick={copyInvitationLink}
-                        >
-                          <LinkIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline" 
-                      size="sm"
-                      className="shrink-0 w-full md:w-auto"
-                      onClick={() => window.open(invitationLink, '_blank')}
-                    >
-                      Preview
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </section>
-          
-          <section className="py-4 md:py-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
               <h2 className="text-xl md:text-2xl font-serif">Guest List</h2>
               <Dialog>
                 <DialogTrigger asChild>
@@ -224,6 +167,9 @@ const UserHomepage = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Add New Guest</DialogTitle>
+                    <DialogDescription>
+                      Add guest details to send them an invitation link.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
@@ -243,6 +189,16 @@ const UserHomepage = () => {
                         value={newGuestEmail} 
                         onChange={(e) => setNewGuestEmail(e.target.value)} 
                         placeholder="Email" 
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <label htmlFor="phone" className="text-sm font-medium">Phone Number</label>
+                      <Input 
+                        id="phone" 
+                        type="tel" 
+                        value={newGuestPhone} 
+                        onChange={(e) => setNewGuestPhone(e.target.value)} 
+                        placeholder="Phone Number" 
                       />
                     </div>
                     <div className="grid gap-2">
@@ -302,21 +258,30 @@ const UserHomepage = () => {
                   <TabsContent value="all" className="mt-0">
                     <div className="rounded-md border overflow-x-auto">
                       <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50 min-w-[600px]">
-                        <div className="col-span-5">Name</div>
-                        <div className="col-span-3">Group</div>
-                        <div className="col-span-3">Status</div>
-                        <div className="col-span-1"></div>
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-3">Contact</div>
+                        <div className="col-span-2">Group</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-2 text-right">Actions</div>
                       </div>
                       <div className="divide-y min-w-[600px]">
                         {filteredGuests.length > 0 ? (
                           filteredGuests.map((guest) => (
                             <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
-                              <div className="col-span-5">
-                                <div className="font-medium">{guest.name}</div>
-                                <div className="text-muted-foreground text-xs">{guest.email}</div>
-                              </div>
-                              <div className="col-span-3">{guest.group}</div>
                               <div className="col-span-3">
+                                <div className="font-medium">{guest.name}</div>
+                              </div>
+                              <div className="col-span-3">
+                                <div className="text-xs mb-1">{guest.email}</div>
+                                {guest.phone && (
+                                  <div className="text-xs flex items-center text-muted-foreground">
+                                    <Phone className="h-3 w-3 mr-1" />
+                                    {guest.phone}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="col-span-2">{guest.group}</div>
+                              <div className="col-span-2">
                                 <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                   guest.status === 'confirmed' ? 'bg-green-100 text-green-800' :
                                   guest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -325,7 +290,55 @@ const UserHomepage = () => {
                                   {guest.status.charAt(0).toUpperCase() + guest.status.slice(1)}
                                 </div>
                               </div>
-                              <div className="col-span-1 text-right">
+                              <div className="col-span-2 text-right">
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button 
+                                      variant="outline" 
+                                      size="icon" 
+                                      className="mr-1"
+                                      onClick={() => generateGuestInviteLink(guest)}
+                                    >
+                                      <LinkIcon className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Invitation Link for {selectedGuest?.name}</DialogTitle>
+                                      <DialogDescription>
+                                        Share this unique link with your guest to let them RSVP directly.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-4">
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          value={guestInviteLink}
+                                          readOnly
+                                          className="font-mono text-xs text-ellipsis"
+                                        />
+                                        <Button
+                                          variant="outline"
+                                          size="icon"
+                                          onClick={copyGuestInviteLink}
+                                        >
+                                          <Copy className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                      <div className="text-sm text-muted-foreground">
+                                        <p>When your guest opens this link, they'll be able to confirm or decline your invitation.</p>
+                                      </div>
+                                      <div className="flex justify-end">
+                                        <Button 
+                                          variant="default" 
+                                          onClick={copyGuestInviteLink}
+                                          className="w-full sm:w-auto"
+                                        >
+                                          Copy Link
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
                                 <Button variant="ghost" size="icon">
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
@@ -344,10 +357,11 @@ const UserHomepage = () => {
                   <TabsContent value="confirmed" className="mt-0">
                     <div className="rounded-md border">
                       <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
-                        <div className="col-span-5">Name</div>
-                        <div className="col-span-3">Group</div>
-                        <div className="col-span-3">Status</div>
-                        <div className="col-span-1"></div>
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-3">Contact</div>
+                        <div className="col-span-2">Group</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-2 text-right">Actions</div>
                       </div>
                       <div className="divide-y">
                         {filteredGuests.filter(g => g.status === 'confirmed').length > 0 ? (
@@ -355,17 +369,33 @@ const UserHomepage = () => {
                             .filter(g => g.status === 'confirmed')
                             .map((guest) => (
                               <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
-                                <div className="col-span-5">
-                                  <div className="font-medium">{guest.name}</div>
-                                  <div className="text-muted-foreground text-xs">{guest.email}</div>
-                                </div>
-                                <div className="col-span-3">{guest.group}</div>
                                 <div className="col-span-3">
+                                  <div className="font-medium">{guest.name}</div>
+                                </div>
+                                <div className="col-span-3">
+                                  <div className="text-xs mb-1">{guest.email}</div>
+                                  {guest.phone && (
+                                    <div className="text-xs flex items-center text-muted-foreground">
+                                      <Phone className="h-3 w-3 mr-1" />
+                                      {guest.phone}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="col-span-2">{guest.group}</div>
+                                <div className="col-span-2">
                                   <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
                                     Confirmed
                                   </div>
                                 </div>
-                                <div className="col-span-1 text-right">
+                                <div className="col-span-2 text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className="mr-1"
+                                    onClick={() => generateGuestInviteLink(guest)}
+                                  >
+                                    <LinkIcon className="h-4 w-4" />
+                                  </Button>
                                   <Button variant="ghost" size="icon">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
@@ -384,10 +414,11 @@ const UserHomepage = () => {
                   <TabsContent value="pending" className="mt-0">
                     <div className="rounded-md border">
                       <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
-                        <div className="col-span-5">Name</div>
-                        <div className="col-span-3">Group</div>
-                        <div className="col-span-3">Status</div>
-                        <div className="col-span-1"></div>
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-3">Contact</div>
+                        <div className="col-span-2">Group</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-2 text-right">Actions</div>
                       </div>
                       <div className="divide-y">
                         {filteredGuests.filter(g => g.status === 'pending').length > 0 ? (
@@ -395,17 +426,33 @@ const UserHomepage = () => {
                             .filter(g => g.status === 'pending')
                             .map((guest) => (
                               <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
-                                <div className="col-span-5">
-                                  <div className="font-medium">{guest.name}</div>
-                                  <div className="text-muted-foreground text-xs">{guest.email}</div>
-                                </div>
-                                <div className="col-span-3">{guest.group}</div>
                                 <div className="col-span-3">
+                                  <div className="font-medium">{guest.name}</div>
+                                </div>
+                                <div className="col-span-3">
+                                  <div className="text-xs mb-1">{guest.email}</div>
+                                  {guest.phone && (
+                                    <div className="text-xs flex items-center text-muted-foreground">
+                                      <Phone className="h-3 w-3 mr-1" />
+                                      {guest.phone}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="col-span-2">{guest.group}</div>
+                                <div className="col-span-2">
                                   <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-yellow-100 text-yellow-800">
                                     Pending
                                   </div>
                                 </div>
-                                <div className="col-span-1 text-right">
+                                <div className="col-span-2 text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className="mr-1"
+                                    onClick={() => generateGuestInviteLink(guest)}
+                                  >
+                                    <LinkIcon className="h-4 w-4" />
+                                  </Button>
                                   <Button variant="ghost" size="icon">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
@@ -424,10 +471,11 @@ const UserHomepage = () => {
                   <TabsContent value="declined" className="mt-0">
                     <div className="rounded-md border">
                       <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
-                        <div className="col-span-5">Name</div>
-                        <div className="col-span-3">Group</div>
-                        <div className="col-span-3">Status</div>
-                        <div className="col-span-1"></div>
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-3">Contact</div>
+                        <div className="col-span-2">Group</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-2 text-right">Actions</div>
                       </div>
                       <div className="divide-y">
                         {filteredGuests.filter(g => g.status === 'declined').length > 0 ? (
@@ -435,17 +483,33 @@ const UserHomepage = () => {
                             .filter(g => g.status === 'declined')
                             .map((guest) => (
                               <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
-                                <div className="col-span-5">
-                                  <div className="font-medium">{guest.name}</div>
-                                  <div className="text-muted-foreground text-xs">{guest.email}</div>
-                                </div>
-                                <div className="col-span-3">{guest.group}</div>
                                 <div className="col-span-3">
+                                  <div className="font-medium">{guest.name}</div>
+                                </div>
+                                <div className="col-span-3">
+                                  <div className="text-xs mb-1">{guest.email}</div>
+                                  {guest.phone && (
+                                    <div className="text-xs flex items-center text-muted-foreground">
+                                      <Phone className="h-3 w-3 mr-1" />
+                                      {guest.phone}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="col-span-2">{guest.group}</div>
+                                <div className="col-span-2">
                                   <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-red-100 text-red-800">
                                     Declined
                                   </div>
                                 </div>
-                                <div className="col-span-1 text-right">
+                                <div className="col-span-2 text-right">
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className="mr-1"
+                                    onClick={() => generateGuestInviteLink(guest)}
+                                  >
+                                    <LinkIcon className="h-4 w-4" />
+                                  </Button>
                                   <Button variant="ghost" size="icon">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
