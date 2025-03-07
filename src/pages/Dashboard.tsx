@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -109,7 +108,7 @@ const Dashboard = () => {
           
           <ProjectStats />
           
-          <Tabs defaultValue="tasks" className="w-full">
+          <Tabs defaultValue="invitations" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="tasks">Planning Tasks</TabsTrigger>
               <TabsTrigger value="invitations">AI Invitations</TabsTrigger>
