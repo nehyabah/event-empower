@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from "@/components/layout/Navbar";
@@ -23,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useWishlist } from "@/context/useWishlist";
-import { Image, Link, Share2, Camera, MessageSquare, Send } from "lucide-react";
+import { Image, Link, Share2, Camera, MessageSquare, Send, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
 // Comment type
@@ -90,7 +89,6 @@ const CoupleStory = () => {
     const savedComments = localStorage.getItem("storyComments");
     return savedComments ? JSON.parse(savedComments) : [];
   });
-  const [newComment, setNewComment] = useState({ name: "", text: "" });
   const [imageCaption, setImageCaption] = useState("");
   const [coupleStory, setCoupleStory] = useState(() => {
     const savedStory = localStorage.getItem("coupleStory");
