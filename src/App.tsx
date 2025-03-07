@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import UserHomepage from "./pages/UserHomepage";
+import VendorHomepage from "./pages/VendorHomepage";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Vendors from "./pages/Vendors";
@@ -77,6 +78,13 @@ const App = () => {
               <Route path="/home" element={
                 <ProtectedRoute requireAuth={true}>
                   <UserHomepage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Authenticated vendor homepage */}
+              <Route path="/vendor-home" element={
+                <ProtectedRoute requireAuth={true}>
+                  <VendorHomepage />
                 </ProtectedRoute>
               } />
               
