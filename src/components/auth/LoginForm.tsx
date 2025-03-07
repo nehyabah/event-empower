@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  userType: z.enum(["client", "vendor"]).default("client"),
 });
 
 type LoginFormValues = z.infer<typeof formSchema>;
@@ -37,6 +38,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     defaultValues: {
       email: "",
       password: "",
+      userType: "client",
     },
   });
 
@@ -50,17 +52,27 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Set auth state
+      // Set auth state and user type
       localStorage.setItem("authenticated", "true");
+      localStorage.setItem("userType", data.userType);
+      localStorage.setItem("userEmail", data.email);
       
-      toast.success("Login successful!", {
-        description: "Welcome back to Planr!",
+      const firstName = data.email.split('@')[0].split('.')[0];
+      const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+      
+      toast.success(`Welcome back, ${capitalizedName}! 👋`, {
+        description: "We're so happy to see you again!",
+        duration: 5000,
       });
       
       if (onSuccess) onSuccess();
       
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Redirect based on user type
+      if (data.userType === "vendor") {
+        navigate("/vendor-profile");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed", {
@@ -106,6 +118,41 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
                     {...field}
                     className="input-elegant" 
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="userType"
+            render={({ field }) => (
+              <FormItem className="space-y-3">
+                <FormLabel>I am a:</FormLabel>
+                <FormControl>
+                  <div className="flex space-x-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-primary"
+                        value="client"
+                        checked={field.value === "client"}
+                        onChange={() => field.onChange("client")}
+                      />
+                      <span>Client (Couple)</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-primary"
+                        value="vendor"
+                        checked={field.value === "vendor"}
+                        onChange={() => field.onChange("vendor")}
+                      />
+                      <span>Vendor</span>
+                    </label>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

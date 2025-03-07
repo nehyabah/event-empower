@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import CoupleStory from "./pages/CoupleStory";
 import ExpenseTracker from "./pages/ExpenseTracker";
 import TodoLists from "./pages/TodoLists";
+import VendorProfile from "./pages/VendorProfile";
 import NotFound from "./pages/NotFound";
 import { TodoProvider } from "./context/TodoContext";
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/couple-story" element={<CoupleStory />} />
             <Route path="/expense-tracker" element={<ExpenseTracker />} />
             <Route path="/todo-lists" element={<TodoLists />} />
+            <Route path="/vendor-profile" element={<VendorProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TodoProvider>
