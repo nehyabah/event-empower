@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,7 +45,7 @@ interface WellWish {
 const CoupleStory = () => {
   const location = useLocation();
   const [isPreviewMode, setIsPreviewMode] = useState(true);
-  const [isPublicView, setIsPublicView] = useState(true);
+  const [isPublicView, setIsPublicView] = useState(false); // Default to false
   const [copied, setCopied] = useState(false);
   const [showWellWishForm, setShowWellWishForm] = useState(false);
   const { wishlistItems, addWishlistItem } = useTodo();
@@ -109,7 +110,7 @@ const CoupleStory = () => {
     if (params.get('view') === 'public') {
       setIsPublicView(true);
     } else {
-      setIsPublicView(true);
+      setIsPublicView(false); // Fixed: Set to false if not public view
     }
   }, [location]);
 
@@ -214,7 +215,8 @@ const CoupleStory = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {!isPublicView && <Navbar />}
+      {/* Always render the Navbar, regardless of view mode */}
+      <Navbar />
       
       {!isPublicView && (
         <div className="fixed right-6 top-20 z-40 bg-card shadow-md rounded-md p-2 flex flex-col space-y-2 border">
