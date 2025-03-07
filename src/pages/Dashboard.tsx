@@ -1,44 +1,58 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import TaskCard from "@/components/dashboard/TaskCard";
 import ProjectStats from "@/components/dashboard/ProjectStats";
+import TaskAssignForm from "@/components/dashboard/TaskAssignForm";
+import { toast } from "sonner";
 
-// Temporary mock data - in a real app, this would come from an API
-const tasks = [
+// Initial tasks data
+const initialTasks = [
   {
     title: "Book Venue",
     assignee: { name: "Sarah M", image: "" },
     progress: 75,
     dueDate: "Mar 15",
-    priority: "high"
+    priority: "high" as const
   },
   {
     title: "Catering Menu",
     assignee: { name: "John D", image: "" },
     progress: 45,
     dueDate: "Mar 20",
-    priority: "medium"
+    priority: "medium" as const
   },
   {
     title: "Send Invitations",
     assignee: { name: "Emma W", image: "" },
     progress: 30,
     dueDate: "Mar 25",
-    priority: "high"
+    priority: "high" as const
   },
   {
     title: "Music Selection",
     assignee: { name: "Michael B", image: "" },
     progress: 60,
     dueDate: "Mar 30",
-    priority: "low"
+    priority: "low" as const
   }
-] as const;
+];
+
+interface Task {
+  title: string;
+  assignee: {
+    name: string;
+    image?: string;
+  };
+  progress: number;
+  dueDate: string;
+  priority: "low" | "medium" | "high";
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
   // Basic auth check - replace with your auth logic
   useEffect(() => {
@@ -47,6 +61,39 @@ const Dashboard = () => {
       navigate("/");
     }
   }, [navigate]);
+
+  // Handle new task assignments
+  const handleTaskAssigned = (newTask: any) => {
+    // Format the task to match our Task interface
+    const formattedTask: Task = {
+      title: newTask.title,
+      assignee: { name: newTask.assignee, image: "" },
+      progress: newTask.progress,
+      dueDate: formatDate(newTask.dueDate),
+      priority: newTask.priority,
+    };
+    
+    setTasks([...tasks, formattedTask]);
+  };
+
+  // Simple date formatter to convert YYYY-MM-DD to MMM DD
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  // Handle task progress update
+  const handleProgressUpdate = (taskTitle: string, newProgress: number) => {
+    setTasks(
+      tasks.map((task) =>
+        task.title === taskTitle ? { ...task, progress: newProgress } : task
+      )
+    );
+    
+    toast.success("Progress updated", {
+      description: `${taskTitle} is now at ${newProgress}% completion`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,12 +107,31 @@ const Dashboard = () => {
           
           <ProjectStats />
           
-          <div>
-            <h2 className="text-xl font-medium mb-4">Current Tasks</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {tasks.map((task) => (
-                <TaskCard key={task.title} {...task} />
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-3">
+              <h2 className="text-xl font-medium mb-4">Current Tasks</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {tasks.map((task) => (
+                  <div key={task.title} onClick={() => handleProgressUpdate(task.title, Math.min(100, task.progress + 5))}>
+                    <TaskCard {...task} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h2 className="text-xl font-medium mb-4">Manage Tasks</h2>
+              <div className="space-y-4">
+                <TaskAssignForm onTaskAssigned={handleTaskAssigned} />
+                <div className="bg-muted p-4 rounded-lg">
+                  <h3 className="font-medium mb-2">Task Tips</h3>
+                  <ul className="text-sm space-y-2 text-muted-foreground">
+                    <li>• Click on a task to update progress by 5%</li>
+                    <li>• Assign clear deadlines for better tracking</li>
+                    <li>• Break large tasks into smaller ones</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
