@@ -1,33 +1,59 @@
 
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Check, Star } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
-const PricingTier = ({ 
-  title, 
-  price, 
-  description, 
-  features, 
-  buttonText, 
-  highlighted = false 
-}: { 
+type PricingTierProps = { 
+  id: string;
   title: string; 
   price: string; 
   description: string; 
   features: string[]; 
   buttonText: string; 
   highlighted?: boolean;
-}) => {
+  selected?: boolean;
+  onSelect: (id: string) => void;
+};
+
+const PricingTier = ({ 
+  id,
+  title, 
+  price, 
+  description, 
+  features, 
+  buttonText, 
+  highlighted = false,
+  selected = false,
+  onSelect
+}: PricingTierProps) => {
+  const isActive = highlighted || selected;
+  
   return (
-    <div className={`glass rounded-xl p-8 transition-all duration-300 hover:shadow-elegant hover:translate-y-[-4px] ${highlighted ? 'border-2 border-primary shadow-elegant relative' : 'border border-border/30'}`}>
+    <Card 
+      className={`glass rounded-xl p-8 transition-all duration-300 hover:shadow-elegant hover:translate-y-[-4px] cursor-pointer
+        ${isActive ? 'border-2 border-primary shadow-elegant relative' : 'border border-border/30'}`}
+      onClick={() => onSelect(id)}
+    >
       {highlighted && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium flex items-center">
           <Star className="w-3.5 h-3.5 mr-1.5" fill="currentColor" strokeWidth={0} />
           Most Popular
         </div>
       )}
-      <h3 className="text-2xl font-serif mb-2 tracking-tight">{title}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-2xl font-serif tracking-tight">{title}</h3>
+        <RadioGroupItem 
+          value={id} 
+          id={id} 
+          className="h-5 w-5"
+          onClick={(e) => e.stopPropagation()} 
+        />
+      </div>
       <div className="mb-4">
         <span className="text-3xl font-bold">₦{price}</span>
         {price !== "Free" && <span className="text-muted-foreground">/month</span>}
@@ -41,14 +67,26 @@ const PricingTier = ({
           </li>
         ))}
       </ul>
-      <Button className={`w-full font-medium ${highlighted ? '' : 'bg-muted hover:bg-muted/80 text-foreground'}`}>
+      <Button 
+        className={`w-full font-medium ${isActive ? '' : 'bg-muted hover:bg-muted/80 text-foreground'}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(id);
+        }}
+      >
         {buttonText}
       </Button>
-    </div>
+    </Card>
   );
 };
 
 const PricingPage = () => {
+  const [selectedTier, setSelectedTier] = useState<string>("premium");
+  
+  const handleSelectTier = (id: string) => {
+    setSelectedTier(id);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -64,53 +102,64 @@ const PricingPage = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <PricingTier 
-              title="Basic" 
-              price="Free" 
-              description="Perfect for couples just getting started"
-              features={[
-                "Basic event planning tools",
-                "Limited task management",
-                "Access to public vendor listings",
-                "Simple wedding countdown",
-                "Up to 50 guests"
-              ]}
-              buttonText="Get Started"
-            />
-            
-            <PricingTier 
-              title="Premium" 
-              price="9,999" 
-              description="Most popular for typical Nigerian weddings"
-              features={[
-                "Advanced planning tools",
-                "Full task management & delegation",
-                "Complete vendor directory",
-                "Custom wedding website",
-                "Up to 300 guests",
-                "Budget tracking tools"
-              ]}
-              buttonText="Choose Premium"
-              highlighted={true}
-            />
-            
-            <PricingTier 
-              title="Luxury" 
-              price="24,999" 
-              description="For elaborate celebrations with all the extras"
-              features={[
-                "All Premium features",
-                "Unlimited guests",
-                "Priority vendor access",
-                "Advanced budget analytics",
-                "Dedicated planning support",
-                "Custom event app for guests",
-                "VIP vendor discounts"
-              ]}
-              buttonText="Choose Luxury"
-            />
-          </div>
+          <RadioGroup value={selectedTier} onValueChange={setSelectedTier} className="space-y-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              <PricingTier 
+                id="basic"
+                title="Basic" 
+                price="Free" 
+                description="Perfect for couples just getting started"
+                features={[
+                  "Basic event planning tools",
+                  "Limited task management",
+                  "Access to public vendor listings",
+                  "Simple wedding countdown",
+                  "Up to 50 guests"
+                ]}
+                buttonText="Get Started"
+                selected={selectedTier === "basic"}
+                onSelect={handleSelectTier}
+              />
+              
+              <PricingTier 
+                id="premium"
+                title="Premium" 
+                price="9,999" 
+                description="Most popular for typical Nigerian weddings"
+                features={[
+                  "Advanced planning tools",
+                  "Full task management & delegation",
+                  "Complete vendor directory",
+                  "Custom wedding website",
+                  "Up to 300 guests",
+                  "Budget tracking tools"
+                ]}
+                buttonText="Choose Premium"
+                highlighted={true}
+                selected={selectedTier === "premium"}
+                onSelect={handleSelectTier}
+              />
+              
+              <PricingTier 
+                id="luxury"
+                title="Luxury" 
+                price="24,999" 
+                description="For elaborate celebrations with all the extras"
+                features={[
+                  "All Premium features",
+                  "Unlimited guests",
+                  "Priority vendor access",
+                  "Advanced budget analytics",
+                  "Dedicated planning support",
+                  "Custom event app for guests",
+                  "VIP vendor discounts"
+                ]}
+                buttonText="Choose Luxury"
+                selected={selectedTier === "luxury"}
+                onSelect={handleSelectTier}
+              />
+            </div>
+          </RadioGroup>
           
           <div className="mt-20 text-center max-w-xl mx-auto">
             <h3 className="font-serif text-2xl mb-4">Need a Custom Solution?</h3>
