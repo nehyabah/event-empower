@@ -32,4 +32,3 @@ export interface BankDetail {
   swift?: string;
   description?: string;
 }
-
