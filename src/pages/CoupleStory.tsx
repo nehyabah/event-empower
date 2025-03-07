@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import Navbar from "@/components/layout/Navbar";
 import { 
   Heart, Gift, ShoppingBag, Image, Edit, 
   DollarSign, Plus, Calendar, MapPin, 
-  Share2, Eye, EyeOff, Copy, Check
+  Share2, Eye, EyeOff, Copy, Check, UploadCloud
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
@@ -18,6 +17,7 @@ import { useLocation } from "react-router-dom";
 interface StorySection {
   title: string;
   content: string;
+  image?: string;
 }
 
 interface Vendor {
@@ -60,11 +60,13 @@ const CoupleStory = () => {
   const [storySections, setStorySections] = useState<StorySection[]>([
     { 
       title: "How We Met", 
-      content: "We first met at a friend's birthday party in 2018. Sarah was there with her college roommate, and Michael came with his work colleagues. We spent the whole night talking about our shared love for travel and photography."
+      content: "We first met at a friend's birthday party in 2018. Sarah was there with her college roommate, and Michael came with his work colleagues. We spent the whole night talking about our shared love for travel and photography.",
+      image: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80"
     },
     { 
       title: "The Proposal", 
-      content: "Michael proposed during our trip to Bali in December 2022. He planned a private sunset dinner on the beach, and as the sun was setting, he got down on one knee. It was the perfect moment."
+      content: "Michael proposed during our trip to Bali in December 2022. He planned a private sunset dinner on the beach, and as the sun was setting, he got down on one knee. It was the perfect moment.",
+      image: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1169&q=80"
     }
   ]);
   
@@ -113,7 +115,6 @@ const CoupleStory = () => {
   ]);
 
   useEffect(() => {
-    // Check if URL has ?view=public param
     const params = new URLSearchParams(location.search);
     if (params.get('view') === 'public') {
       setIsPublicView(true);
@@ -154,6 +155,29 @@ const CoupleStory = () => {
     }
   };
   
+  const handleSectionImageUpload = (e: React.ChangeEvent<HTMLInputElement>, formElement: HTMLFormElement) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && typeof event.target.result === 'string') {
+          const hiddenInput = formElement.querySelector('#sectionImageUrl') as HTMLInputElement;
+          if (hiddenInput) {
+            hiddenInput.value = event.target.result as string;
+          }
+          
+          const previewElement = document.getElementById('sectionImagePreview');
+          if (previewElement) {
+            previewElement.style.backgroundImage = `url(${event.target.result})`;
+            previewElement.classList.remove('hidden');
+          }
+          
+          toast.success("Image uploaded for section!");
+        }
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+  
   const handleAddWellWish = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -181,7 +205,6 @@ const CoupleStory = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Show only the navbar and message for public view if in edit mode
   if (isPublicView && !isPreviewMode) {
     return (
       <div className="min-h-screen bg-background">
@@ -198,7 +221,6 @@ const CoupleStory = () => {
     <div className="min-h-screen bg-background">
       {!isPublicView && <Navbar />}
       
-      {/* Mode toggle and share buttons - Only visible for the couple */}
       {!isPublicView && (
         <div className="fixed right-6 top-20 z-40 bg-card shadow-md rounded-md p-2 flex flex-col space-y-2 border">
           <Button
@@ -223,30 +245,29 @@ const CoupleStory = () => {
         </div>
       )}
       
-      {/* Hero Section - Similar to inawo.com */}
       <div className="relative h-[70vh] overflow-hidden">
-        <div className="absolute inset-0 bg-black/40 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 to-black/30 z-10" />
         <img 
           src={photos[0]} 
           alt="Couple" 
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-30000 hover:scale-105"
         />
-        <div className="relative z-20 flex flex-col items-center justify-center h-full text-white text-center px-4">
-          <h1 className="text-5xl md:text-7xl font-serif mb-4 tracking-tight">
+        <div className="relative z-20 flex flex-col items-center justify-center h-full text-white text-center px-4 animate-fade-in-down">
+          <h1 className="text-5xl md:text-7xl font-serif mb-4 tracking-tight text-white drop-shadow-lg">
             {coupleNames}
           </h1>
           <div className="flex items-center space-x-4 mb-6 text-lg md:text-xl">
-            <div className="flex items-center">
+            <div className="flex items-center backdrop-blur-sm bg-white/10 px-4 py-2 rounded-full">
               <Calendar className="w-5 h-5 mr-2" />
               <span>{weddingDate}</span>
             </div>
             <div className="h-2 w-2 rounded-full bg-primary" />
-            <div className="flex items-center">
+            <div className="flex items-center backdrop-blur-sm bg-white/10 px-4 py-2 rounded-full">
               <MapPin className="w-5 h-5 mr-2" />
               <span>{weddingLocation}</span>
             </div>
           </div>
-          <p className="max-w-2xl text-lg md:text-xl leading-relaxed">
+          <p className="max-w-2xl text-lg md:text-xl leading-relaxed bg-gradient-to-r from-white to-white bg-clip-text drop-shadow">
             Thank you for being part of our special day. We're excited to share our journey with you.
           </p>
         </div>
@@ -254,7 +275,6 @@ const CoupleStory = () => {
       
       <main className="container mx-auto px-4 py-16">
         <div className="space-y-16 max-w-5xl mx-auto">
-          {/* Tabs Section - Hidden in preview mode */}
           {!isPreviewMode ? (
             <Tabs defaultValue="story" className="w-full">
               <TabsList className="grid grid-cols-5 w-full mb-8">
@@ -280,15 +300,14 @@ const CoupleStory = () => {
                 </TabsTrigger>
               </TabsList>
               
-              {/* Story Tab Content */}
               <TabsContent value="story" className="space-y-10 pt-4">
                 {storySections.map((section, index) => (
                   <div key={index} className={`flex flex-col md:flex-row ${index % 2 === 0 ? '' : 'md:flex-row-reverse'} gap-8 items-center`}>
-                    <div className="w-full md:w-1/2 aspect-video rounded-lg overflow-hidden">
+                    <div className="w-full md:w-1/2 aspect-video rounded-lg overflow-hidden shadow-xl transition-all hover:shadow-2xl duration-300">
                       <img 
-                        src={photos[index % photos.length]} 
+                        src={section.image || photos[index % photos.length]} 
                         alt={section.title} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                       />
                     </div>
                     <div className="w-full md:w-1/2 space-y-4">
@@ -306,20 +325,23 @@ const CoupleStory = () => {
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button className="w-full mt-8">
+                    <Button className="w-full mt-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary">
                       <Plus className="h-4 w-4 mr-2" /> Add New Section
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>Add New Story Section</DialogTitle>
                     </DialogHeader>
                     <form className="space-y-4" onSubmit={(e) => {
                       e.preventDefault();
                       const formData = new FormData(e.currentTarget);
+                      const imageUrl = formData.get('sectionImageUrl') as string;
+                      
                       handleAddStorySection({
                         title: formData.get('title') as string,
-                        content: formData.get('content') as string
+                        content: formData.get('content') as string,
+                        image: imageUrl || undefined
                       });
                       (e.target as HTMLFormElement).reset();
                     }}>
@@ -338,17 +360,37 @@ const CoupleStory = () => {
                           required
                         ></textarea>
                       </div>
+                      
+                      <div className="space-y-2">
+                        <label htmlFor="sectionImage" className="block text-sm font-medium">Section Image</label>
+                        <div id="sectionImagePreview" className="hidden h-32 bg-cover bg-center rounded-md mb-2"></div>
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md border-primary/30 cursor-pointer bg-muted/20 hover:bg-muted/30 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                            <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p className="text-xs text-muted-foreground/70">PNG, JPG or JPEG (MAX. 5MB)</p>
+                          </div>
+                          <input 
+                            id="sectionImage" 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={(e) => handleSectionImageUpload(e, e.currentTarget.form as HTMLFormElement)} 
+                          />
+                        </label>
+                        <input type="hidden" id="sectionImageUrl" name="sectionImageUrl" />
+                      </div>
+                      
                       <Button type="submit" className="w-full">Save Section</Button>
                     </form>
                   </DialogContent>
                 </Dialog>
               </TabsContent>
               
-              {/* Photos Tab Content */}
               <TabsContent value="photos" className="pt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {photos.map((photo, index) => (
-                    <div key={index} className="aspect-square overflow-hidden rounded-xl shadow-md">
+                    <div key={index} className="aspect-square overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300">
                       <img 
                         src={photo} 
                         alt={`Couple photo ${index + 1}`}
@@ -372,9 +414,8 @@ const CoupleStory = () => {
                 </div>
               </TabsContent>
               
-              {/* Vendors Tab Content */}
               <TabsContent value="vendors" className="pt-4 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {vendors.map((vendor, index) => (
                     <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow">
                       <div className="h-3 bg-gradient-to-r from-primary to-primary/60"></div>
@@ -449,7 +490,6 @@ const CoupleStory = () => {
                 </div>
               </TabsContent>
               
-              {/* Wishlist Tab Content */}
               <TabsContent value="wishlist" className="pt-4 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {wishlist.map((item, index) => (
@@ -551,7 +591,6 @@ const CoupleStory = () => {
                 </div>
               </TabsContent>
               
-              {/* Cash Gifts Tab Content */}
               <TabsContent value="gifts" className="pt-4 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {giftOptions.map((option, index) => (
@@ -624,65 +663,72 @@ const CoupleStory = () => {
               </TabsContent>
             </Tabs>
           ) : (
-            /* Preview Mode or Public View */
-            <div className="space-y-16">
+            <div className="space-y-16 animate-fade-in">
               <div className="text-center mb-12">
-                <div className="inline-block border-b-2 border-primary pb-1 mb-8">
-                  <h2 className="text-3xl font-serif">Our Story</h2>
+                <div className="inline-block relative mb-8 border-b-0">
+                  <h2 className="text-3xl font-serif pb-2">Our Story</h2>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
                 </div>
                 
-                <div className="space-y-16">
+                <div className="space-y-24 mt-16">
                   {storySections.map((section, index) => (
-                    <div key={index} className={`flex flex-col md:flex-row ${index % 2 === 0 ? '' : 'md:flex-row-reverse'} gap-8 items-center`}>
-                      <div className="w-full md:w-1/2 aspect-video rounded-lg overflow-hidden shadow-lg">
+                    <div key={index} className={`flex flex-col md:flex-row ${index % 2 === 0 ? '' : 'md:flex-row-reverse'} gap-12 items-center relative`}>
+                      <div className="w-full md:w-1/2 aspect-video rounded-xl overflow-hidden shadow-2xl relative transform hover:-translate-y-1 transition-all duration-300">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent z-10"></div>
                         <img 
-                          src={photos[index % photos.length]} 
+                          src={section.image || photos[index % photos.length]} 
                           alt={section.title} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform hover:scale-105 duration-1000"
                         />
                       </div>
-                      <div className="w-full md:w-1/2 space-y-4 text-left">
-                        <h3 className="text-2xl font-serif font-medium">{section.title}</h3>
-                        <p className="text-muted-foreground leading-relaxed">{section.content}</p>
+                      <div className="w-full md:w-1/2 space-y-6 text-left">
+                        <h3 className="text-3xl font-serif font-medium bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">{section.title}</h3>
+                        <p className="text-muted-foreground leading-relaxed text-lg">{section.content}</p>
                       </div>
+                      {index % 2 === 0 && (
+                        <div className="hidden md:block absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-primary/5 z-0"></div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="text-center mb-12">
-                <div className="inline-block border-b-2 border-primary pb-1 mb-8">
-                  <h2 className="text-3xl font-serif">Our Photo Gallery</h2>
+              <div className="text-center mb-16 mt-24">
+                <div className="inline-block relative mb-12 border-b-0">
+                  <h2 className="text-3xl font-serif pb-2">Our Photo Gallery</h2>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                   {photos.map((photo, index) => (
-                    <div key={index} className="aspect-square overflow-hidden rounded-xl shadow-md">
+                    <div key={index} className="group aspect-square overflow-hidden rounded-xl shadow-lg relative">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
                       <img 
                         src={photo} 
                         alt={`Couple photo ${index + 1}`}
-                        className="w-full h-full object-cover transition-all hover:scale-105 duration-500"
+                        className="w-full h-full object-cover transition-all group-hover:scale-110 duration-700"
                       />
                     </div>
                   ))}
                 </div>
               </div>
               
-              <div className="text-center mb-12">
-                <div className="inline-block border-b-2 border-primary pb-1 mb-8">
-                  <h2 className="text-3xl font-serif">Registry & Gifts</h2>
+              <div className="text-center mb-16 mt-24 bg-gradient-to-b from-transparent via-primary/5 to-transparent py-16 rounded-3xl">
+                <div className="inline-block relative mb-12 border-b-0">
+                  <h2 className="text-3xl font-serif pb-2">Registry & Gifts</h2>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
                   {giftOptions.map((option, index) => (
-                    <Card key={index} className="overflow-hidden border-none shadow-lg">
+                    <Card key={index} className="overflow-hidden border-none shadow-xl hover:shadow-2xl transition-all duration-300">
                       <div className="bg-gradient-to-r from-primary/80 to-primary p-6 text-white">
                         <h3 className="text-xl font-serif">{option.title}</h3>
                       </div>
-                      <CardContent className="p-6 bg-white">
-                        <p className="text-muted-foreground mb-4">{option.description}</p>
-                        <div className="bg-secondary p-4 rounded-md">
-                          <h4 className="text-sm font-medium mb-1">Payment Details:</h4>
+                      <CardContent className="p-8 bg-white">
+                        <p className="text-muted-foreground mb-6">{option.description}</p>
+                        <div className="bg-secondary/50 backdrop-blur-sm p-5 rounded-lg">
+                          <h4 className="text-sm font-medium mb-2">Payment Details:</h4>
                           <p className="text-sm">{option.paymentDetails}</p>
                         </div>
                       </CardContent>
@@ -690,23 +736,23 @@ const CoupleStory = () => {
                   ))}
                 </div>
                 
-                <div className="mt-12">
-                  <h3 className="text-2xl font-serif mb-6">Our Wishlist</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="mt-16">
+                  <h3 className="text-2xl font-serif mb-8">Our Wishlist</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {wishlist.map((item, index) => (
-                      <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow backdrop-blur-sm bg-white/90">
                         <div className={`h-2 ${
                           item.priority === 'high' 
-                            ? 'bg-red-400' 
+                            ? 'bg-gradient-to-r from-red-300 to-red-500' 
                             : item.priority === 'medium' 
-                            ? 'bg-amber-400' 
-                            : 'bg-blue-400'
+                            ? 'bg-gradient-to-r from-amber-300 to-amber-500' 
+                            : 'bg-gradient-to-r from-blue-300 to-blue-500'
                         }`}></div>
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start">
                             <h3 className="text-lg font-medium">{item.name}</h3>
                             {item.price && (
-                              <span className="text-sm font-medium px-2 py-1 bg-secondary rounded-full">
+                              <span className="text-sm font-medium px-3 py-1 bg-secondary/50 backdrop-blur-sm rounded-full">
                                 {item.price}
                               </span>
                             )}
@@ -728,18 +774,18 @@ const CoupleStory = () => {
                 </div>
               </div>
               
-              {/* Well Wishes Section */}
-              <div className="text-center mb-12">
-                <div className="inline-block border-b-2 border-primary pb-1 mb-8">
-                  <h2 className="text-3xl font-serif">Well Wishes</h2>
+              <div className="text-center mb-16 mt-24">
+                <div className="inline-block relative mb-12 border-b-0">
+                  <h2 className="text-3xl font-serif pb-2">Well Wishes</h2>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
                   {wellWishes.map((wish, index) => (
-                    <Card key={index} className="text-left p-6 hover:shadow-md transition-shadow">
-                      <blockquote className="italic text-muted-foreground">{wish.message}</blockquote>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="font-medium">— {wish.name}</span>
+                    <Card key={index} className="text-left p-8 hover:shadow-xl transition-shadow bg-gradient-to-b from-white to-primary/5 border-none">
+                      <blockquote className="italic text-muted-foreground text-lg">{wish.message}</blockquote>
+                      <div className="mt-6 flex justify-between items-center">
+                        <span className="font-medium text-primary/90">— {wish.name}</span>
                         <span className="text-sm text-muted-foreground">{wish.date}</span>
                       </div>
                     </Card>
@@ -747,21 +793,21 @@ const CoupleStory = () => {
                 </div>
                 
                 {isPublicView && (
-                  <div className="mt-8">
+                  <div className="mt-12">
                     {!showWellWishForm ? (
                       <Button 
                         onClick={() => setShowWellWishForm(true)}
-                        className="mx-auto"
+                        className="mx-auto bg-gradient-to-r from-primary/90 to-primary hover:from-primary hover:to-primary/90"
                       >
                         <Heart className="mr-2 h-4 w-4" /> Add Your Well Wishes
                       </Button>
                     ) : (
-                      <Card className="max-w-lg mx-auto p-6">
-                        <h3 className="text-xl font-serif mb-4">Share Your Well Wishes</h3>
-                        <form onSubmit={handleAddWellWish} className="space-y-4">
+                      <Card className="max-w-lg mx-auto p-8 border-none shadow-xl bg-gradient-to-b from-white to-primary/5">
+                        <h3 className="text-xl font-serif mb-6">Share Your Well Wishes</h3>
+                        <form onSubmit={handleAddWellWish} className="space-y-5">
                           <div className="space-y-2">
                             <label htmlFor="well-name" className="block text-sm font-medium">Your Name</label>
-                            <Input id="well-name" name="name" placeholder="e.g., The Smith Family" required />
+                            <Input id="well-name" name="name" placeholder="e.g., The Smith Family" required className="bg-white/70" />
                           </div>
                           <div className="space-y-2">
                             <label htmlFor="well-message" className="block text-sm font-medium">Your Message</label>
@@ -771,10 +817,11 @@ const CoupleStory = () => {
                               rows={4}
                               placeholder="Share your congratulations and well wishes..."
                               required 
+                              className="bg-white/70"
                             />
                           </div>
-                          <div className="flex gap-2">
-                            <Button type="submit" className="flex-1">Submit</Button>
+                          <div className="flex gap-3">
+                            <Button type="submit" className="flex-1 bg-gradient-to-r from-primary/90 to-primary hover:from-primary hover:to-primary/90">Submit</Button>
                             <Button 
                               type="button" 
                               variant="outline" 
