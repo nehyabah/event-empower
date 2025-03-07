@@ -9,6 +9,7 @@ import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Vendors from "./pages/Vendors";
 import Dashboard from "./pages/Dashboard";
+import CoupleStory from "./pages/CoupleStory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/couple-story" element={<CoupleStory />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
