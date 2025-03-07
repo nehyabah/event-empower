@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +8,6 @@ import Navbar from "@/components/layout/Navbar";
 import { Heart, Gift, ShoppingBag, Image, Edit, DollarSign, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-// Types for our data structures
 interface StorySection {
   title: string;
   content: string;
@@ -36,7 +34,6 @@ interface GiftOption {
 }
 
 const CoupleStory = () => {
-  // State for each section
   const [coupleNames, setCoupleNames] = useState("Sarah & Michael");
   const [storyEditing, setStoryEditing] = useState(false);
   const [storySections, setStorySections] = useState<StorySection[]>([
@@ -81,7 +78,6 @@ const CoupleStory = () => {
     }
   ]);
 
-  // Handlers for adding new items
   const handleAddStorySection = (newSection: StorySection) => {
     setStorySections([...storySections, newSection]);
     toast.success("New story section added!");
@@ -102,10 +98,7 @@ const CoupleStory = () => {
     toast.success("Gift option added!");
   };
 
-  // Upload photo handler (would connect to backend in production)
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // In a real app, this would upload to backend storage
-    // For demo, we'll just simulate adding a random photo
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -156,7 +149,6 @@ const CoupleStory = () => {
               </TabsTrigger>
             </TabsList>
             
-            {/* Our Story Tab */}
             <TabsContent value="story" className="space-y-6 pt-4">
               {storySections.map((section, index) => (
                 <Card key={index} className="overflow-hidden">
@@ -213,7 +205,6 @@ const CoupleStory = () => {
               </Dialog>
             </TabsContent>
             
-            {/* Photos Tab */}
             <TabsContent value="photos" className="pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {photos.map((photo, index) => (
@@ -241,7 +232,6 @@ const CoupleStory = () => {
               </div>
             </TabsContent>
             
-            {/* Vendors Tab */}
             <TabsContent value="vendors" className="pt-4 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {vendors.map((vendor, index) => (
@@ -304,7 +294,6 @@ const CoupleStory = () => {
               </div>
             </TabsContent>
             
-            {/* Wishlist Tab */}
             <TabsContent value="wishlist" className="pt-4 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {wishlist.map((item, index) => (
@@ -401,7 +390,6 @@ const CoupleStory = () => {
               </div>
             </TabsContent>
             
-            {/* Cash Gifts Tab */}
             <TabsContent value="gifts" className="pt-4 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {giftOptions.map((option, index) => (

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Calendar, Heart, Users, Home, Menu, X } from "lucide-react";
+import { Calendar, Heart, Users, Home, Menu, X, BookOpen } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 
 interface NavLinkProps {
@@ -67,7 +67,7 @@ const Navbar = () => {
       <div className="container flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Heart className="w-6 h-6 text-primary animate-pulse-soft" />
-          <span className="font-serif text-xl font-medium">EventEmpower</span>
+          <span className="font-serif text-xl font-medium">Planr</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -76,6 +76,7 @@ const Navbar = () => {
           <NavLink to="/features">Features</NavLink>
           <NavLink to="/pricing">Pricing</NavLink>
           <NavLink to="/vendors">Vendors</NavLink>
+          <NavLink to="/couple-story">Couple Story</NavLink>
         </nav>
 
         {/* Auth Buttons */}
@@ -139,6 +140,12 @@ const Navbar = () => {
               <div className="flex items-center gap-3">
                 <Users className="w-5 h-5" />
                 <span>Vendors</span>
+              </div>
+            </NavLink>
+            <NavLink to="/couple-story" className="px-4 py-2" onClick={() => setMobileMenuOpen(false)}>
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5" />
+                <span>Couple Story</span>
               </div>
             </NavLink>
             <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
