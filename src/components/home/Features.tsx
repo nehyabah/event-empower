@@ -1,5 +1,5 @@
 
-import { Calendar, Users, MapPin, CheckCircle2, Clock, ListChecks, BarChart4 } from "lucide-react";
+import { Calendar, Users, MapPin, CheckCircle2, Clock, ListChecks, BarChart4, Camera, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CSSProperties } from "react";
 
@@ -23,13 +23,13 @@ const FeatureCard = ({
   return (
     <div 
       className={cn(
-        "glass rounded-xl p-6 transition-all hover:shadow-elegant hover:translate-y-[-3px] duration-300",
+        "glass rounded-xl p-7 transition-all hover:shadow-elegant hover:translate-y-[-3px] duration-300 border border-white/5",
         className
       )}
       style={style}
     >
       <div className={cn(
-        "w-12 h-12 rounded-lg flex items-center justify-center bg-primary/10 text-primary mb-5",
+        "w-14 h-14 rounded-xl flex items-center justify-center bg-primary/10 text-primary mb-6",
         iconClassName
       )}>
         {icon}
@@ -42,14 +42,22 @@ const FeatureCard = ({
 
 const Features = () => {
   return (
-    <section className="py-24 bg-gradient-to-b from-background to-secondary/30">
-      <div className="container">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-serif mb-5 font-medium tracking-tight">
-            Curated Features for Your <span className="text-gradient">Nigerian Wedding</span>
+    <section className="py-28 bg-gradient-to-b from-background via-secondary/30 to-background relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-0 left-1/4 w-64 h-64 bg-wedding-blush/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-wedding-sage/10 rounded-full blur-3xl" />
+      
+      <div className="container relative z-10">
+        <div className="text-center max-w-2xl mx-auto mb-20">
+          <span className="inline-block px-3 py-1 text-sm font-medium bg-wedding-gold/10 text-wedding-gold rounded-full mb-4">
+            Features
+          </span>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif mb-6 font-medium tracking-tight">
+            Curated for Your <span className="text-gradient">Nigerian Wedding</span>
           </h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Our platform is designed with Nigerian cultural nuances in mind, providing tools that respect tradition while embracing modern planning approaches.
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            Our platform embraces Nigerian cultural nuances, providing tools that respect tradition 
+            while offering modern planning solutions.
           </p>
         </div>
         
@@ -89,9 +97,9 @@ const Features = () => {
           />
           
           <FeatureCard
-            icon={<Clock className="w-6 h-6" />}
-            title="Countdown & Timeline"
-            description="Beautiful countdown pages to share with guests and detailed timelines for your big day."
+            icon={<Camera className="w-6 h-6" />}
+            title="Photo Collections"
+            description="Create and share beautiful galleries of your wedding preparations and special day with family and friends."
             className="animate-fade-in-up"
             iconClassName="bg-wedding-navy/20 text-wedding-navy"
             style={{ animationDelay: "400ms" }}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -26,6 +25,7 @@ import {
   Trash
 } from "lucide-react";
 import { toast } from "sonner";
+import { Loader } from "lucide-react";
 
 interface SocialLink {
   platform: string;
@@ -520,7 +520,7 @@ const VendorProfile = () => {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader className="mr-2 h-4 w-4 animate-spin text-primary" />
                   Saving...
                 </>
               ) : (
