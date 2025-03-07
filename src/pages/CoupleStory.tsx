@@ -45,7 +45,9 @@ const CoupleStory = () => {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
   const { wishlistItems, bankDetails, addWishlistItem, addBankDetail, markItemAsPurchased, removeItemPurchaser, removeBankDetail } = useWishlist();
-  const { todos, addTodo } = useTodo();
+  
+  // Removing the non-existent properties from useTodo()
+  // const { todos, addTodo } = useTodo();
 
   useEffect(() => {
     if (!isAuthenticated) {
