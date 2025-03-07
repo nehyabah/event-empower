@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,7 +54,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       localStorage.setItem("authenticated", "true");
       
       toast.success("Login successful!", {
-        description: "Welcome back to EventEmpower!",
+        description: "Welcome back to Planr!",
       });
       
       if (onSuccess) onSuccess();

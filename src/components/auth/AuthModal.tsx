@@ -41,7 +41,7 @@ const AuthModal = ({
       <DialogContent className="sm:max-w-[425px] p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-2xl font-serif text-center">
-            {defaultTab === "login" ? "Welcome Back" : "Join EventEmpower"}
+            {defaultTab === "login" ? "Welcome Back" : "Join Planr"}
           </DialogTitle>
           <DialogDescription className="text-center">
             {defaultTab === "login" 

@@ -1,58 +1,53 @@
 
 import { useState } from "react";
-import { WishlistItem, BankDetail } from "./types";
 import { toast } from "sonner";
+import { WishlistItem, BankDetail } from "./types";
+import { v4 as uuidv4 } from "uuid";
 
-// Initial data
+// Sample initial wishlist items
 const initialWishlistItems: WishlistItem[] = [
   {
-    id: "wish-1",
-    name: "KitchenAid Stand Mixer",
-    price: "$350",
-    priority: "high",
-    link: "https://www.kitchenaid.com"
-  },
-  {
-    id: "wish-2",
-    name: "Honeymoon Fund Contribution",
+    id: "1",
+    name: "Dinner Set",
+    price: "₦45,000",
+    link: "https://example.com/dinner-set",
     priority: "high"
   },
   {
-    id: "wish-3",
-    name: "Dyson Vacuum Cleaner",
-    price: "$400",
+    id: "2",
+    name: "Blender",
+    price: "₦25,000",
+    link: "https://example.com/blender",
+    priority: "medium"
+  },
+  {
+    id: "3",
+    name: "Bedding Set",
+    price: "₦60,000",
+    link: "https://example.com/bedding",
     priority: "medium"
   }
 ];
 
-// Initial bank details
+// Sample initial bank details
 const initialBankDetails: BankDetail[] = [
   {
-    bankName: "Chase Bank",
-    accountName: "Sarah & Michael Johnson",
-    accountNumber: "1234567890",
-    description: "For honeymoon contributions"
+    bankName: "GTBank",
+    accountName: "John & Jane Doe",
+    accountNumber: "0123456789",
+    sortCode: "123456",
+    description: "Wedding gift contributions"
   }
 ];
 
-export interface WishlistHook {
-  wishlistItems: WishlistItem[];
-  bankDetails: BankDetail[];
-  addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
-  addBankDetail: (detail: BankDetail) => void;
-  markItemAsPurchased: (itemId: string, purchaserName: string) => void;
-  removeItemPurchaser: (itemId: string) => void;
-  removeBankDetail: (index: number) => void;
-}
-
-export const useWishlist = (): WishlistHook => {
+export const useWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(initialWishlistItems);
   const [bankDetails, setBankDetails] = useState<BankDetail[]>(initialBankDetails);
 
   const addWishlistItem = (item: Omit<WishlistItem, "id">) => {
     const newItem: WishlistItem = {
-      ...item,
-      id: `wish-${Date.now()}`
+      id: uuidv4(),
+      ...item
     };
     setWishlistItems([...wishlistItems, newItem]);
     toast.success("Item added to wishlist!");
@@ -65,39 +60,31 @@ export const useWishlist = (): WishlistHook => {
 
   const markItemAsPurchased = (itemId: string, purchaserName: string) => {
     setWishlistItems(
-      wishlistItems.map(item =>
-        item.id === itemId
+      wishlistItems.map(item => 
+        item.id === itemId 
           ? { ...item, purchasedBy: purchaserName }
           : item
       )
     );
-    
-    const itemName = wishlistItems.find(item => item.id === itemId)?.name;
-    toast.success(`Thank you for getting the ${itemName}!`, {
-      description: "Your selection has been saved"
-    });
+    toast.success("Item marked as purchased!");
   };
 
   const removeItemPurchaser = (itemId: string) => {
     setWishlistItems(
-      wishlistItems.map(item =>
-        item.id === itemId
+      wishlistItems.map(item => 
+        item.id === itemId 
           ? { ...item, purchasedBy: undefined }
           : item
       )
     );
-    
-    const itemName = wishlistItems.find(item => item.id === itemId)?.name;
-    toast.success(`Selection removed`, {
-      description: `${itemName} is now available again`
-    });
+    toast.success("Item marked as available again!");
   };
 
   const removeBankDetail = (index: number) => {
-    const newBankDetails = [...bankDetails];
-    newBankDetails.splice(index, 1);
-    setBankDetails(newBankDetails);
-    toast.success("Bank details removed");
+    const newDetails = [...bankDetails];
+    newDetails.splice(index, 1);
+    setBankDetails(newDetails);
+    toast.success("Bank details removed!");
   };
 
   return {
@@ -110,3 +97,14 @@ export const useWishlist = (): WishlistHook => {
     removeBankDetail
   };
 };
+
+// Type for the useWishlist hook return value
+export interface WishlistContextType {
+  wishlistItems: WishlistItem[];
+  bankDetails: BankDetail[];
+  addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
+  addBankDetail: (detail: BankDetail) => void;
+  markItemAsPurchased: (itemId: string, purchaserName: string) => void;
+  removeItemPurchaser: (itemId: string) => void;
+  removeBankDetail: (index: number) => void;
+}

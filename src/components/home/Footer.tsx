@@ -12,7 +12,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Heart className="w-5 h-5 text-primary" />
-              <span className="font-serif text-lg font-medium">EventEmpower</span>
+              <span className="font-serif text-lg font-medium">Planr</span>
             </div>
             <p className="text-muted-foreground mb-6">
               The ultimate Nigerian wedding planning platform, connecting couples with local vendors and resources.
@@ -102,7 +102,7 @@ const Footer = () => {
         
         <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-muted-foreground text-sm mb-4 md:mb-0">
-            © {new Date().getFullYear()} EventEmpower. All rights reserved.
+            © {new Date().getFullYear()} Planr. All rights reserved.
           </p>
           <div className="flex space-x-6">
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

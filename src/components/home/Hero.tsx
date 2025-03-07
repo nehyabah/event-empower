@@ -22,7 +22,7 @@ const Hero = () => {
           </h1>
           
           <p className="text-lg text-muted-foreground max-w-2xl animate-fade-in-up" style={{ animationDelay: "150ms" }}>
-            EventEmpower is your all-in-one platform for planning weddings and events in Nigeria.
+            Planr is your all-in-one platform for planning weddings and events in Nigeria.
             Find local vendors, manage tasks, and create memorable experiences.
           </p>
           

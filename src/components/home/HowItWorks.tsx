@@ -7,7 +7,7 @@ const HowItWorks = () => {
     <section className="py-20">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-serif mb-4">How EventEmpower Works</h2>
+          <h2 className="text-3xl md:text-4xl font-serif mb-4">How Planr Works</h2>
           <p className="text-muted-foreground">
             Our simple process helps you plan your perfect Nigerian wedding from start to finish.
           </p>
@@ -56,7 +56,7 @@ const HowItWorks = () => {
                 Ready to Plan Your Dream Nigerian Wedding?
               </h3>
               <p className="text-muted-foreground mb-6">
-                Join thousands of couples who have planned successful Nigerian weddings with EventEmpower. Our platform understands local traditions, vendors, and timelines.
+                Join thousands of couples who have planned successful Nigerian weddings with Planr. Our platform understands local traditions, vendors, and timelines.
               </p>
               <div className="flex flex-wrap gap-4">
                 <AuthModal 

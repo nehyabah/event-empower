@@ -62,7 +62,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success("Registration successful!", {
-        description: "Welcome to EventEmpower! Start planning your perfect event.",
+        description: "Welcome to Planr! Start planning your perfect event.",
       });
       
       if (onSuccess) onSuccess();

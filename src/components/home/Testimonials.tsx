@@ -39,13 +39,13 @@ const Testimonials = () => {
             Loved by Nigerian Couples
           </h2>
           <p className="text-muted-foreground">
-            Hear from couples who used EventEmpower to plan their perfect Nigerian wedding.
+            Hear from couples who used Planr to plan their perfect Nigerian wedding.
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           <Testimonial
-            quote="EventEmpower made planning our traditional Igbo wedding and white wedding seamless. The vendor recommendations in Enugu were spot-on!"
+            quote="Planr made planning our traditional Igbo wedding and white wedding seamless. The vendor recommendations in Enugu were spot-on!"
             author="Chioma & Emeka"
             role="Married in Enugu"
             className="animate-fade-in-up"
@@ -60,7 +60,7 @@ const Testimonials = () => {
           />
           
           <Testimonial
-            quote="As a wedding planner in Abuja, I recommend EventEmpower to all my clients. The regional focus makes it perfect for Nigerian weddings."
+            quote="As a wedding planner in Abuja, I recommend Planr to all my clients. The regional focus makes it perfect for Nigerian weddings."
             author="Fatima Yusuf"
             role="Wedding Planner in Abuja"
             className="animate-fade-in-up"

@@ -17,7 +17,7 @@ const FeaturesPage = () => {
               Elegant <span className="text-gradient">Features</span> for Your Dream Wedding
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-              Discover how EventEmpower makes planning Nigerian weddings simpler, 
+              Discover how Planr makes planning Nigerian weddings simpler, 
               more organized, and culturally appropriate with our thoughtfully designed features.
             </p>
             <div className="mt-8">
