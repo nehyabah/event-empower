@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
@@ -96,35 +95,15 @@ const UserHomepage = () => {
     }
   };
   
-  const generateGuestInviteLink = (guest: Guest) => {
-    // Create a unique code for the invitation that includes the guest ID
-    const inviteCode = `${guest.id}-${Math.random().toString(36).substring(2, 8)}`;
-    
-    // In a real app, this would save to a database
-    // For this demo, we'll save to localStorage
-    const invitationData = {
-      guest: guest,
-      couple: capitalizedName + " & Partner",
-      date: weddingDate,
-      code: inviteCode
-    };
-    
-    localStorage.setItem(`invitation_${inviteCode}`, JSON.stringify(invitationData));
-    
-    // Create the invitation URL
+  const getGenericRsvpLink = () => {
     const baseUrl = window.location.origin;
-    const url = `${baseUrl}/invitation/${inviteCode}`;
-    
-    setSelectedGuest(guest);
-    setGuestInviteLink(url);
-    return url;
+    return `${baseUrl}/invitation`;
   };
   
-  const copyGuestInviteLink = () => {
-    if (guestInviteLink) {
-      navigator.clipboard.writeText(guestInviteLink);
-      toast.success("Invitation link copied to clipboard!");
-    }
+  const copyGenericRsvpLink = () => {
+    const link = getGenericRsvpLink();
+    navigator.clipboard.writeText(link);
+    toast.success("RSVP link copied to clipboard!");
   };
   
   const filteredGuests = guests.filter(guest => 
@@ -157,68 +136,78 @@ const UserHomepage = () => {
           <section className="py-4 md:py-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
               <h2 className="text-xl md:text-2xl font-serif">Guest List</h2>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="text-sm w-full md:w-auto gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Add Guest
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Guest</DialogTitle>
-                    <DialogDescription>
-                      Add guest details to send them an invitation link.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <label htmlFor="name" className="text-sm font-medium">Guest Name</label>
-                      <Input 
-                        id="name" 
-                        value={newGuestName} 
-                        onChange={(e) => setNewGuestName(e.target.value)} 
-                        placeholder="Full Name" 
-                      />
+              <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2">
+                <Button 
+                  className="text-sm w-full md:w-auto gap-2 order-2 sm:order-1"
+                  variant="outline"
+                  onClick={copyGenericRsvpLink}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Copy RSVP Link
+                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="text-sm w-full md:w-auto gap-2 order-1 sm:order-2">
+                      <UserPlus className="h-4 w-4" />
+                      Add Guest
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Guest</DialogTitle>
+                      <DialogDescription>
+                        Add guest details to send them an invitation link.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <label htmlFor="name" className="text-sm font-medium">Guest Name</label>
+                        <Input 
+                          id="name" 
+                          value={newGuestName} 
+                          onChange={(e) => setNewGuestName(e.target.value)} 
+                          placeholder="Full Name" 
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <label htmlFor="email" className="text-sm font-medium">Email Address</label>
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          value={newGuestEmail} 
+                          onChange={(e) => setNewGuestEmail(e.target.value)} 
+                          placeholder="Email" 
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <label htmlFor="phone" className="text-sm font-medium">Phone Number</label>
+                        <Input 
+                          id="phone" 
+                          type="tel" 
+                          value={newGuestPhone} 
+                          onChange={(e) => setNewGuestPhone(e.target.value)} 
+                          placeholder="Phone Number" 
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <label htmlFor="group" className="text-sm font-medium">Group</label>
+                        <select 
+                          id="group" 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={newGuestGroup} 
+                          onChange={(e) => setNewGuestGroup(e.target.value)}
+                        >
+                          <option value="Family">Family</option>
+                          <option value="Friends">Friends</option>
+                          <option value="Work">Work</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <Button onClick={addGuest} className="w-full mt-2">Save Guest</Button>
                     </div>
-                    <div className="grid gap-2">
-                      <label htmlFor="email" className="text-sm font-medium">Email Address</label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        value={newGuestEmail} 
-                        onChange={(e) => setNewGuestEmail(e.target.value)} 
-                        placeholder="Email" 
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <label htmlFor="phone" className="text-sm font-medium">Phone Number</label>
-                      <Input 
-                        id="phone" 
-                        type="tel" 
-                        value={newGuestPhone} 
-                        onChange={(e) => setNewGuestPhone(e.target.value)} 
-                        placeholder="Phone Number" 
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <label htmlFor="group" className="text-sm font-medium">Group</label>
-                      <select 
-                        id="group" 
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={newGuestGroup} 
-                        onChange={(e) => setNewGuestGroup(e.target.value)}
-                      >
-                        <option value="Family">Family</option>
-                        <option value="Friends">Friends</option>
-                        <option value="Work">Work</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <Button onClick={addGuest} className="w-full mt-2">Save Guest</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
             
             <Card>

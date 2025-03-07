@@ -1,124 +1,109 @@
 
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Heart, MapPin, Clock, Users, Phone, Mail } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Heart, CalendarIcon, MapPin, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-interface Guest {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  status: 'pending' | 'confirmed' | 'declined' | 'maybe';
-  group?: string;
-}
-
-interface InvitationData {
-  guest: Guest;
-  couple: string;
-  date: string;
-  venue?: string;
-  details?: string;
-  code: string;
-}
-
 const InvitationPage = () => {
-  const { code } = useParams<{ code: string }>();
-  const [invitation, setInvitation] = useState<InvitationData | null>(null);
-  const [rsvpStatus, setRsvpStatus] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [attending, setAttending] = useState<boolean | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   
-  useEffect(() => {
-    if (!code) return;
-    
-    // In a real app, this would fetch from a database
-    const invitationData = localStorage.getItem(`invitation_${code}`);
-    if (invitationData) {
-      setInvitation(JSON.parse(invitationData));
-      
-      // Check if user has already RSVP'd
-      const status = localStorage.getItem(`rsvp_${code}`);
-      if (status) {
-        setRsvpStatus(status);
-      }
-    }
-  }, [code]);
+  // Get the wedding date from localStorage (fallback to a future date if not set)
+  const weddingDate = localStorage.getItem("weddingDate") || "2024-12-31";
+  const parsedDate = new Date(weddingDate);
+  const formattedDate = format(parsedDate, "EEEE, MMMM d, yyyy");
+  const formattedTime = format(parsedDate, "h:mm a");
   
-  const handleRSVP = (status: string) => {
-    if (!code || !invitation) return;
+  // Extract couple name from localStorage or use fallback
+  const userEmail = localStorage.getItem("userEmail") || "user@example.com";
+  const firstName = userEmail.split('@')[0].split('.')[0];
+  const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  const coupleName = `${capitalizedName} & Partner`;
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Update the guest status in the guestlist
-    const guestId = invitation.guest.id;
-    const guestsData = localStorage.getItem("weddingGuests");
-    
-    if (guestsData) {
-      const guests: Guest[] = JSON.parse(guestsData);
-      const updatedGuests = guests.map(guest => {
-        if (guest.id === guestId) {
-          return { ...guest, status: status === 'accepted' ? 'confirmed' : 'declined' };
-        }
-        return guest;
-      });
-      
-      // Save updated guests list
-      localStorage.setItem("weddingGuests", JSON.stringify(updatedGuests));
+    if (!name || !email) {
+      toast.error("Please fill in required fields");
+      return;
     }
     
-    // In a real app, this would save to a database
-    localStorage.setItem(`rsvp_${code}`, status);
-    setRsvpStatus(status);
-    toast.success(`You have ${status} the invitation!`);
+    if (attending === null) {
+      toast.error("Please indicate whether you'll be attending");
+      return;
+    }
+    
+    // Create a new guest entry
+    const guest = {
+      id: Date.now().toString(),
+      name,
+      email,
+      phone,
+      status: attending ? 'confirmed' : 'declined',
+      group: 'RSVP'
+    };
+    
+    // Add to guest list in localStorage
+    const existingGuests = localStorage.getItem("weddingGuests");
+    const guestList = existingGuests ? JSON.parse(existingGuests) : [];
+    guestList.push(guest);
+    localStorage.setItem("weddingGuests", JSON.stringify(guestList));
+    
+    // Show success message
+    toast.success(`Thank you for your response!`);
+    setSubmitted(true);
   };
   
-  if (!invitation) {
+  if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <h1 className="text-2xl font-serif mb-4">Invitation Not Found</h1>
-            <p className="text-muted-foreground mb-6">
-              The invitation you're looking for doesn't exist or has expired.
-            </p>
-            <Link to="/">
-              <Button>Return Home</Button>
-            </Link>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-wedding-gold/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-wedding-burgundy/10 to-transparent rounded-full blur-3xl" />
+        
+        <Card className="w-full max-w-md border border-wedding-gold/20 shadow-lg relative overflow-hidden">
+          <CardContent className="p-6 text-center">
+            <div className="my-8">
+              <Heart className="w-14 h-14 text-wedding-burgundy mx-auto mb-4" />
+              <h1 className="text-2xl font-serif mb-4">Thank You!</h1>
+              <p className="mb-6">
+                Your response has been recorded. We look forward to celebrating with you!
+              </p>
+              <Button asChild>
+                <Link to="/">Return Home</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
     );
   }
   
-  // Parse the date for display
-  const weddingDate = new Date(invitation.date);
-  const formattedDate = format(weddingDate, "EEEE, MMMM d, yyyy");
-  const formattedTime = format(weddingDate, "h:mm a");
-  
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-wedding-gold/10 to-transparent rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-wedding-burgundy/10 to-transparent rounded-full blur-3xl" />
       
-      <Card className="w-full max-w-md border border-wedding-gold/20 shadow-lg relative overflow-hidden bg-gradient-to-tr from-background via-background to-background/90">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMCwwIEwyMDAsMjAwIE0yMDAsMCBMMCwyMDAiIHN0cm9rZT0iaHNsKDMyIDQwJSA1MCUgLyAwLjA1KSIgc3Ryb2tlLXdpZHRoPSIwLjUiIGZpbGw9Im5vbmUiLz48L3N2Zz4=')] opacity-10" />
+      <Card className="w-full max-w-md border border-wedding-gold/20 shadow-lg relative overflow-hidden">
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-wedding-gold/5 rounded-full blur-3xl" />
         
-        <CardContent className="p-6 relative">
+        <CardHeader className="text-center border-b border-border/10 pb-6">
           <div className="flex items-center justify-center mb-2">
-            <Heart className="w-5 h-5 text-wedding-burgundy/70 animate-pulse-soft" />
+            <Heart className="w-6 h-6 text-wedding-burgundy animate-pulse-soft" />
           </div>
-          
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-serif mb-2">Wedding Invitation</h1>
-            <h2 className="text-xl font-serif text-wedding-gold">{invitation.couple}</h2>
-            <p className="text-muted-foreground text-sm mt-2">
-              cordially invites
-            </p>
-            <h3 className="text-lg font-medium mt-1">{invitation.guest.name}</h3>
-          </div>
-          
-          <div className="space-y-5 mb-8">
+          <CardTitle className="font-serif text-2xl">{coupleName}</CardTitle>
+          <p className="text-muted-foreground text-sm mt-1">Request the pleasure of your company at their wedding</p>
+        </CardHeader>
+        
+        <CardContent className="p-6 space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-wedding-gold/10 flex items-center justify-center">
                 <CalendarIcon className="w-5 h-5 text-wedding-gold" />
@@ -145,78 +130,72 @@ const InvitationPage = () => {
               </div>
               <div>
                 <p className="font-medium">Venue</p>
-                <p className="text-sm text-muted-foreground">
-                  {invitation.venue || "Sunset Gardens Resort"}
-                </p>
+                <p className="text-sm text-muted-foreground">Sunset Gardens Resort</p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-wedding-gold/10 flex items-center justify-center">
-                <Mail className="w-5 h-5 text-wedding-gold" />
-              </div>
-              <div>
-                <p className="font-medium">Contact Email</p>
-                <p className="text-sm text-muted-foreground truncate max-w-[230px]">
-                  {invitation.guest.email}
-                </p>
-              </div>
-            </div>
-            
-            {invitation.guest.phone && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-wedding-gold/10 flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-wedding-gold" />
-                </div>
-                <div>
-                  <p className="font-medium">Phone</p>
-                  <p className="text-sm text-muted-foreground">
-                    {invitation.guest.phone}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
           
-          {rsvpStatus ? (
-            <div className="text-center">
-              <div className={`inline-flex items-center rounded-full px-4 py-1 text-sm font-semibold mb-4 ${
-                rsvpStatus === 'accepted' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-              }`}>
-                {rsvpStatus === 'accepted' ? 'You have accepted' : 'You have declined'}
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Thank you for your response
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => setRsvpStatus(null)}
-              >
-                Change Response
-              </Button>
+          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your full name"
+                required
+              />
             </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-center text-sm">
-                Please confirm your attendance:
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  className="bg-wedding-gold hover:bg-wedding-gold/90 text-black"
-                  onClick={() => handleRSVP('accepted')}
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address <span className="text-red-500">*</span></Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email address"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Your phone number"
+              />
+            </div>
+            
+            <div className="space-y-2 pt-2">
+              <Label>Will you be attending?</Label>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant={attending === true ? "default" : "outline"}
+                  className={attending === true ? "bg-wedding-gold hover:bg-wedding-gold/90 text-black" : ""}
+                  onClick={() => setAttending(true)}
                 >
-                  Accept
+                  Happily Accept
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => handleRSVP('declined')}
+                <Button
+                  type="button"
+                  variant={attending === false ? "default" : "outline"}
+                  className={attending === false ? "bg-wedding-burgundy hover:bg-wedding-burgundy/90" : ""}
+                  onClick={() => setAttending(false)}
                 >
-                  Decline
+                  Regretfully Decline
                 </Button>
               </div>
             </div>
-          )}
+            
+            <Button type="submit" className="w-full mt-6">
+              Submit RSVP
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
