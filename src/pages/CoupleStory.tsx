@@ -1,8 +1,9 @@
+
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
-import { useTodoContext } from "@/context/TodoContext";
+import { useTodo } from "@/context/TodoContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,14 +22,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import AuthModal from "@/components/auth/AuthModal";
 import { toast } from "sonner";
 import { useWishlist } from "@/context/useWishlist";
 
@@ -52,7 +45,7 @@ const CoupleStory = () => {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
   const { wishlistItems, bankDetails, addWishlistItem, addBankDetail, markItemAsPurchased, removeItemPurchaser, removeBankDetail } = useWishlist();
-  const { todos, addTodo } = useTodoContext();
+  const { todos, addTodo } = useTodo();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -78,7 +71,14 @@ const CoupleStory = () => {
   });
 
   const onSubmit = (values: z.infer<typeof bankDetailSchema>) => {
-    addBankDetail(values);
+    // Ensure all required fields are present for BankDetail type
+    addBankDetail({
+      bankName: values.bankName,
+      accountName: values.accountName,
+      accountNumber: values.accountNumber,
+      sortCode: values.sortCode,
+      description: values.description,
+    });
     form.reset();
   };
 
@@ -98,8 +98,8 @@ const CoupleStory = () => {
                   <WishlistItem
                     key={item.id}
                     item={item}
-                    onMarkAsPurchased={markItemAsPurchased}
-                    onRemovePurchaser={removeItemPurchaser}
+                    isPreviewMode={false}
+                    isPublicView={false}
                   />
                 ))}
               </CardContent>
@@ -192,6 +192,8 @@ const CoupleStory = () => {
                     key={index}
                     detail={detail}
                     onRemove={() => removeBankDetail(index)}
+                    index={index}
+                    isEditable={true}
                   />
                 ))}
               </CardContent>

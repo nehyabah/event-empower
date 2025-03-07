@@ -40,7 +40,18 @@ const initialBankDetails: BankDetail[] = [
   }
 ];
 
-export const useWishlist = () => {
+// Type for the useWishlist hook return value
+export interface WishlistHook {
+  wishlistItems: WishlistItem[];
+  bankDetails: BankDetail[];
+  addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
+  addBankDetail: (detail: BankDetail) => void;
+  markItemAsPurchased: (itemId: string, purchaserName: string) => void;
+  removeItemPurchaser: (itemId: string) => void;
+  removeBankDetail: (index: number) => void;
+}
+
+export const useWishlist = (): WishlistHook => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(initialWishlistItems);
   const [bankDetails, setBankDetails] = useState<BankDetail[]>(initialBankDetails);
 
@@ -97,14 +108,3 @@ export const useWishlist = () => {
     removeBankDetail
   };
 };
-
-// Type for the useWishlist hook return value
-export interface WishlistHook {
-  wishlistItems: WishlistItem[];
-  bankDetails: BankDetail[];
-  addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
-  addBankDetail: (detail: BankDetail) => void;
-  markItemAsPurchased: (itemId: string, purchaserName: string) => void;
-  removeItemPurchaser: (itemId: string) => void;
-  removeBankDetail: (index: number) => void;
-}

@@ -77,8 +77,6 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
           )}
         </div>
         
-        {/* Modified logic to show buttons regardless of preview mode - 
-            the button should always be visible on the public view */}
         <div className="mt-4">
           {!item.purchasedBy ? (
             <Dialog open={open} onOpenChange={setOpen}>
