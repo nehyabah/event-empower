@@ -13,6 +13,7 @@ import CoupleStory from "./pages/CoupleStory";
 import ExpenseTracker from "./pages/ExpenseTracker";
 import TodoLists from "./pages/TodoLists";
 import NotFound from "./pages/NotFound";
+import { TodoProvider } from "./context/TodoContext";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,14 @@ const App = () => (
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/couple-story" element={<CoupleStory />} />
+          <Route 
+            path="/couple-story" 
+            element={
+              <TodoProvider>
+                <CoupleStory />
+              </TodoProvider>
+            } 
+          />
           <Route path="/expense-tracker" element={<ExpenseTracker />} />
           <Route path="/todo-lists" element={<TodoLists />} />
           <Route path="*" element={<NotFound />} />
