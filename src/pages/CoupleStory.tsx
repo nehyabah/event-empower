@@ -1,12 +1,12 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { useTodo } from "@/context/TodoContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -41,13 +41,39 @@ const bankDetailSchema = z.object({
   description: z.string().optional(),
 });
 
+// Story schema for editing
+const storySchema = z.object({
+  title: z.string().min(2, {
+    message: "Title must be at least 2 characters.",
+  }),
+  content: z.string().min(10, {
+    message: "Story must be at least 10 characters.",
+  }),
+});
+
 const CoupleStory = () => {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
   const { wishlistItems, bankDetails, addWishlistItem, addBankDetail, markItemAsPurchased, removeItemPurchaser, removeBankDetail } = useWishlist();
   
-  // Removing the non-existent properties from useTodo()
-  // const { todos, addTodo } = useTodo();
+  // State for couple's story
+  const [isEditingStory, setIsEditingStory] = useState(false);
+  const [coupleStory, setCoupleStory] = useState(() => {
+    const savedStory = localStorage.getItem("coupleStory");
+    return savedStory ? JSON.parse(savedStory) : {
+      title: "Our Love Story",
+      content: "Share your story here! How you met, your journey together, and your plans for the future."
+    };
+  });
+
+  // Story form
+  const storyForm = useForm<z.infer<typeof storySchema>>({
+    resolver: zodResolver(storySchema),
+    defaultValues: {
+      title: coupleStory.title,
+      content: coupleStory.content
+    },
+  });
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -84,15 +110,91 @@ const CoupleStory = () => {
     form.reset();
   };
 
+  const onStorySubmit = (values: z.infer<typeof storySchema>) => {
+    const newStory = {
+      title: values.title,
+      content: values.content
+    };
+    setCoupleStory(newStory);
+    localStorage.setItem("coupleStory", JSON.stringify(newStory));
+    setIsEditingStory(false);
+    toast.success("Your story has been saved!");
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="container pt-24 flex-grow">
-        <Tabs defaultValue="wishlist" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="story" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="story">Our Story</TabsTrigger>
             <TabsTrigger value="wishlist">Our Wishlist</TabsTrigger>
             <TabsTrigger value="bank-details">Bank Details</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="story" className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                {isEditingStory ? (
+                  <Form {...storyForm}>
+                    <form onSubmit={storyForm.handleSubmit(onStorySubmit)} className="space-y-4">
+                      <FormField
+                        control={storyForm.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Story Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Our Love Story" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={storyForm.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Your Story</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Share your journey together..."
+                                className="min-h-[200px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsEditingStory(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit">Save Story</Button>
+                      </div>
+                    </form>
+                  </Form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-serif">{coupleStory.title}</h2>
+                      <Button variant="outline" onClick={() => setIsEditingStory(true)}>
+                        Edit Story
+                      </Button>
+                    </div>
+                    <div className="prose max-w-none">
+                      {coupleStory.content.split('\n').map((paragraph, index) => (
+                        <p key={index} className="mb-4 text-muted-foreground">{paragraph}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
           <TabsContent value="wishlist" className="space-y-4">
             <Card>
               <CardContent className="space-y-2">
@@ -107,6 +209,7 @@ const CoupleStory = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          
           <TabsContent value="bank-details">
             <Card>
               <CardContent>
