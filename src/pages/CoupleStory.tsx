@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/layout/Navbar";
-import { Heart, Gift, ShoppingBag, Image, Edit, DollarSign, Plus } from "lucide-react";
+import { Heart, Gift, ShoppingBag, Image, Edit, DollarSign, Plus, Calendar, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 interface StorySection {
@@ -35,6 +36,8 @@ interface GiftOption {
 
 const CoupleStory = () => {
   const [coupleNames, setCoupleNames] = useState("Sarah & Michael");
+  const [weddingDate, setWeddingDate] = useState("August 15, 2024");
+  const [weddingLocation, setWeddingLocation] = useState("Rosewood Garden, New York");
   const [storyEditing, setStoryEditing] = useState(false);
   const [storySections, setStorySections] = useState<StorySection[]>([
     { 
@@ -114,19 +117,41 @@ const CoupleStory = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="container mx-auto px-4 pt-24 pb-16">
-        <div className="space-y-8 max-w-5xl mx-auto">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight">
-              {coupleNames}
-            </h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Thank you for being part of our special day. We're excited to share our journey with you.
-            </p>
+      
+      {/* Hero Section - Similar to inawo.com */}
+      <div className="relative h-[70vh] overflow-hidden">
+        <div className="absolute inset-0 bg-black/40 z-10" />
+        <img 
+          src={photos[0]} 
+          alt="Couple" 
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        <div className="relative z-20 flex flex-col items-center justify-center h-full text-white text-center px-4">
+          <h1 className="text-5xl md:text-7xl font-serif mb-4 tracking-tight">
+            {coupleNames}
+          </h1>
+          <div className="flex items-center space-x-4 mb-6 text-lg md:text-xl">
+            <div className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              <span>{weddingDate}</span>
+            </div>
+            <div className="h-2 w-2 rounded-full bg-primary" />
+            <div className="flex items-center">
+              <MapPin className="w-5 h-5 mr-2" />
+              <span>{weddingLocation}</span>
+            </div>
           </div>
-          
+          <p className="max-w-2xl text-lg md:text-xl leading-relaxed">
+            Thank you for being part of our special day. We're excited to share our journey with you.
+          </p>
+        </div>
+      </div>
+      
+      <main className="container mx-auto px-4 py-16">
+        <div className="space-y-16 max-w-5xl mx-auto">
+          {/* Tabs Section */}
           <Tabs defaultValue="story" className="w-full">
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-5 w-full mb-8">
               <TabsTrigger value="story" className="flex items-center gap-2">
                 <Heart className="h-4 w-4" /> 
                 <span className="hidden sm:inline">Our Story</span>
@@ -149,25 +174,33 @@ const CoupleStory = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="story" className="space-y-6 pt-4">
+            {/* Story Tab Content */}
+            <TabsContent value="story" className="space-y-10 pt-4">
               {storySections.map((section, index) => (
-                <Card key={index} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="text-xl font-serif font-medium">{section.title}</h3>
+                <div key={index} className={`flex flex-col md:flex-row ${index % 2 === 0 ? '' : 'md:flex-row-reverse'} gap-8 items-center`}>
+                  <div className="w-full md:w-1/2 aspect-video rounded-lg overflow-hidden">
+                    <img 
+                      src={photos[index % photos.length]} 
+                      alt={section.title} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="w-full md:w-1/2 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-2xl font-serif font-medium">{section.title}</h3>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setStoryEditing(true)}>
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
                       </Button>
                     </div>
                     <p className="text-muted-foreground leading-relaxed">{section.content}</p>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
               
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="w-full">
+                  <Button className="w-full mt-8">
                     <Plus className="h-4 w-4 mr-2" /> Add New Section
                   </Button>
                 </DialogTrigger>
@@ -205,20 +238,21 @@ const CoupleStory = () => {
               </Dialog>
             </TabsContent>
             
+            {/* Photos Tab Content */}
             <TabsContent value="photos" className="pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {photos.map((photo, index) => (
-                  <div key={index} className="aspect-square overflow-hidden rounded-md">
+                  <div key={index} className="aspect-square overflow-hidden rounded-xl shadow-md">
                     <img 
                       src={photo} 
                       alt={`Couple photo ${index + 1}`}
-                      className="w-full h-full object-cover transition-all hover:scale-105 duration-300"
+                      className="w-full h-full object-cover transition-all hover:scale-105 duration-500"
                     />
                   </div>
                 ))}
-                <label className="aspect-square flex flex-col items-center justify-center rounded-md border-2 border-dashed border-primary/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                <label className="aspect-square flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors shadow-sm">
                   <div className="flex flex-col items-center justify-center p-6 text-center">
-                    <Image className="h-10 w-10 text-muted-foreground mb-2" />
+                    <Image className="h-12 w-12 text-primary/60 mb-3" />
                     <span className="text-sm font-medium">Upload Photo</span>
                     <span className="text-xs text-muted-foreground mt-1">Click to browse</span>
                   </div>
@@ -232,16 +266,31 @@ const CoupleStory = () => {
               </div>
             </TabsContent>
             
+            {/* Vendors Tab Content */}
             <TabsContent value="vendors" className="pt-4 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {vendors.map((vendor, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-serif mb-2">{vendor.name}</h3>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <p><strong>Category:</strong> {vendor.category}</p>
-                        {vendor.website && <p><strong>Website:</strong> {vendor.website}</p>}
-                        {vendor.contact && <p><strong>Contact:</strong> {vendor.contact}</p>}
+                  <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow">
+                    <div className="h-3 bg-gradient-to-r from-primary to-primary/60"></div>
+                    <CardContent className="p-6 mt-3">
+                      <h3 className="text-xl font-serif mb-3">{vendor.name}</h3>
+                      <div className="text-sm text-muted-foreground space-y-2">
+                        <p className="flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-primary"></span>
+                          <span><strong>Category:</strong> {vendor.category}</span>
+                        </p>
+                        {vendor.website && (
+                          <p className="flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 rounded-full bg-primary"></span>
+                            <span><strong>Website:</strong> {vendor.website}</span>
+                          </p>
+                        )}
+                        {vendor.contact && (
+                          <p className="flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 rounded-full bg-primary"></span>
+                            <span><strong>Contact:</strong> {vendor.contact}</span>
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -249,9 +298,9 @@ const CoupleStory = () => {
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="flex items-center justify-center p-6 rounded-md border-2 border-dashed border-primary/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-center p-8 rounded-lg border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors h-full">
                       <div className="text-center">
-                        <Plus className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                        <Plus className="h-12 w-12 text-primary/60 mx-auto mb-3" />
                         <span className="text-sm font-medium">Add Vendor</span>
                       </div>
                     </div>
@@ -294,20 +343,26 @@ const CoupleStory = () => {
               </div>
             </TabsContent>
             
+            {/* Wishlist Tab Content */}
             <TabsContent value="wishlist" className="pt-4 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {wishlist.map((item, index) => (
-                  <Card key={index} className={`border-l-4 ${
-                    item.priority === 'high' 
-                      ? 'border-l-red-400' 
-                      : item.priority === 'medium' 
-                      ? 'border-l-amber-400' 
-                      : 'border-l-blue-400'
-                  }`}>
+                  <Card key={index} className={`overflow-hidden hover:shadow-md transition-shadow`}>
+                    <div className={`h-2 ${
+                      item.priority === 'high' 
+                        ? 'bg-red-400' 
+                        : item.priority === 'medium' 
+                        ? 'bg-amber-400' 
+                        : 'bg-blue-400'
+                    }`}></div>
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start">
                         <h3 className="text-lg font-medium">{item.name}</h3>
-                        {item.price && <span className="text-sm font-medium">{item.price}</span>}
+                        {item.price && (
+                          <span className="text-sm font-medium px-2 py-1 bg-secondary rounded-full">
+                            {item.price}
+                          </span>
+                        )}
                       </div>
                       {item.link && (
                         <a 
@@ -319,7 +374,7 @@ const CoupleStory = () => {
                           View Item
                         </a>
                       )}
-                      <div className="mt-2">
+                      <div className="mt-3">
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           item.priority === 'high' 
                             ? 'bg-red-100 text-red-800' 
@@ -336,9 +391,9 @@ const CoupleStory = () => {
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="flex items-center justify-center p-6 rounded-md border-2 border-dashed border-primary/30 cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                    <div className="flex items-center justify-center p-6 rounded-lg border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors h-full">
                       <div className="text-center">
-                        <Plus className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                        <Plus className="h-12 w-12 text-primary/60 mx-auto mb-3" />
                         <span className="text-sm font-medium">Add Wishlist Item</span>
                       </div>
                     </div>
@@ -390,14 +445,17 @@ const CoupleStory = () => {
               </div>
             </TabsContent>
             
+            {/* Cash Gifts Tab Content */}
             <TabsContent value="gifts" className="pt-4 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {giftOptions.map((option, index) => (
-                  <Card key={index} className="overflow-hidden">
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-serif mb-2">{option.title}</h3>
+                  <Card key={index} className="overflow-hidden border-none shadow-lg">
+                    <div className="bg-gradient-to-r from-primary/80 to-primary p-6 text-white">
+                      <h3 className="text-xl font-serif">{option.title}</h3>
+                    </div>
+                    <CardContent className="p-6 bg-white">
                       <p className="text-muted-foreground mb-4">{option.description}</p>
-                      <div className="bg-muted p-3 rounded-md">
+                      <div className="bg-secondary p-4 rounded-md">
                         <h4 className="text-sm font-medium mb-1">Payment Details:</h4>
                         <p className="text-sm">{option.paymentDetails}</p>
                       </div>
@@ -407,9 +465,9 @@ const CoupleStory = () => {
                 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <div className="flex items-center justify-center p-6 rounded-md border-2 border-dashed border-primary/30 cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                    <div className="flex items-center justify-center p-6 rounded-lg border-2 border-dashed border-primary/40 cursor-pointer hover:bg-muted/30 transition-colors h-full">
                       <div className="text-center">
-                        <Plus className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                        <Plus className="h-12 w-12 text-primary/60 mx-auto mb-3" />
                         <span className="text-sm font-medium">Add Gift Option</span>
                       </div>
                     </div>
