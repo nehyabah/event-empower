@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,6 @@ const Navbar = () => {
               <NavLink to="/features">Features</NavLink>
               <NavLink to="/pricing">Pricing</NavLink>
               <NavLink to="/vendors">Vendors</NavLink>
-              <NavLink to="/couple-story">Couple Story</NavLink>
             </>
           ) : (
             <>
@@ -205,14 +203,14 @@ const Navbar = () => {
                     <span>Vendors</span>
                   </div>
                 </NavLink>
+                <NavLink to="/couple-story" className="px-4 py-2">
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="w-5 h-5" />
+                    <span>Our Story</span>
+                  </div>
+                </NavLink>
               </>
             )}
-            <NavLink to="/couple-story" className="px-4 py-2">
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-5 h-5" />
-                <span>Couple Story</span>
-              </div>
-            </NavLink>
             
             <div className="flex flex-col gap-2 pt-2 border-t border-border/50">
               {!isAuthenticated ? (
