@@ -13,7 +13,10 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
   const navigate = useNavigate();
   
   const handleLogout = () => {
+    // Clear all user data
     localStorage.removeItem("authenticated");
+    localStorage.removeItem("userType");
+    localStorage.removeItem("userEmail");
     navigate("/");
   };
 

@@ -26,17 +26,31 @@ const queryClient = new QueryClient();
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth: boolean;
+  vendorOnly?: boolean;
+  clientOnly?: boolean;
 }
 
-const ProtectedRoute = ({ children, requireAuth }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requireAuth, vendorOnly = false, clientOnly = false }: ProtectedRouteProps) => {
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
+  const userType = localStorage.getItem("userType");
   
   if (requireAuth && !isAuthenticated) {
     return <Navigate to="/" replace />;
   }
   
   if (!requireAuth && isAuthenticated) {
+    if (userType === "vendor") {
+      return <Navigate to="/vendor-home" replace />;
+    }
     return <Navigate to="/home" replace />;
+  }
+  
+  if (vendorOnly && userType !== "vendor") {
+    return <Navigate to="/home" replace />;
+  }
+  
+  if (clientOnly && userType === "vendor") {
+    return <Navigate to="/vendor-home" replace />;
   }
   
   return <>{children}</>;
@@ -74,41 +88,43 @@ const App = () => {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/invitation/:code" element={<InvitationPage />} />
               
-              {/* Authenticated user homepage */}
+              {/* Authenticated user homepage - client only */}
               <Route path="/home" element={
-                <ProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true} clientOnly={true}>
                   <UserHomepage />
                 </ProtectedRoute>
               } />
               
-              {/* Authenticated vendor homepage */}
+              {/* Authenticated vendor homepage - vendor only */}
               <Route path="/vendor-home" element={
-                <ProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true} vendorOnly={true}>
                   <VendorHomepage />
                 </ProtectedRoute>
               } />
               
-              {/* Protected routes */}
+              {/* Protected routes - primarily for clients */}
               <Route path="/dashboard" element={
-                <ProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true} clientOnly={true}>
                   <Dashboard />
                 </ProtectedRoute>
               } />
               <Route path="/couple-story" element={
-                <ProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true} clientOnly={true}>
                   <CoupleStory />
                 </ProtectedRoute>
               } />
               <Route path="/expense-tracker" element={
-                <ProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true} clientOnly={true}>
                   <ExpenseTracker />
                 </ProtectedRoute>
               } />
               <Route path="/todo-lists" element={
-                <ProtectedRoute requireAuth={true}>
+                <ProtectedRoute requireAuth={true} clientOnly={true}>
                   <TodoLists />
                 </ProtectedRoute>
               } />
+              
+              {/* Routes accessible to both clients and vendors */}
               <Route path="/vendors" element={<Vendors />} />
               <Route path="/vendor-profile" element={<VendorProfile />} />
               

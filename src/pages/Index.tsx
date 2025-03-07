@@ -13,10 +13,14 @@ const Index = () => {
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
   const userType = localStorage.getItem("userType");
   
-  // Redirect vendors to vendor homepage if they're authenticated
+  // Redirect authenticated users based on their type
   useEffect(() => {
-    if (isAuthenticated && userType === "vendor") {
-      navigate("/vendor-home");
+    if (isAuthenticated) {
+      if (userType === "vendor") {
+        navigate("/vendor-home");
+      } else {
+        navigate("/home");
+      }
     }
   }, [isAuthenticated, userType, navigate]);
 

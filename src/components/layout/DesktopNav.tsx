@@ -6,6 +6,9 @@ interface DesktopNavProps {
 }
 
 const DesktopNav = ({ isAuthenticated }: DesktopNavProps) => {
+  const userType = localStorage.getItem("userType");
+  const isVendor = userType === "vendor";
+
   return (
     <nav className="hidden md:flex items-center space-x-1">
       <NavLink to="/">Home</NavLink>
@@ -15,6 +18,12 @@ const DesktopNav = ({ isAuthenticated }: DesktopNavProps) => {
           <NavLink to="/features">Features</NavLink>
           <NavLink to="/pricing">Pricing</NavLink>
           <NavLink to="/vendors">Vendors</NavLink>
+        </>
+      ) : isVendor ? (
+        <>
+          <NavLink to="/vendor-home">Dashboard</NavLink>
+          <NavLink to="/vendors">Marketplace</NavLink>
+          <NavLink to="/vendor-profile">My Profile</NavLink>
         </>
       ) : (
         <>
