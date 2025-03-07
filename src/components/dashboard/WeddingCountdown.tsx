@@ -93,10 +93,10 @@ const WeddingCountdown = ({
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
           {/* Left column: Date display */}
-          <div className="bg-gradient-to-br from-wedding-gold/10 via-wedding-gold/5 to-transparent p-8 flex flex-col items-center justify-center text-center border-r border-wedding-gold/10">
-            <div className="text-5xl font-serif font-light text-wedding-gold mb-2">{weddingMonth}</div>
-            <div className="text-8xl font-serif font-bold bg-gradient-to-br from-wedding-gold to-wedding-burgundy/80 bg-clip-text text-transparent">{weddingDay}</div>
-            <div className="text-3xl font-serif text-muted-foreground mt-1">{weddingYear}</div>
+          <div className="bg-gradient-to-br from-wedding-gold/10 via-wedding-gold/5 to-transparent p-6 md:p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-wedding-gold/10">
+            <div className="text-4xl md:text-5xl font-serif font-light text-wedding-gold mb-1 md:mb-2">{weddingMonth}</div>
+            <div className="text-7xl md:text-8xl font-serif font-bold bg-gradient-to-br from-wedding-gold to-wedding-burgundy/80 bg-clip-text text-transparent">{weddingDay}</div>
+            <div className="text-2xl md:text-3xl font-serif text-muted-foreground mt-0 md:mt-1">{weddingYear}</div>
             
             <Popover open={isEditing} onOpenChange={setIsEditing}>
               <PopoverTrigger asChild>
@@ -123,30 +123,30 @@ const WeddingCountdown = ({
           </div>
           
           {/* Right column: Countdown */}
-          <div className="col-span-1 md:col-span-2 p-8">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="col-span-1 md:col-span-2 p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-4 md:mb-6">
               <Heart className="w-5 h-5 text-wedding-burgundy/70 animate-pulse-soft" />
-              <h3 className="text-2xl md:text-3xl font-serif">
+              <h3 className="text-xl md:text-3xl font-serif">
                 <span className="bg-gradient-to-r from-wedding-gold to-wedding-burgundy/80 bg-clip-text text-transparent">Your Special Day</span>
               </h3>
             </div>
             
-            <div className="grid grid-cols-4 gap-4 max-w-xl">
+            <div className="grid grid-cols-4 gap-3 md:gap-4 max-w-xl">
               {Object.entries(timeLeft).map(([unit, value]) => (
                 <div key={unit} className="flex flex-col items-center">
                   <div className="w-full aspect-square relative rounded-xl overflow-hidden group">
-                    {/* Background layers */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-wedding-gold/5 to-transparent opacity-70"></div>
-                    <div className="absolute inset-0 border border-wedding-gold/10 rounded-xl"></div>
+                    {/* Background layers with improved mobile styling */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-wedding-gold/10 to-transparent opacity-80"></div>
+                    <div className="absolute inset-0 border border-wedding-gold/20 rounded-xl"></div>
                     
-                    {/* Number display */}
+                    {/* Number display with responsive font size */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-3xl md:text-4xl font-bold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
+                      <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
                         {value}
                       </span>
                     </div>
                   </div>
-                  <span className="mt-2 text-sm md:text-base text-muted-foreground capitalize">
+                  <span className="mt-2 text-xs md:text-sm text-muted-foreground capitalize">
                     {unit}
                   </span>
                 </div>

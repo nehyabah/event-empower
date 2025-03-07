@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import ProjectStats from "@/components/dashboard/ProjectStats";
 import WeddingCountdown from "@/components/dashboard/WeddingCountdown";
+import InvitationGenerator from "@/components/invitations/InvitationGenerator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -13,7 +15,8 @@ import {
   Pencil,
   UserPlus,
   Search,
-  MoreHorizontal 
+  MoreHorizontal,
+  Link as LinkIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { 
@@ -30,6 +33,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface Guest {
   id: string;
@@ -46,6 +50,8 @@ const UserHomepage = () => {
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   
   const [weddingDate, setWeddingDate] = useState(localStorage.getItem("weddingDate") || "2024-12-31");
+  const [showInvitationGenerator, setShowInvitationGenerator] = useState(false);
+  const [invitationLink, setInvitationLink] = useState("");
   
   const [guests, setGuests] = useState<Guest[]>(() => {
     const savedGuests = localStorage.getItem("weddingGuests");
@@ -84,6 +90,34 @@ const UserHomepage = () => {
     }
   };
   
+  const generateInvitationLink = () => {
+    // Create a unique code for the invitation
+    const inviteCode = Math.random().toString(36).substring(2, 10);
+    
+    // In a real app, this would save to a database
+    // For this demo, we'll save to localStorage
+    const invitationData = {
+      couple: capitalizedName + " & Partner",
+      date: weddingDate,
+      code: inviteCode
+    };
+    
+    localStorage.setItem(`invitation_${inviteCode}`, JSON.stringify(invitationData));
+    
+    // Create the invitation URL
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/invitation/${inviteCode}`;
+    
+    setInvitationLink(url);
+    return url;
+  };
+  
+  const copyInvitationLink = () => {
+    const link = invitationLink || generateInvitationLink();
+    navigator.clipboard.writeText(link);
+    toast.success("Invitation link copied to clipboard!");
+  };
+  
   const filteredGuests = guests.filter(guest => 
     guest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     guest.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -97,25 +131,92 @@ const UserHomepage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-4 space-y-10">
+      <main className="flex-grow pt-20 md:pt-24 pb-16">
+        <div className="container mx-auto px-4 space-y-8 md:space-y-10">
           <section className="text-center md:text-left">
-            <h1 className="font-serif text-3xl md:text-4xl mb-2">
+            <h1 className="font-serif text-2xl md:text-4xl mb-2">
               Welcome back, <span className="text-primary">{capitalizedName}</span>!
             </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl">
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl">
               Continue planning your perfect Nigerian wedding. Here's what needs your attention.
             </p>
           </section>
           
           <WeddingCountdown weddingDate={weddingDate} onDateChange={handleDateChange} />
           
-          <section className="py-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-serif">Guest List</h2>
+          <section className="py-4 md:py-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
+              <h2 className="text-xl md:text-2xl font-serif">Wedding Invitations</h2>
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  className="text-sm gap-2"
+                  onClick={() => setShowInvitationGenerator(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Create Invitation
+                </Button>
+                <Button 
+                  className="text-sm gap-2"
+                  onClick={copyInvitationLink}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Generate URL
+                </Button>
+              </div>
+            </div>
+            
+            <Dialog open={showInvitationGenerator} onOpenChange={setShowInvitationGenerator}>
+              <DialogContent className="max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create Wedding Invitation</DialogTitle>
+                </DialogHeader>
+                <InvitationGenerator />
+              </DialogContent>
+            </Dialog>
+            
+            {invitationLink && (
+              <Card className="mb-6">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="w-full md:flex-1">
+                      <p className="text-sm font-medium mb-2">Your Invitation Link:</p>
+                      <div className="flex items-center gap-2 w-full">
+                        <Input 
+                          value={invitationLink} 
+                          readOnly 
+                          className="font-mono text-xs text-ellipsis"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="shrink-0"
+                          onClick={copyInvitationLink}
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline" 
+                      size="sm"
+                      className="shrink-0 w-full md:w-auto"
+                      onClick={() => window.open(invitationLink, '_blank')}
+                    >
+                      Preview
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </section>
+          
+          <section className="py-4 md:py-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
+              <h2 className="text-xl md:text-2xl font-serif">Guest List</h2>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="gap-2">
+                  <Button className="text-sm w-full md:w-auto gap-2">
                     <UserPlus className="h-4 w-4" />
                     Add Guest
                   </Button>
@@ -166,20 +267,20 @@ const UserHomepage = () => {
             
             <Card>
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="space-y-1">
                     <CardTitle>Your Wedding Guests</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       Manage and track your guest list
                     </p>
                   </div>
-                  <div className="flex gap-2 items-center">
-                    <div className="relative">
+                  <div className="w-full md:w-auto">
+                    <div className="relative w-full">
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         type="search"
                         placeholder="Search guests..."
-                        className="pl-8 w-full md:w-[200px]"
+                        className="pl-8 w-full"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
@@ -189,22 +290,24 @@ const UserHomepage = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="all" className="w-full">
-                  <TabsList className="w-full md:w-auto mb-4">
-                    <TabsTrigger value="all">All ({guests.length})</TabsTrigger>
-                    <TabsTrigger value="confirmed">Confirmed ({confirmedCount})</TabsTrigger>
-                    <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
-                    <TabsTrigger value="declined">Declined ({declinedCount})</TabsTrigger>
-                  </TabsList>
+                  <div className="overflow-x-auto pb-2">
+                    <TabsList className="w-full md:w-auto mb-4">
+                      <TabsTrigger value="all">All ({guests.length})</TabsTrigger>
+                      <TabsTrigger value="confirmed">Confirmed ({confirmedCount})</TabsTrigger>
+                      <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+                      <TabsTrigger value="declined">Declined ({declinedCount})</TabsTrigger>
+                    </TabsList>
+                  </div>
                   
                   <TabsContent value="all" className="mt-0">
-                    <div className="rounded-md border">
-                      <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50">
+                    <div className="rounded-md border overflow-x-auto">
+                      <div className="grid grid-cols-12 p-4 text-sm font-medium text-muted-foreground bg-muted/50 min-w-[600px]">
                         <div className="col-span-5">Name</div>
                         <div className="col-span-3">Group</div>
                         <div className="col-span-3">Status</div>
                         <div className="col-span-1"></div>
                       </div>
-                      <div className="divide-y">
+                      <div className="divide-y min-w-[600px]">
                         {filteredGuests.length > 0 ? (
                           filteredGuests.map((guest) => (
                             <div key={guest.id} className="grid grid-cols-12 p-4 items-center text-sm">
@@ -362,13 +465,13 @@ const UserHomepage = () => {
             </Card>
           </section>
           
-          <section className="py-6">
-            <h2 className="text-2xl font-serif mb-6">Wedding Planning Progress</h2>
+          <section className="py-4 md:py-6">
+            <h2 className="text-xl md:text-2xl font-serif mb-4 md:mb-6">Wedding Planning Progress</h2>
             <ProjectStats />
           </section>
           
-          <section className="py-6">
-            <h2 className="text-2xl font-serif mb-6">Quick Actions</h2>
+          <section className="py-4 md:py-6">
+            <h2 className="text-xl md:text-2xl font-serif mb-4 md:mb-6">Quick Actions</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <QuickActionCard 
                 title="To-Do Lists" 
@@ -397,9 +500,9 @@ const UserHomepage = () => {
             </div>
           </section>
           
-          <section className="py-8">
-            <h2 className="text-2xl font-serif mb-8">Your Wedding Timeline</h2>
-            <div className="relative pl-12 space-y-10 max-w-3xl before:absolute before:left-4 before:top-3 before:bottom-10 before:w-[2px] 
+          <section className="py-6 md:py-8">
+            <h2 className="text-xl md:text-2xl font-serif mb-4 md:mb-8">Your Wedding Timeline</h2>
+            <div className="relative pl-8 md:pl-12 space-y-8 md:space-y-10 max-w-3xl before:absolute before:left-3 md:before:left-4 before:top-3 before:bottom-10 before:w-[2px] 
               before:bg-gradient-to-b before:from-primary/10 before:via-primary/50 before:to-primary/20">
               <TimelineItem 
                 date="8 weeks before" 

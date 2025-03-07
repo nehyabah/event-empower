@@ -15,6 +15,7 @@ import CoupleStory from "./pages/CoupleStory";
 import ExpenseTracker from "./pages/ExpenseTracker";
 import TodoLists from "./pages/TodoLists";
 import VendorProfile from "./pages/VendorProfile";
+import InvitationPage from "./pages/InvitationPage";
 import NotFound from "./pages/NotFound";
 import { TodoProvider } from "./context/TodoContext";
 
@@ -70,6 +71,7 @@ const App = () => {
               } />
               <Route path="/features" element={<Features />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/invitation/:code" element={<InvitationPage />} />
               
               {/* Authenticated user homepage */}
               <Route path="/home" element={
