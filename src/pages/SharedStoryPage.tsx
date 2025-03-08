@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Gift, Banknote, MessageSquare } from "lucide-react";
 import StoryDisplay from "@/components/couple-story/StoryDisplay";
@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SharedStoryPage = () => {
   const [searchParams] = useSearchParams();
-  const location = useLocation();
   const { wishlistItems, bankDetails } = useWishlist();
   
   // Extract the couple ID from the URL if present
@@ -25,33 +24,80 @@ const SharedStoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // In a real app, we would load this data from a server based on the coupleId
-    // For now, we'll load from localStorage as it's a demo
-    try {
-      const savedStory = localStorage.getItem("coupleStory");
-      const savedImages = localStorage.getItem("storyImages");
-      const savedComments = localStorage.getItem("storyComments");
-      
-      if (savedStory) {
-        setCoupleStory(JSON.parse(savedStory));
-      } else {
+    // Load data from localStorage to match the main story page
+    const loadStoryData = () => {
+      try {
+        // Load story details
+        const savedStory = localStorage.getItem("coupleStory");
+        if (savedStory) {
+          setCoupleStory(JSON.parse(savedStory));
+        } else {
+          throw new Error("No story found");
+        }
+        
+        // Load story images
+        const savedImages = localStorage.getItem("storyImages");
+        if (savedImages) {
+          setStoryImages(JSON.parse(savedImages));
+        } else {
+          throw new Error("No images found");
+        }
+        
+        // Load comments/well wishes
+        const savedComments = localStorage.getItem("storyComments");
+        const parsedComments = savedComments ? JSON.parse(savedComments) : [];
+        
+        // Add some sample well wishes if there are none
+        if (parsedComments.length === 0) {
+          setComments([
+            {
+              id: "1",
+              name: "Sarah & David",
+              text: "Congratulations on your upcoming wedding! Wishing you a lifetime of love and happiness together. May your special day be everything you've dreamed of!",
+              date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+              id: "2",
+              name: "Michael & Jennifer",
+              text: "So happy for you both! Your love story is truly inspiring. Wishing you a beautiful wedding day and a marriage filled with joy, laughter and endless adventures.",
+              date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+              id: "3",
+              name: "Aunt Mary",
+              text: "My dearest niece and her wonderful partner, may God bless your union with love and prosperity. Looking forward to celebrating with you on your big day!",
+              date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+              id: "4",
+              name: "John & Emma",
+              text: "We are so excited to celebrate this special day with you! Your love is an inspiration to us all. Wishing you all the happiness in the world.",
+              date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+              id: "5",
+              name: "Uncle Robert",
+              text: "May your journey together be filled with love and laughter, and your hearts grow fonder with each passing day. Congratulations!",
+              date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+            }
+          ]);
+        } else {
+          setComments(parsedComments);
+        }
+      } catch (error) {
+        console.error("Error loading story data:", error);
+        // Set default values as fallback
         setCoupleStory({
           title: "Our Love Story",
           content: "Share your story here! How you met, your journey together, and your plans for the future.",
           hashtag: "OurWedding",
-          weddingDate: "",
-          weddingTime: "",
+          weddingDate: "10/15/2023",
+          weddingTime: "4:00 PM",
           venue: "Beautiful Wedding Venue",
           loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
           selectedIcon: "heart",
           bannerImage: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
         });
-      }
-      
-      if (savedImages) {
-        setStoryImages(JSON.parse(savedImages));
-      } else {
-        // Sample images for demonstration
         setStoryImages([
           {
             id: "1",
@@ -72,103 +118,12 @@ const SharedStoryPage = () => {
             storyType: "general"
           }
         ]);
+      } finally {
+        setIsLoading(false);
       }
-      
-      // If there are no comments, add some sample well wishes
-      const parsedComments = savedComments ? JSON.parse(savedComments) : [];
-      if (parsedComments.length === 0) {
-        setComments([
-          {
-            id: "1",
-            name: "Sarah & David",
-            text: "Congratulations on your upcoming wedding! Wishing you a lifetime of love and happiness together. May your special day be everything you've dreamed of!",
-            date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
-          },
-          {
-            id: "2",
-            name: "Michael & Jennifer",
-            text: "So happy for you both! Your love story is truly inspiring. Wishing you a beautiful wedding day and a marriage filled with joy, laughter and endless adventures.",
-            date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
-          },
-          {
-            id: "3",
-            name: "Aunt Mary",
-            text: "My dearest niece and her wonderful partner, may God bless your union with love and prosperity. Looking forward to celebrating with you on your big day!",
-            date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
-          },
-          {
-            id: "4",
-            name: "John & Emma",
-            text: "We are so excited to celebrate this special day with you! Your love is an inspiration to us all. Wishing you all the happiness in the world.",
-            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
-          },
-          {
-            id: "5",
-            name: "Uncle Robert",
-            text: "May your journey together be filled with love and laughter, and your hearts grow fonder with each passing day. Congratulations!",
-            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
-          }
-        ]);
-      } else {
-        setComments(parsedComments);
-      }
-    } catch (error) {
-      console.error("Error loading story data:", error);
-      // Set default values if there's an error
-      setCoupleStory({
-        title: "Our Love Story",
-        content: "Share your story here! How you met, your journey together, and your plans for the future.",
-        hashtag: "OurWedding",
-        weddingDate: "10/15/2023",
-        weddingTime: "4:00 PM",
-        venue: "Beautiful Wedding Venue",
-        loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
-        selectedIcon: "heart",
-        bannerImage: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-      });
-      setStoryImages([
-        {
-          id: "1",
-          url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-          caption: "Our first date",
-          storyType: "general"
-        },
-        {
-          id: "2",
-          url: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-          caption: "The proposal",
-          storyType: "general"
-        },
-        {
-          id: "3",
-          url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80",
-          caption: "Our engagement",
-          storyType: "general"
-        }
-      ]);
-      setComments([
-        {
-          id: "1",
-          name: "Sarah & David",
-          text: "Congratulations on your upcoming wedding! Wishing you a lifetime of love and happiness together. May your special day be everything you've dreamed of!",
-          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: "2",
-          name: "Michael & Jennifer",
-          text: "So happy for you both! Your love story is truly inspiring. Wishing you a beautiful wedding day and a marriage filled with joy, laughter and endless adventures.",
-          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: "3",
-          name: "Aunt Mary",
-          text: "My dearest niece and her wonderful partner, may God bless your union with love and prosperity. Looking forward to celebrating with you on your big day!",
-          date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-        }
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    loadStoryData();
   }, [coupleId]);
   
   if (isLoading || !coupleStory) {
