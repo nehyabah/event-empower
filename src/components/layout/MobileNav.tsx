@@ -1,6 +1,8 @@
 
 import { Home, Calendar, Users, BookOpen, Filter, Briefcase, CheckSquare } from "lucide-react";
 import NavLink from "./NavLink";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MobileNavProps {
   isAuthenticated: boolean;
@@ -10,7 +12,29 @@ interface MobileNavProps {
 const MobileNav = ({ isAuthenticated, isOpen }: MobileNavProps) => {
   if (!isOpen) return null;
   
-  const userType = localStorage.getItem("userType");
+  const [userType, setUserType] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const getUserType = async () => {
+      if (isAuthenticated) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (data) {
+            setUserType(data.user_type);
+          }
+        }
+      }
+    };
+    
+    getUserType();
+  }, [isAuthenticated]);
+  
   const isVendor = userType === "vendor";
   const isPlanner = userType === "planner";
 

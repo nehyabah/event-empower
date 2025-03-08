@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useNavigate } from "react-router-dom";
-import { logoutUser } from "@/services/authService";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 interface AuthButtonsProps {
   isAuthenticated: boolean;
@@ -13,10 +14,32 @@ interface AuthButtonsProps {
 
 const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) => {
   const navigate = useNavigate();
+  const [userType, setUserType] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const getUserType = async () => {
+      if (isAuthenticated) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (data) {
+            setUserType(data.user_type);
+          }
+        }
+      }
+    };
+    
+    getUserType();
+  }, [isAuthenticated]);
   
   const handleLogout = async () => {
     try {
-      await logoutUser();
+      await supabase.auth.signOut();
       toast({
         title: "You've been logged out",
         description: "Hope to see you again soon!",

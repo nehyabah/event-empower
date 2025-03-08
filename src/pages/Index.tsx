@@ -7,22 +7,39 @@ import Features from "@/components/home/Features";
 import HowItWorks from "@/components/home/HowItWorks";
 import Testimonials from "@/components/home/Testimonials";
 import Footer from "@/components/home/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
-  const isAuthenticated = localStorage.getItem("authenticated") === "true";
-  const userType = localStorage.getItem("userType");
   
-  // Redirect authenticated users based on their type
+  // Check authentication state and redirect if needed
   useEffect(() => {
-    if (isAuthenticated) {
-      if (userType === "vendor") {
-        navigate("/vendor-home");
-      } else {
-        navigate("/home");
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (data.session) {
+        // User is authenticated, get their user type
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (profileData) {
+          // Redirect based on user type
+          if (profileData.user_type === "vendor") {
+            navigate("/vendor-home");
+          } else if (profileData.user_type === "planner") {
+            navigate("/planner-home");
+          } else {
+            navigate("/home");
+          }
+        }
       }
-    }
-  }, [isAuthenticated, userType, navigate]);
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">

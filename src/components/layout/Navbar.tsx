@@ -7,12 +7,13 @@ import { Heart, Menu, X } from "lucide-react";
 import DesktopNav from './DesktopNav';
 import MobileNav from './MobileNav';
 import AuthButtons from './AuthButtons';
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const location = useLocation();
-  const isAuthenticated = localStorage.getItem("authenticated") === "true";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,6 +23,25 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Check auth status when component mounts
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    
+    return () => {
+      subscription.unsubscribe();
     };
   }, []);
 
