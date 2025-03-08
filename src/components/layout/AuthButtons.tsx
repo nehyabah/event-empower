@@ -45,8 +45,10 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
         description: "Hope to see you again soon!",
         variant: "default",
       });
-      // Force a full page reload to the root URL to ensure proper rendering
-      window.location.href = "/";
+      
+      // Force navigation to the root URL and a page reload
+      navigate("/");
+      window.location.reload();
     } catch (error) {
       console.error("Logout error:", error);
       toast({

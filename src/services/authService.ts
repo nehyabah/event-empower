@@ -170,9 +170,12 @@ export const signInWithGmail = async (): Promise<AuthUser> => {
 };
 
 // Phone number sign in (requires verifying OTP in a separate step)
-export const signInWithPhone = async (phoneNumber: string): Promise<void> => {
+export const signInWithPhone = async (phoneNumber: string, channel: "sms" | "whatsapp" = "sms"): Promise<void> => {
   const { error } = await supabase.auth.signInWithOtp({
-    phone: phoneNumber
+    phone: phoneNumber,
+    options: {
+      channel: channel
+    }
   });
   
   if (error) {

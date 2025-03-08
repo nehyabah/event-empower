@@ -14,6 +14,13 @@ import { Input } from "@/components/ui/input";
 import { signInWithPhone, verifyPhoneOTP } from "@/services/authService";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface SocialLoginButtonsProps {
   onSocialLogin?: (method: string) => Promise<void>;
@@ -26,6 +33,7 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [isPhoneLoginLoading, setIsPhoneLoginLoading] = useState(false);
+  const [phoneMethod, setPhoneMethod] = useState<"sms" | "whatsapp">("sms");
   const navigate = useNavigate();
 
   const handlePhoneLogin = async () => {
@@ -46,11 +54,11 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
       
       if (!showOtpInput) {
         // Request OTP
-        await signInWithPhone(formattedPhone);
+        await signInWithPhone(formattedPhone, phoneMethod);
         
         toast({
           title: "Verification code sent",
-          description: "Please check your phone for the verification code",
+          description: `Please check your ${phoneMethod === "whatsapp" ? "WhatsApp" : "phone"} for the verification code`,
           variant: "default",
         });
         
@@ -133,13 +141,27 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
               </p>
               
               {!showOtpInput ? (
-                <Input
-                  type="tel"
-                  placeholder="Enter your phone number (with country code)"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="mb-4"
-                />
+                <>
+                  <Input
+                    type="tel"
+                    placeholder="Enter your phone number (with country code)"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="mb-4"
+                  />
+                  <Select
+                    value={phoneMethod}
+                    onValueChange={(value) => setPhoneMethod(value as "sms" | "whatsapp")}
+                  >
+                    <SelectTrigger className="mb-4">
+                      <SelectValue placeholder="Select OTP delivery method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sms">SMS</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
               ) : (
                 <Input
                   type="text"
