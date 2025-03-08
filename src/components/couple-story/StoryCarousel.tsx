@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StoryImage } from './StoryEditor';
@@ -21,22 +21,48 @@ const StoryCarousel = ({
   styleVariant = 'left' 
 }: StoryCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const filteredImages = images.filter(img => img.storyType === storyType);
   
   // If no images, don't show navigation
   const hasMultipleImages = filteredImages.length > 1;
   
   const goToPrevious = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setCurrentIndex(prev => 
       prev === 0 ? filteredImages.length - 1 : prev - 1
     );
   };
   
   const goToNext = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
     setCurrentIndex(prev => 
       prev === filteredImages.length - 1 ? 0 : prev + 1
     );
   };
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (!hasMultipleImages) return;
+    
+    const interval = setInterval(() => {
+      goToNext();
+    }, 5000); // Change image every 5 seconds
+    
+    return () => clearInterval(interval);
+  }, [currentIndex, hasMultipleImages]);
+
+  // Reset transition state
+  useEffect(() => {
+    if (isTransitioning) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 500); // Match this with the CSS transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isTransitioning, currentIndex]);
 
   return (
     <div className={cn(
