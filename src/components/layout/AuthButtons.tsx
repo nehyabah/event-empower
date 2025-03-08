@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "@/services/authService";
+import { toast } from "sonner";
 
 interface AuthButtonsProps {
   isAuthenticated: boolean;
@@ -13,10 +15,10 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
   const navigate = useNavigate();
   
   const handleLogout = () => {
-    // Clear all user data
-    localStorage.removeItem("authenticated");
-    localStorage.removeItem("userType");
-    localStorage.removeItem("userEmail");
+    logoutUser();
+    toast.success("You've been logged out", {
+      description: "Hope to see you again soon!",
+    });
     navigate("/");
   };
 

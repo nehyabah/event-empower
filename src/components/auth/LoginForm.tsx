@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import LoginFormFields from "./LoginFormFields";
 import SocialLoginButtons from "./SocialLoginButtons";
+import { loginUser, signInWithGmail, UserType } from "@/services/authService";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -40,13 +41,14 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     try {
       console.log("Login data:", data);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const user = await loginUser({
+        email: data.email,
+        password: data.password,
+        userType: data.userType as UserType
+      });
       
-      localStorage.setItem("authenticated", "true");
-      localStorage.setItem("userType", data.userType);
-      localStorage.setItem("userEmail", data.email);
-      
-      const firstName = data.email.split('@')[0].split('.')[0];
+      // Extract first name for greeting
+      const firstName = user.name.split(' ')[0] || user.email.split('@')[0];
       const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
       
       toast.success(`Welcome back, ${capitalizedName}! 👋`, {
@@ -56,9 +58,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       
       if (onSuccess) onSuccess();
       
-      if (data.userType === "planner") {
+      if (user.userType === "planner") {
         navigate("/planner-home");
-      } else if (data.userType === "vendor") {
+      } else if (user.userType === "vendor") {
         navigate("/vendor-home");
       } else {
         navigate("/home");
@@ -66,10 +68,34 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed", {
-        description: "Please check your credentials and try again.",
+        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (method: string) => {
+    if (method === "gmail") {
+      setIsLoading(true);
+      try {
+        const user = await signInWithGmail();
+        
+        toast.success(`Welcome, ${user.name}! 👋`, {
+          description: "You've successfully signed in with Gmail!",
+          duration: 5000,
+        });
+        
+        if (onSuccess) onSuccess();
+        navigate("/home");
+      } catch (error) {
+        console.error("Gmail login error:", error);
+        toast.error("Gmail login failed", {
+          description: "Unable to sign in with Gmail. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -81,7 +107,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
         </form>
       </Form>
       
-      <SocialLoginButtons />
+      <SocialLoginButtons onSocialLogin={handleSocialLogin} isLoading={isLoading} />
     </div>
   );
 };

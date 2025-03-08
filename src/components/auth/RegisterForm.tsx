@@ -17,6 +17,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { registerUser } from "@/services/authService";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -39,6 +41,7 @@ interface RegisterFormProps {
 
 const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
   
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(formSchema),
@@ -55,21 +58,33 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
     setIsLoading(true);
     
     try {
-      // This would be where you'd handle registration via your auth service
       console.log("Registration data:", data);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const user = await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role
+      });
       
       toast.success("Registration successful!", {
-        description: "Welcome to Planr! Start planning your perfect event.",
+        description: `Welcome to Planr, ${data.name}! Start planning your perfect event.`,
       });
       
       if (onSuccess) onSuccess();
+      
+      // Navigate based on user type
+      if (user.userType === "planner") {
+        navigate("/planner-home");
+      } else if (user.userType === "vendor") {
+        navigate("/vendor-home");
+      } else {
+        navigate("/home");
+      }
     } catch (error) {
       console.error("Registration error:", error);
       toast.error("Registration failed", {
-        description: "Please check your information and try again.",
+        description: error instanceof Error ? error.message : "Please check your information and try again.",
       });
     } finally {
       setIsLoading(false);
