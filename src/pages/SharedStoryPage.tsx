@@ -1,17 +1,15 @@
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Heart, Gift, Banknote, MessageSquare } from "lucide-react";
 import StoryDisplay from "@/components/couple-story/StoryDisplay";
 import CommentsSection, { Comment } from "@/components/couple-story/CommentsSection";
 import { StoryImage } from "@/components/couple-story/StoryEditor";
 import { useWishlist } from "@/context/useWishlist";
 import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
-import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Gift, Banknote, MessageSquare } from "lucide-react";
 
 const SharedStoryPage = () => {
   const [searchParams] = useSearchParams();
@@ -21,7 +19,6 @@ const SharedStoryPage = () => {
   // Extract the couple ID from the URL if present
   const coupleId = searchParams.get('id') || 'default';
 
-  // Parse story data from URL parameters or use default values
   const [coupleStory, setCoupleStory] = useState<any>(null);
   const [storyImages, setStoryImages] = useState<StoryImage[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -35,18 +32,47 @@ const SharedStoryPage = () => {
       const savedImages = localStorage.getItem("storyImages");
       const savedComments = localStorage.getItem("storyComments");
       
-      setCoupleStory(savedStory ? JSON.parse(savedStory) : {
-        title: "Our Love Story",
-        content: "Share your story here! How you met, your journey together, and your plans for the future.",
-        hashtag: "OurWedding",
-        weddingDate: "",
-        weddingTime: "",
-        venue: "Beautiful Wedding Venue",
-        loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
-        selectedIcon: "heart"
-      });
+      if (savedStory) {
+        setCoupleStory(JSON.parse(savedStory));
+      } else {
+        setCoupleStory({
+          title: "Our Love Story",
+          content: "Share your story here! How you met, your journey together, and your plans for the future.",
+          hashtag: "OurWedding",
+          weddingDate: "",
+          weddingTime: "",
+          venue: "Beautiful Wedding Venue",
+          loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
+          selectedIcon: "heart",
+          bannerImage: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+        });
+      }
       
-      setStoryImages(savedImages ? JSON.parse(savedImages) : []);
+      if (savedImages) {
+        setStoryImages(JSON.parse(savedImages));
+      } else {
+        // Sample images for demonstration
+        setStoryImages([
+          {
+            id: "1",
+            url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+            caption: "Our first date",
+            storyType: "general"
+          },
+          {
+            id: "2",
+            url: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+            caption: "The proposal",
+            storyType: "general"
+          },
+          {
+            id: "3",
+            url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80",
+            caption: "Our engagement",
+            storyType: "general"
+          }
+        ]);
+      }
       
       // If there are no comments, add some sample well wishes
       const parsedComments = savedComments ? JSON.parse(savedComments) : [];
@@ -69,6 +95,18 @@ const SharedStoryPage = () => {
             name: "Aunt Mary",
             text: "My dearest niece and her wonderful partner, may God bless your union with love and prosperity. Looking forward to celebrating with you on your big day!",
             date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+          },
+          {
+            id: "4",
+            name: "John & Emma",
+            text: "We are so excited to celebrate this special day with you! Your love is an inspiration to us all. Wishing you all the happiness in the world.",
+            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days ago
+          },
+          {
+            id: "5",
+            name: "Uncle Robert",
+            text: "May your journey together be filled with love and laughter, and your hearts grow fonder with each passing day. Congratulations!",
+            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
           }
         ]);
       } else {
@@ -81,13 +119,33 @@ const SharedStoryPage = () => {
         title: "Our Love Story",
         content: "Share your story here! How you met, your journey together, and your plans for the future.",
         hashtag: "OurWedding",
-        weddingDate: "",
-        weddingTime: "",
+        weddingDate: "10/15/2023",
+        weddingTime: "4:00 PM",
         venue: "Beautiful Wedding Venue",
         loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
-        selectedIcon: "heart"
+        selectedIcon: "heart",
+        bannerImage: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
       });
-      setStoryImages([]);
+      setStoryImages([
+        {
+          id: "1",
+          url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+          caption: "Our first date",
+          storyType: "general"
+        },
+        {
+          id: "2",
+          url: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+          caption: "The proposal",
+          storyType: "general"
+        },
+        {
+          id: "3",
+          url: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80",
+          caption: "Our engagement",
+          storyType: "general"
+        }
+      ]);
       setComments([
         {
           id: "1",
