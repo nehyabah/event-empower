@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "@/services/authService";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface AuthButtonsProps {
   isAuthenticated: boolean;
@@ -16,8 +16,10 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
   
   const handleLogout = () => {
     logoutUser();
-    toast.success("You've been logged out", {
+    toast({
+      title: "You've been logged out",
       description: "Hope to see you again soon!",
+      variant: "default",
     });
     navigate("/");
   };

@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form } from "@/components/ui/form";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import LoginFormFields from "./LoginFormFields";
 import SocialLoginButtons from "./SocialLoginButtons";
@@ -51,9 +51,10 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       const firstName = user.name.split(' ')[0] || user.email.split('@')[0];
       const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
       
-      toast.success(`Welcome back, ${capitalizedName}! 👋`, {
+      toast({
+        title: `Welcome back, ${capitalizedName}! 👋`,
         description: "We're so happy to see you again!",
-        duration: 5000,
+        variant: "default",
       });
       
       if (onSuccess) onSuccess();
@@ -67,8 +68,10 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Login failed", {
+      toast({
+        title: "Login failed",
         description: error instanceof Error ? error.message : "Please check your credentials and try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -81,17 +84,20 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       try {
         const user = await signInWithGmail();
         
-        toast.success(`Welcome, ${user.name}! 👋`, {
+        toast({
+          title: `Welcome, ${user.name}! 👋`,
           description: "You've successfully signed in with Gmail!",
-          duration: 5000,
+          variant: "default",
         });
         
         if (onSuccess) onSuccess();
         navigate("/home");
       } catch (error) {
         console.error("Gmail login error:", error);
-        toast.error("Gmail login failed", {
+        toast({
+          title: "Gmail login failed",
           description: "Unable to sign in with Gmail. Please try again.",
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
