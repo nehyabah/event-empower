@@ -112,8 +112,8 @@ export default {
         'float': 'float 6s infinite ease-in-out'
 			},
       fontFamily: {
-        serif: ['Playfair Display', 'Georgia', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+        sans: ['Montserrat', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'elegant': '0 4px 20px -2px rgba(0,0,0,0.05)',
