@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from "@/components/layout/Navbar";
@@ -118,7 +117,8 @@ const CoupleStory = () => {
   }
 
   const shareStory = () => {
-    const url = `${window.location.origin}/couple-story?preview=true`;
+    // Create a shareable URL for the shared story page
+    const url = `${window.location.origin}/shared-story`;
     navigator.clipboard.writeText(url);
     toast.success("Story URL copied to clipboard! Share it with your friends and family.");
   };

@@ -33,9 +33,10 @@ const commentSchema = z.object({
 interface CommentsSectionProps {
   comments: Comment[];
   setComments: React.Dispatch<React.SetStateAction<Comment[]>>;
+  isSharedView?: boolean;
 }
 
-const CommentsSection = ({ comments, setComments }: CommentsSectionProps) => {
+const CommentsSection = ({ comments, setComments, isSharedView = false }: CommentsSectionProps) => {
   // Comment form
   const commentForm = useForm<z.infer<typeof commentSchema>>({
     resolver: zodResolver(commentSchema),
@@ -55,15 +56,15 @@ const CommentsSection = ({ comments, setComments }: CommentsSectionProps) => {
       };
       setComments(prev => [...prev, newCommentObj]);
       commentForm.reset();
-      toast.success("Comment added!");
+      toast.success(isSharedView ? "Thank you for your well wishes!" : "Comment added!");
     })();
   };
 
   return (
-    <div className="mt-8 border-t pt-6">
+    <div className={`${isSharedView ? "" : "mt-8 border-t pt-6"}`}>
       <h3 className="text-xl font-medium mb-4 flex items-center">
         <MessageSquare className="mr-2 h-5 w-5" />
-        Comments ({comments.length})
+        {isSharedView ? `Well Wishes (${comments.length})` : `Comments (${comments.length})`}
       </h3>
       
       {comments.length > 0 ? (
@@ -81,11 +82,17 @@ const CommentsSection = ({ comments, setComments }: CommentsSectionProps) => {
           ))}
         </div>
       ) : (
-        <p className="text-gray-500 mb-4">No comments yet. Be the first to leave a comment!</p>
+        <p className="text-gray-500 mb-4">
+          {isSharedView 
+            ? "No well wishes yet. Be the first to send your blessings!" 
+            : "No comments yet. Be the first to leave a comment!"}
+        </p>
       )}
       
       <div className="bg-gray-50 p-4 rounded-md">
-        <h4 className="text-sm font-medium mb-2">Leave a Comment</h4>
+        <h4 className="text-sm font-medium mb-2">
+          {isSharedView ? "Send Your Blessings" : "Leave a Comment"}
+        </h4>
         <Form {...commentForm}>
           <form className="space-y-3">
             <FormField
@@ -107,7 +114,7 @@ const CommentsSection = ({ comments, setComments }: CommentsSectionProps) => {
                 <FormItem>
                   <FormControl>
                     <Textarea
-                      placeholder="Write your comment..."
+                      placeholder={isSharedView ? "Write your well wishes..." : "Write your comment..."}
                       className="resize-none"
                       {...field}
                     />
@@ -122,7 +129,7 @@ const CommentsSection = ({ comments, setComments }: CommentsSectionProps) => {
               className="w-full"
             >
               <Send className="mr-2 h-4 w-4" />
-              Submit Comment
+              {isSharedView ? "Send Well Wishes" : "Submit Comment"}
             </Button>
           </form>
         </Form>

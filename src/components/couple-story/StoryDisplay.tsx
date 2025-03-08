@@ -27,6 +27,7 @@ interface StoryDisplayProps {
   comments: Comment[];
   setComments: React.Dispatch<React.SetStateAction<Comment[]>>;
   isEditingStory: boolean;
+  isSharedView?: boolean;
 }
 
 const StoryDisplay = ({
@@ -35,11 +36,13 @@ const StoryDisplay = ({
   comments,
   setComments,
   isEditingStory,
+  isSharedView = false,
 }: StoryDisplayProps) => {
   const [selectedIcon, setSelectedIcon] = useState(coupleStory.selectedIcon || "heart");
   
   const shareStory = () => {
-    const url = `${window.location.origin}/couple-story?preview=true`;
+    // Create a shareable URL with the couple ID or other identifier
+    const url = `${window.location.origin}/shared-story`;
     navigator.clipboard.writeText(url);
     toast.success("Story URL copied to clipboard! Share it with your friends and family.");
   };
@@ -92,18 +95,20 @@ const StoryDisplay = ({
           {coupleStory.title}
         </h1>
         
-        {/* Share button */}
-        <div className="absolute top-0 right-0">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-wedding-gold hover:text-wedding-gold/70 hover:bg-secondary/50"
-            onClick={shareStory}
-          >
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-        </div>
+        {/* Share button - only show in edit mode, not shared view */}
+        {!isSharedView && (
+          <div className="absolute top-0 right-0">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-wedding-gold hover:text-wedding-gold/70 hover:bg-secondary/50"
+              onClick={shareStory}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
+          </div>
+        )}
         
         {/* Wedding Details */}
         <div className="flex flex-wrap items-center justify-center gap-8 mb-10 bg-secondary/10 py-6 px-4 rounded-lg shadow-inner border border-wedding-gold/10">
@@ -178,7 +183,8 @@ const StoryDisplay = ({
         </div>
       </div>
       
-      {!isEditingStory && (
+      {/* Only show comments section in the main view if not in shared view and not editing */}
+      {!isEditingStory && !isSharedView && (
         <div className="mt-16 border-t border-wedding-gold/20 pt-8">
           <CommentsSection comments={comments} setComments={setComments} />
         </div>

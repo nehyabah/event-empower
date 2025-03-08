@@ -14,6 +14,7 @@ import Pricing from "./pages/Pricing";
 import Vendors from "./pages/Vendors";
 import Dashboard from "./pages/Dashboard";
 import CoupleStory from "./pages/CoupleStory";
+import SharedStoryPage from "./pages/SharedStoryPage";
 import ExpenseTracker from "./pages/ExpenseTracker";
 import TodoLists from "./pages/TodoLists";
 import VendorProfile from "./pages/VendorProfile";
@@ -116,6 +117,9 @@ const App = () => {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/invitation" element={<InvitationPage />} />
               <Route path="/invitation/:code" element={<InvitationPage />} />
+              
+              {/* Shared story page - publicly accessible */}
+              <Route path="/shared-story" element={<SharedStoryPage />} />
               
               {/* Authenticated user homepage - client only */}
               <Route path="/home" element={
