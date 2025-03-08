@@ -49,6 +49,7 @@ export interface WishlistHook {
   markItemAsPurchased: (itemId: string, purchaserName: string) => void;
   removeItemPurchaser: (itemId: string) => void;
   removeBankDetail: (index: number) => void;
+  updateBankDetail?: (index: number, detail: BankDetail) => void;
 }
 
 export const useWishlist = (): WishlistHook => {
@@ -98,6 +99,13 @@ export const useWishlist = (): WishlistHook => {
     toast.success("Bank details removed!");
   };
 
+  const updateBankDetail = (index: number, detail: BankDetail) => {
+    const newDetails = [...bankDetails];
+    newDetails[index] = detail;
+    setBankDetails(newDetails);
+    toast.success("Bank details updated!");
+  };
+
   return {
     wishlistItems,
     bankDetails,
@@ -105,6 +113,7 @@ export const useWishlist = (): WishlistHook => {
     addBankDetail,
     markItemAsPurchased,
     removeItemPurchaser,
-    removeBankDetail
+    removeBankDetail,
+    updateBankDetail
   };
 };

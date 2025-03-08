@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Check, X, Gift, ExternalLink } from "lucide-react";
-import { useTodo, WishlistItem as WishlistItemType } from "@/context/TodoContext";
+import { WishlistItem as WishlistItemType } from "@/context/types";
+import { useWishlist } from "@/context/useWishlist";
 
 interface WishlistItemProps {
   item: WishlistItemType;
@@ -14,7 +15,7 @@ interface WishlistItemProps {
 }
 
 const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) => {
-  const { markItemAsPurchased, removeItemPurchaser } = useTodo();
+  const { markItemAsPurchased, removeItemPurchaser } = useWishlist();
   const [purchaserName, setPurchaserName] = useState("");
   const [open, setOpen] = useState(false);
   
