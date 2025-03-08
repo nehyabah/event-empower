@@ -129,7 +129,7 @@ const StoryDisplay = ({
         
         {/* Love Quote */}
         {coupleStory.loveQuote && (
-          <div className="my-12 italic text-xl relative px-8 py-4 before:content-['\u201C'] before:absolute before:-top-4 before:left-0 before:text-6xl before:text-wedding-gold/30 before:font-serif after:content-['\u201D'] after:absolute after:-bottom-10 after:right-0 after:text-6xl after:text-wedding-gold/30 after:font-serif">
+          <div className="my-12 italic text-xl relative px-8 py-4 before:content-['"'] before:absolute before:-top-4 before:left-0 before:text-6xl before:text-wedding-gold/30 before:font-serif after:content-['"'] after:absolute after:-bottom-10 after:right-0 after:text-6xl after:text-wedding-gold/30 after:font-serif">
             <p className="text-gray-700 leading-relaxed">{coupleStory.loveQuote}</p>
           </div>
         )}
