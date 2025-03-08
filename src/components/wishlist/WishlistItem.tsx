@@ -8,6 +8,7 @@ import { Check, X, Gift, ExternalLink, Tag } from "lucide-react";
 import { WishlistItem as WishlistItemType } from "@/context/types";
 import { useWishlist } from "@/context/useWishlist";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface WishlistItemProps {
   item: WishlistItemType;
@@ -34,9 +35,15 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
   };
   
   const priorityColors = {
-    high: "bg-red-400",
-    medium: "bg-amber-400",
-    low: "bg-blue-400"
+    high: "border-rose-200",
+    medium: "border-amber-200",
+    low: "border-blue-200"
+  };
+  
+  const priorityBadgeColors = {
+    high: "bg-rose-100 text-rose-800 hover:bg-rose-100",
+    medium: "bg-amber-100 text-amber-800 hover:bg-amber-100",
+    low: "bg-blue-100 text-blue-800 hover:bg-blue-100"
   };
   
   const priorityLabels = {
@@ -47,26 +54,29 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
   
   return (
     <Card className={cn(
-      "overflow-hidden hover:shadow-md transition-shadow border-t-4",
+      "overflow-hidden hover:shadow-md transition-shadow border-l-4",
       item.purchasedBy ? "bg-muted/30" : "",
       priorityColors[item.priority]
     )}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
-          <div className="space-y-2">
+          <div className="space-y-2 flex-1">
             <h3 className={`text-lg font-medium ${item.purchasedBy ? "line-through text-muted-foreground" : ""}`}>
               {item.name}
             </h3>
             
             <div className="flex items-center gap-2">
-              <Tag className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
+              <Badge 
+                variant="outline" 
+                className={cn("text-xs font-normal", priorityBadgeColors[item.priority])}
+              >
+                <Tag className="h-3 w-3 mr-1" />
                 {priorityLabels[item.priority]}
-              </span>
+              </Badge>
             </div>
             
             {item.purchasedBy && (
-              <p className="text-sm text-primary font-medium mt-2">
+              <p className="text-sm text-primary/80 font-medium mt-2">
                 <Check className="inline-block h-4 w-4 mr-1" />
                 Being purchased by: {item.purchasedBy}
               </p>
@@ -74,9 +84,9 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
           </div>
           
           {item.price && (
-            <span className="text-sm font-medium px-3 py-1 bg-secondary rounded-full">
+            <Badge variant="secondary" className="text-sm font-medium">
               {item.price}
-            </span>
+            </Badge>
           )}
         </div>
         
@@ -86,7 +96,7 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
               href={item.link} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline flex items-center gap-1 hover:text-primary/80 transition-colors"
+              className="text-sm text-primary/80 hover:underline flex items-center gap-1 hover:text-primary/60 transition-colors"
             >
               <ExternalLink size={14} />
               View Item
