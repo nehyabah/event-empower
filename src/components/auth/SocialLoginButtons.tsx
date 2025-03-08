@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Facebook, Mail, Smartphone, Loader2 } from "lucide-react";
+import { Mail, Smartphone, Loader2, Mail as Gmail } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { signInWithPhone } from "@/services/authService";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 interface SocialLoginButtonsProps {
@@ -32,24 +32,30 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
     try {
       // Basic phone number validation
       if (!phoneNumber || phoneNumber.length < 10) {
-        toast.error("Invalid phone number", {
+        toast({
+          title: "Invalid phone number",
           description: "Please enter a valid phone number",
+          variant: "destructive",
         });
         return;
       }
       
       const user = await signInWithPhone(phoneNumber);
       
-      toast.success(`Welcome! 👋`, {
+      toast({
+        title: `Welcome! 👋`,
         description: "You've successfully signed in with your phone number!",
+        variant: "default",
       });
       
       setPhoneDialogOpen(false);
       navigate("/home");
     } catch (error) {
       console.error("Phone login error:", error);
-      toast.error("Phone login failed", {
+      toast({
+        title: "Phone login failed",
         description: error instanceof Error ? error.message : "Unable to sign in with this phone number. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsPhoneLoginLoading(false);
@@ -134,8 +140,8 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
           onClick={() => onSocialLogin && onSocialLogin("gmail")}
           disabled={isLoading}
         >
-          <Facebook className="mr-2 h-4 w-4" />
-          Gmail
+          <Gmail className="mr-2 h-4 w-4" />
+          Google
         </Button>
       </div>
     </>
