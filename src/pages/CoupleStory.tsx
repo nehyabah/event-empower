@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from "@/components/layout/Navbar";
@@ -16,6 +15,7 @@ import { Share2, Plus, X, Gift, ExternalLink } from "lucide-react";
 import StoryEditor, { StoryImage } from "@/components/couple-story/StoryEditor";
 import StoryDisplay from "@/components/couple-story/StoryDisplay";
 import BankDetailsForm from "@/components/couple-story/BankDetailsForm";
+import WishlistForm from "@/components/wishlist/WishlistForm";
 import { Comment } from "@/components/couple-story/CommentsSection";
 
 const CoupleStory = () => {
@@ -23,7 +23,6 @@ const CoupleStory = () => {
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
   const { wishlistItems, bankDetails, removeBankDetail, addWishlistItem } = useWishlist();
   
-  // State for couple's story
   const [isEditingStory, setIsEditingStory] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [storyImages, setStoryImages] = useState<StoryImage[]>(() => {
@@ -42,10 +41,7 @@ const CoupleStory = () => {
     };
   });
   
-  // State for bank details form visibility
   const [showBankForm, setShowBankForm] = useState(false);
-  
-  // State for wishlist visibility
   const [showWishlistForm, setShowWishlistForm] = useState(false);
 
   useEffect(() => {
@@ -55,17 +51,14 @@ const CoupleStory = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Save images to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("storyImages", JSON.stringify(storyImages));
   }, [storyImages]);
 
-  // Save comments to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("storyComments", JSON.stringify(comments));
   }, [comments]);
 
-  // If not authenticated, don't render the page content
   if (!isAuthenticated) {
     return null;
   }
@@ -140,11 +133,33 @@ const CoupleStory = () => {
                 <h2 className="text-2xl font-medium">Gift Registry</h2>
                 <p className="text-muted-foreground">Items we'd love to receive for our new journey together</p>
               </div>
-              <Button className="bg-wedding-gold hover:bg-wedding-gold/90 text-white">
-                <Gift className="mr-2 h-4 w-4" />
-                View Public Registry
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setShowWishlistForm(!showWishlistForm)}
+                  variant="outline"
+                >
+                  {showWishlistForm ? (
+                    <>
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Item
+                    </>
+                  )}
+                </Button>
+                <Button className="bg-wedding-gold hover:bg-wedding-gold/90 text-white">
+                  <Gift className="mr-2 h-4 w-4" />
+                  View Public Registry
+                </Button>
+              </div>
             </div>
+
+            {showWishlistForm && (
+              <WishlistForm onSuccess={() => setShowWishlistForm(false)} />
+            )}
 
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {wishlistItems.map((item) => (

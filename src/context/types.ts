@@ -21,6 +21,7 @@ export interface WishlistItem {
   link?: string;
   priority: "high" | "medium" | "low";
   purchasedBy?: string;
+  isAnonymous?: boolean;
 }
 
 export interface BankDetail {

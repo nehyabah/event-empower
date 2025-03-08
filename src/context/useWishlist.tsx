@@ -46,7 +46,7 @@ export interface WishlistHook {
   bankDetails: BankDetail[];
   addWishlistItem: (item: Omit<WishlistItem, "id">) => void;
   addBankDetail: (detail: BankDetail) => void;
-  markItemAsPurchased: (itemId: string, purchaserName: string) => void;
+  markItemAsPurchased: (itemId: string, purchaserName: string, isAnonymous?: boolean) => void;
   removeItemPurchaser: (itemId: string) => void;
   removeBankDetail: (index: number) => void;
   updateBankDetail?: (index: number, detail: BankDetail) => void;
@@ -70,11 +70,11 @@ export const useWishlist = (): WishlistHook => {
     toast.success("Bank details added successfully!");
   };
 
-  const markItemAsPurchased = (itemId: string, purchaserName: string) => {
+  const markItemAsPurchased = (itemId: string, purchaserName: string, isAnonymous: boolean = false) => {
     setWishlistItems(
       wishlistItems.map(item => 
         item.id === itemId 
-          ? { ...item, purchasedBy: purchaserName }
+          ? { ...item, purchasedBy: purchaserName, isAnonymous }
           : item
       )
     );
@@ -85,7 +85,7 @@ export const useWishlist = (): WishlistHook => {
     setWishlistItems(
       wishlistItems.map(item => 
         item.id === itemId 
-          ? { ...item, purchasedBy: undefined }
+          ? { ...item, purchasedBy: undefined, isAnonymous: undefined }
           : item
       )
     );

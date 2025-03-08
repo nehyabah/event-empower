@@ -4,11 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Check, X, Gift, ExternalLink, Tag } from "lucide-react";
+import { Check, X, Gift, ExternalLink, Tag, UserX } from "lucide-react";
 import { WishlistItem as WishlistItemType } from "@/context/types";
 import { useWishlist } from "@/context/useWishlist";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface WishlistItemProps {
   item: WishlistItemType;
@@ -19,13 +21,15 @@ interface WishlistItemProps {
 const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) => {
   const { markItemAsPurchased, removeItemPurchaser } = useWishlist();
   const [purchaserName, setPurchaserName] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [open, setOpen] = useState(false);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (purchaserName.trim()) {
-      markItemAsPurchased(item.id, purchaserName);
+      markItemAsPurchased(item.id, purchaserName, isAnonymous);
       setPurchaserName("");
+      setIsAnonymous(false);
       setOpen(false);
     }
   };
@@ -78,7 +82,14 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
             {item.purchasedBy && (
               <p className="text-sm text-primary/80 font-medium mt-2">
                 <Check className="inline-block h-4 w-4 mr-1" />
-                Being purchased by: {item.purchasedBy}
+                {item.isAnonymous ? (
+                  <>
+                    <UserX className="inline-block h-4 w-4 mr-1" />
+                    Being purchased anonymously
+                  </>
+                ) : (
+                  <>Being purchased by: {item.purchasedBy}</>
+                )}
               </p>
             )}
           </div>
@@ -127,6 +138,14 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
                     onChange={(e) => setPurchaserName(e.target.value)}
                     required
                   />
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="anonymous-mode" 
+                      checked={isAnonymous}
+                      onCheckedChange={setIsAnonymous}
+                    />
+                    <Label htmlFor="anonymous-mode">Make my gift anonymous</Label>
+                  </div>
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                       Cancel
