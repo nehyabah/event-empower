@@ -1,5 +1,6 @@
 
-import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export type UserType = "client" | "vendor" | "planner";
 
@@ -23,176 +24,195 @@ export interface AuthUser {
   userType: UserType;
 }
 
-// Simulated database of users for development (will be replaced with real backend)
-const USERS_STORAGE_KEY = "planr_users";
-
-// Helper to get users from localStorage
-const getStoredUsers = (): Record<string, AuthUser> => {
-  const usersStr = localStorage.getItem(USERS_STORAGE_KEY);
-  return usersStr ? JSON.parse(usersStr) : {};
-};
-
-// Helper to save users to localStorage
-const saveUsers = (users: Record<string, AuthUser>) => {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-};
-
-// Persist the current user
-const setCurrentUser = (user: AuthUser | null) => {
-  if (user) {
-    localStorage.setItem("authenticated", "true");
-    localStorage.setItem("userType", user.userType);
-    localStorage.setItem("userEmail", user.email);
-    localStorage.setItem("userId", user.id);
-    localStorage.setItem("userName", user.name);
-  } else {
-    localStorage.removeItem("authenticated");
-    localStorage.removeItem("userType");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userName");
-  }
-};
-
-// Get the current user from localStorage
-export const getCurrentUser = (): AuthUser | null => {
-  const isAuthenticated = localStorage.getItem("authenticated") === "true";
+// Get the current user from Supabase
+export const getCurrentUser = async (): Promise<AuthUser | null> => {
+  const { data: { session }, error } = await supabase.auth.getSession();
   
-  if (!isAuthenticated) return null;
+  if (error || !session) {
+    return null;
+  }
+  
+  // Fetch user profile from profiles table
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('name, user_type')
+    .eq('id', session.user.id)
+    .single();
+  
+  if (profileError || !profile) {
+    console.error("Profile fetch error:", profileError);
+    return {
+      id: session.user.id,
+      email: session.user.email || "",
+      name: session.user.email?.split('@')[0] || "",
+      userType: "client" as UserType
+    };
+  }
   
   return {
-    id: localStorage.getItem("userId") || "",
-    email: localStorage.getItem("userEmail") || "",
-    name: localStorage.getItem("userName") || "",
-    userType: (localStorage.getItem("userType") as UserType) || "client",
+    id: session.user.id,
+    email: session.user.email || "",
+    name: profile.name || session.user.email?.split('@')[0] || "",
+    userType: profile.user_type as UserType || "client"
   };
 };
 
 // Register a new user
 export const registerUser = async (credentials: RegisterCredentials): Promise<AuthUser> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+  // Convert role to userType
+  const userType = credentials.role === "couple" ? "client" : credentials.role;
   
-  const users = getStoredUsers();
+  // Register the user with Supabase
+  const { data, error } = await supabase.auth.signUp({
+    email: credentials.email,
+    password: credentials.password,
+    options: {
+      data: {
+        name: credentials.name,
+        userType: userType
+      }
+    }
+  });
   
-  // Check if user already exists
-  if (users[credentials.email]) {
-    throw new Error("User with this email already exists");
+  if (error) {
+    throw new Error(error.message);
   }
   
-  // Create new user
-  const newUser: AuthUser = {
-    id: Date.now().toString(),
-    email: credentials.email,
+  if (!data.user) {
+    throw new Error("Failed to create user");
+  }
+  
+  return {
+    id: data.user.id,
+    email: data.user.email || "",
     name: credentials.name,
-    userType: credentials.role === "couple" ? "client" : credentials.role,
+    userType: userType as UserType
   };
-  
-  // Store user with email as key and password and user data
-  users[credentials.email] = newUser;
-  saveUsers(users);
-  
-  // Also store a separate password map
-  const passwordsStr = localStorage.getItem("planr_passwords") || "{}";
-  const passwords = JSON.parse(passwordsStr);
-  passwords[credentials.email] = credentials.password;
-  localStorage.setItem("planr_passwords", JSON.stringify(passwords));
-  
-  // Set as current user
-  setCurrentUser(newUser);
-  
-  return newUser;
 };
 
 // Login user
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthUser> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+  // Sign in with Supabase
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: credentials.email,
+    password: credentials.password
+  });
   
-  const users = getStoredUsers();
-  const user = users[credentials.email];
-  
-  // Validate user exists
-  if (!user) {
-    throw new Error("Invalid email or password");
+  if (error) {
+    throw new Error(error.message);
   }
   
-  // Validate password
-  const passwordsStr = localStorage.getItem("planr_passwords") || "{}";
-  const passwords = JSON.parse(passwordsStr);
-  const storedPassword = passwords[credentials.email];
-  
-  if (storedPassword !== credentials.password) {
-    throw new Error("Invalid email or password");
+  if (!data.user) {
+    throw new Error("Failed to sign in");
   }
   
-  // Update user type if different from stored (in case they change their role)
-  if (user.userType !== credentials.userType) {
-    user.userType = credentials.userType;
-    users[credentials.email] = user;
-    saveUsers(users);
+  // Update userType if different from selected
+  if (credentials.userType) {
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ user_type: credentials.userType })
+      .eq('id', data.user.id);
+    
+    if (updateError) {
+      console.error("Failed to update user type:", updateError);
+    }
   }
   
-  // Set as current user
-  setCurrentUser(user);
+  // Get the user profile
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('name, user_type')
+    .eq('id', data.user.id)
+    .single();
   
-  return user;
+  if (profileError) {
+    console.error("Profile fetch error:", profileError);
+  }
+  
+  return {
+    id: data.user.id,
+    email: data.user.email || "",
+    name: profile?.name || data.user.email?.split('@')[0] || "",
+    userType: profile?.user_type as UserType || credentials.userType
+  };
 };
 
 // Logout user
-export const logoutUser = (): void => {
-  setCurrentUser(null);
+export const logoutUser = async (): Promise<void> => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error("Logout error:", error);
+    throw new Error(error.message);
+  }
 };
 
-// Gmail sign in (simulated)
+// Gmail sign in
 export const signInWithGmail = async (): Promise<AuthUser> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
   
-  // Simulate a Gmail login with random data
-  const randomId = Math.floor(Math.random() * 10000);
-  const mockGmailUser: AuthUser = {
-    id: `gmail-${randomId}`,
-    email: `user${randomId}@gmail.com`,
-    name: `Gmail User ${randomId}`,
-    userType: "client",
-  };
-  
-  // Save this user
-  const users = getStoredUsers();
-  users[mockGmailUser.email] = mockGmailUser;
-  saveUsers(users);
-  
-  // Set as current user
-  setCurrentUser(mockGmailUser);
-  
-  return mockGmailUser;
-};
-
-// Phone number sign in (simulated)
-export const signInWithPhone = async (phoneNumber: string): Promise<AuthUser> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  if (!phoneNumber || phoneNumber.length < 10) {
-    throw new Error("Invalid phone number");
+  if (error) {
+    throw new Error(error.message);
   }
   
-  // Simulate a phone login
-  const mockPhoneUser: AuthUser = {
-    id: `phone-${Date.now()}`,
-    email: `${phoneNumber}@phone.user`,
-    name: `Phone User`,
-    userType: "client",
+  // Since OAuth redirects, we won't get a user here
+  // The user will be automatically redirected, and we'll handle the session in App.tsx
+  return {
+    id: "",
+    email: "",
+    name: "",
+    userType: "client"
   };
+};
+
+// Phone number sign in (requires verifying OTP in a separate step)
+export const signInWithPhone = async (phoneNumber: string): Promise<void> => {
+  const { error } = await supabase.auth.signInWithOtp({
+    phone: phoneNumber
+  });
   
-  // Save this user
-  const users = getStoredUsers();
-  users[mockPhoneUser.email] = mockPhoneUser;
-  saveUsers(users);
+  if (error) {
+    throw new Error(error.message);
+  }
   
-  // Set as current user
-  setCurrentUser(mockPhoneUser);
+  // Return void since we need to verify OTP in a second step
+};
+
+// Verify phone OTP
+export const verifyPhoneOTP = async (phoneNumber: string, otp: string): Promise<AuthUser> => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone: phoneNumber,
+    token: otp,
+    type: 'sms'
+  });
   
-  return mockPhoneUser;
+  if (error) {
+    throw new Error(error.message);
+  }
+  
+  if (!data.user) {
+    throw new Error("Failed to verify OTP");
+  }
+  
+  // Get the user profile
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('name, user_type')
+    .eq('id', data.user.id)
+    .single();
+  
+  if (profileError) {
+    console.error("Profile fetch error:", profileError);
+  }
+  
+  return {
+    id: data.user.id,
+    email: data.user.email || "",
+    name: profile?.name || data.user.email?.split('@')[0] || "",
+    userType: profile?.user_type as UserType || "client"
+  };
 };

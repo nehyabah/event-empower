@@ -11,7 +11,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { signInWithPhone } from "@/services/authService";
+import { signInWithPhone, verifyPhoneOTP } from "@/services/authService";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -22,44 +22,68 @@ interface SocialLoginButtonsProps {
 
 const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginButtonsProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
   const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const [isPhoneLoginLoading, setIsPhoneLoginLoading] = useState(false);
   const navigate = useNavigate();
 
   const handlePhoneLogin = async () => {
+    if (!phoneNumber || phoneNumber.length < 10) {
+      toast({
+        title: "Invalid phone number",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsPhoneLoginLoading(true);
     
     try {
-      // Basic phone number validation
-      if (!phoneNumber || phoneNumber.length < 10) {
+      // Format phone number (simple example, might need more sophisticated formatting)
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+      
+      if (!showOtpInput) {
+        // Request OTP
+        await signInWithPhone(formattedPhone);
+        
         toast({
-          title: "Invalid phone number",
-          description: "Please enter a valid phone number",
-          variant: "destructive",
+          title: "Verification code sent",
+          description: "Please check your phone for the verification code",
+          variant: "default",
         });
-        return;
+        
+        setShowOtpInput(true);
+      } else {
+        // Verify OTP
+        await verifyPhoneOTP(formattedPhone, otp);
+        
+        toast({
+          title: `Welcome! 👋`,
+          description: "You've successfully signed in with your phone number!",
+          variant: "default",
+        });
+        
+        setPhoneDialogOpen(false);
+        navigate("/home");
       }
-      
-      const user = await signInWithPhone(phoneNumber);
-      
-      toast({
-        title: `Welcome! 👋`,
-        description: "You've successfully signed in with your phone number!",
-        variant: "default",
-      });
-      
-      setPhoneDialogOpen(false);
-      navigate("/home");
     } catch (error) {
       console.error("Phone login error:", error);
       toast({
-        title: "Phone login failed",
+        title: showOtpInput ? "Verification failed" : "Phone login failed",
         description: error instanceof Error ? error.message : "Unable to sign in with this phone number. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsPhoneLoginLoading(false);
     }
+  };
+
+  const handleCloseDialog = () => {
+    setPhoneDialogOpen(false);
+    setShowOtpInput(false);
+    setOtp("");
   };
 
   return (
@@ -103,19 +127,36 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
             </DialogHeader>
             <div className="py-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Enter your phone number to receive a verification code.
+                {showOtpInput
+                  ? "Enter the verification code sent to your phone."
+                  : "Enter your phone number to receive a verification code."}
               </p>
-              <Input
-                type="tel"
-                placeholder="Enter your phone number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="mb-4"
-              />
+              
+              {!showOtpInput ? (
+                <Input
+                  type="tel"
+                  placeholder="Enter your phone number (with country code)"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="mb-4"
+                />
+              ) : (
+                <Input
+                  type="text"
+                  placeholder="Enter verification code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="mb-4"
+                />
+              )}
+              
               <div className="flex justify-end gap-2">
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCloseDialog}
+                >
+                  Cancel
+                </Button>
                 <Button 
                   onClick={handlePhoneLogin} 
                   disabled={isPhoneLoginLoading}
@@ -123,10 +164,10 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
                   {isPhoneLoginLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
+                      {showOtpInput ? "Verifying..." : "Sending..."}
                     </>
                   ) : (
-                    "Continue"
+                    showOtpInput ? "Verify Code" : "Continue"
                   )}
                 </Button>
               </div>

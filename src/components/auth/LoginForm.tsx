@@ -82,16 +82,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     if (method === "gmail") {
       setIsLoading(true);
       try {
-        const user = await signInWithGmail();
-        
-        toast({
-          title: `Welcome, ${user.name}! 👋`,
-          description: "You've successfully signed in with Gmail!",
-          variant: "default",
-        });
-        
-        if (onSuccess) onSuccess();
-        navigate("/home");
+        await signInWithGmail();
+        // The user will be redirected to Google's login page and then back to our app
+        // The auth state change listener in App.tsx will handle the session
       } catch (error) {
         console.error("Gmail login error:", error);
         toast({
@@ -99,7 +92,6 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
           description: "Unable to sign in with Gmail. Please try again.",
           variant: "destructive",
         });
-      } finally {
         setIsLoading(false);
       }
     }

@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, AuthUser } from "@/services/authService";
 import Index from "./pages/Index";
 import UserHomepage from "./pages/UserHomepage";
 import VendorHomepage from "./pages/VendorHomepage";
@@ -36,65 +38,81 @@ interface ProtectedRouteProps {
   plannerOnly?: boolean;
 }
 
-const ProtectedRoute = ({ 
-  children, 
-  requireAuth, 
-  vendorOnly = false, 
-  clientOnly = false,
-  plannerOnly = false 
-}: ProtectedRouteProps) => {
-  const isAuthenticated = localStorage.getItem("authenticated") === "true";
-  const userType = localStorage.getItem("userType");
-  
-  if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-  
-  if (!requireAuth && isAuthenticated) {
-    if (userType === "vendor") {
-      return <Navigate to="/vendor-home" replace />;
-    } else if (userType === "planner") {
-      return <Navigate to="/planner-home" replace />;
-    }
-    return <Navigate to="/home" replace />;
-  }
-  
-  if (vendorOnly && userType !== "vendor") {
-    if (userType === "planner") {
-      return <Navigate to="/planner-home" replace />;
-    }
-    return <Navigate to="/home" replace />;
-  }
-  
-  if (clientOnly && userType !== "client") {
-    if (userType === "vendor") {
-      return <Navigate to="/vendor-home" replace />;
-    } else if (userType === "planner") {
-      return <Navigate to="/planner-home" replace />;
-    }
-    return <Navigate to="/home" replace />;
-  }
-  
-  if (plannerOnly && userType !== "planner") {
-    if (userType === "vendor") {
-      return <Navigate to="/vendor-home" replace />;
-    }
-    return <Navigate to="/home" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
 const App = () => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Simulate checking auth on app load
+  // Check initial auth state
   useEffect(() => {
-    setTimeout(() => {
+    const checkUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
       setIsLoading(false);
-    }, 300);
+    };
+    
+    checkUser();
+    
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
   
+  const ProtectedRoute = ({ 
+    children, 
+    requireAuth, 
+    vendorOnly = false, 
+    clientOnly = false,
+    plannerOnly = false 
+  }: ProtectedRouteProps) => {
+    if (isLoading) {
+      return null; // Or a loading spinner
+    }
+    
+    if (requireAuth && !user) {
+      return <Navigate to="/" replace />;
+    }
+    
+    if (!requireAuth && user) {
+      if (user.userType === "vendor") {
+        return <Navigate to="/vendor-home" replace />;
+      } else if (user.userType === "planner") {
+        return <Navigate to="/planner-home" replace />;
+      }
+      return <Navigate to="/home" replace />;
+    }
+    
+    if (vendorOnly && user?.userType !== "vendor") {
+      if (user?.userType === "planner") {
+        return <Navigate to="/planner-home" replace />;
+      }
+      return <Navigate to="/home" replace />;
+    }
+    
+    if (clientOnly && user?.userType !== "client") {
+      if (user?.userType === "vendor") {
+        return <Navigate to="/vendor-home" replace />;
+      } else if (user?.userType === "planner") {
+        return <Navigate to="/planner-home" replace />;
+      }
+      return <Navigate to="/home" replace />;
+    }
+    
+    if (plannerOnly && user?.userType !== "planner") {
+      if (user?.userType === "vendor") {
+        return <Navigate to="/vendor-home" replace />;
+      }
+      return <Navigate to="/home" replace />;
+    }
+    
+    return <>{children}</>;
+  };
+
   if (isLoading) {
     return null; // Or a loading spinner
   }

@@ -14,14 +14,23 @@ interface AuthButtonsProps {
 const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) => {
   const navigate = useNavigate();
   
-  const handleLogout = () => {
-    logoutUser();
-    toast({
-      title: "You've been logged out",
-      description: "Hope to see you again soon!",
-      variant: "default",
-    });
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      toast({
+        title: "You've been logged out",
+        description: "Hope to see you again soon!",
+        variant: "default",
+      });
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!isAuthenticated) {
