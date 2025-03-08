@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -22,14 +21,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Camera, X, Heart, Wine, Gift, Sparkles } from "lucide-react";
+import { Camera, X, Heart, Wine, Gift, Sparkles, ImageIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ImageGallery from "./ImageGallery";
 
 // Image type
 export type StoryImage = {
   id: string;
   url: string;
   caption: string;
+  storyType?: 'general' | 'bride' | 'groom';
 };
 
 // Story schema for editing
@@ -78,6 +79,7 @@ const StoryEditor = ({
   onStoryUpdated,
 }: StoryEditorProps) => {
   const [imageCaption, setImageCaption] = useState("");
+  const [currentStoryType, setCurrentStoryType] = useState<'general' | 'bride' | 'groom'>('general');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -129,11 +131,13 @@ const StoryEditor = ({
         const newImage: StoryImage = {
           id: crypto.randomUUID(),
           url: event.target.result as string,
-          caption: imageCaption
+          caption: imageCaption,
+          storyType: currentStoryType
         };
         setStoryImages(prev => [...prev, newImage]);
         setImageCaption("");
-        toast.success("Image added to your story!");
+        toast.success(`Image added to ${currentStoryType === 'general' ? 'your story' : 
+                      currentStoryType === 'bride' ? 'bride\'s story' : 'groom\'s story'}!`);
       }
     };
     reader.readAsDataURL(file);
@@ -404,41 +408,103 @@ const StoryEditor = ({
           <Form {...storyForm}>
             <form onSubmit={storyForm.handleSubmit(onStorySubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={storyForm.control}
-                  name="brideStory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bride's Story</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Share the bride's story..."
-                          className="min-h-[250px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-4">
+                  <FormField
+                    control={storyForm.control}
+                    name="brideStory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bride's Story</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Share the bride's story..."
+                            className="min-h-[250px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium">Bride's Photos</h4>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setCurrentStoryType('bride');
+                          fileInputRef.current?.click();
+                        }}
+                      >
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Add Photo
+                      </Button>
+                    </div>
+                    <div className="bg-muted/30 rounded-md p-3">
+                      <ImageGallery 
+                        images={storyImages} 
+                        storyType="bride" 
+                      />
+                      {!storyImages.some(img => img.storyType === 'bride') && (
+                        <p className="text-center text-sm text-muted-foreground py-4">
+                          No photos added to bride's story yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                <FormField
-                  control={storyForm.control}
-                  name="groomStory"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Groom's Story</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Share the groom's story..."
-                          className="min-h-[250px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-4">
+                  <FormField
+                    control={storyForm.control}
+                    name="groomStory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Groom's Story</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Share the groom's story..."
+                            className="min-h-[250px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium">Groom's Photos</h4>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setCurrentStoryType('groom');
+                          fileInputRef.current?.click();
+                        }}
+                      >
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Add Photo
+                      </Button>
+                    </div>
+                    <div className="bg-muted/30 rounded-md p-3">
+                      <ImageGallery 
+                        images={storyImages} 
+                        storyType="groom" 
+                      />
+                      {!storyImages.some(img => img.storyType === 'groom') && (
+                        <p className="text-center text-sm text-muted-foreground py-4">
+                          No photos added to groom's story yet
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="submit">Save Stories</Button>
@@ -451,11 +517,25 @@ const StoryEditor = ({
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium mb-2">Add Images to Your Story</h3>
             <div className="flex gap-2 mb-2">
+              <Select 
+                value={currentStoryType} 
+                onValueChange={(value: 'general' | 'bride' | 'groom') => setCurrentStoryType(value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Image for" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General Story</SelectItem>
+                  <SelectItem value="bride">Bride's Story</SelectItem>
+                  <SelectItem value="groom">Groom's Story</SelectItem>
+                </SelectContent>
+              </Select>
               <Input 
                 type="text" 
                 placeholder="Image caption (optional)"
                 value={imageCaption}
                 onChange={(e) => setImageCaption(e.target.value)}
+                className="flex-grow"
               />
               <Button 
                 type="button" 
@@ -482,23 +562,39 @@ const StoryEditor = ({
                     alt={image.caption || "Story image"}
                     className="w-full h-48 object-cover rounded"
                   />
-                  {image.caption && (
-                    <p className="text-sm text-center mt-2">{image.caption}</p>
-                  )}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => removeImage(image.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center justify-between mt-2">
+                    {image.caption && (
+                      <p className="text-sm">{image.caption}</p>
+                    )}
+                    <div className="flex items-center ml-auto">
+                      {image.storyType && image.storyType !== 'general' && (
+                        <span className="bg-secondary text-xs px-2 py-1 rounded mr-2">
+                          {image.storyType === 'bride' ? 'Bride' : 'Groom'}
+                        </span>
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeImage(image.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </TabsContent>
       </Tabs>
+      
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleImageUpload}
+      />
     </div>
   );
 };

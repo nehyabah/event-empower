@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button";
 
 interface ImageGalleryProps {
   images: StoryImage[];
+  storyType?: 'general' | 'bride' | 'groom';
 }
 
-const ImageGallery = ({ images }: ImageGalleryProps) => {
+const ImageGallery = ({ images, storyType = 'general' }: ImageGalleryProps) => {
   const [selectedImage, setSelectedImage] = useState<StoryImage | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (images.length === 0) {
+  // Filter images based on story type if specified
+  const filteredImages = storyType === 'general' 
+    ? images 
+    : images.filter(img => img.storyType === storyType);
+
+  if (filteredImages.length === 0) {
     return null;
   }
 
@@ -30,14 +36,14 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
   };
 
   const goToPrevious = () => {
-    const newIndex = (currentIndex - 1 + images.length) % images.length;
-    setSelectedImage(images[newIndex]);
+    const newIndex = (currentIndex - 1 + filteredImages.length) % filteredImages.length;
+    setSelectedImage(filteredImages[newIndex]);
     setCurrentIndex(newIndex);
   };
 
   const goToNext = () => {
-    const newIndex = (currentIndex + 1) % images.length;
-    setSelectedImage(images[newIndex]);
+    const newIndex = (currentIndex + 1) % filteredImages.length;
+    setSelectedImage(filteredImages[newIndex]);
     setCurrentIndex(newIndex);
   };
 
@@ -57,7 +63,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {images.map((image, index) => (
+        {filteredImages.map((image, index) => (
           <div 
             key={image.id} 
             className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
@@ -122,7 +128,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                 </p>
               )}
               <div className="text-white text-sm mt-2">
-                {currentIndex + 1} / {images.length}
+                {currentIndex + 1} / {filteredImages.length}
               </div>
             </div>
 
