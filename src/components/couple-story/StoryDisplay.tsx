@@ -1,5 +1,5 @@
 
-import { Heart, Calendar, MapPin, Clock, Wine, Gift, Sparkles } from "lucide-react";
+import { Heart, Calendar, MapPin, Clock, Wine, Gift, Sparkles, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ImageGallery from "./ImageGallery";
@@ -7,6 +7,7 @@ import CommentsSection from "./CommentsSection";
 import { StoryImage } from "./StoryEditor";
 import { Comment } from "./CommentsSection";
 import { useState } from "react";
+import StoryCarousel from "./StoryCarousel";
 
 interface StoryDisplayProps {
   coupleStory: {
@@ -91,6 +92,19 @@ const StoryDisplay = ({
           {coupleStory.title}
         </h1>
         
+        {/* Share button */}
+        <div className="absolute top-0 right-0">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-wedding-gold hover:text-wedding-gold/70 hover:bg-secondary/50"
+            onClick={shareStory}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            Share
+          </Button>
+        </div>
+        
         {/* Wedding Details */}
         <div className="flex flex-wrap items-center justify-center gap-8 mb-10 bg-secondary/10 py-6 px-4 rounded-lg shadow-inner border border-wedding-gold/10">
           {coupleStory.weddingDate && (
@@ -128,62 +142,30 @@ const StoryDisplay = ({
         </div>
       </div>
       
-      {/* Bride and Groom Stories */}
+      {/* Bride and Groom Stories as Carousels */}
       {(coupleStory.brideStory || coupleStory.groomStory) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 my-16">
-          {/* Bride's Story Card */}
+        <div className="space-y-10 my-16 max-w-5xl mx-auto">
           {coupleStory.brideStory && (
-            <div className="bg-secondary/10 p-6 rounded-lg shadow-md border border-wedding-gold/10 transform transition-transform hover:scale-[1.01] duration-300">
-              <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">
-                Bride&apos;s Story
-              </h3>
-              
-              <div className="flex flex-col gap-6">
-                {/* Bride's images first */}
-                <div className="w-full">
-                  <ImageGallery 
-                    images={storyImages}
-                    storyType="bride"
-                    displayMode="sideBySide"
-                    isEditMode={false}
-                  />
-                </div>
-                
-                {/* Bride's story text */}
-                <div className="w-full prose prose-sm max-w-none">
-                  {coupleStory.brideStory.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
-                  ))}
-                </div>
-              </div>
+            <div className="transform transition-all duration-300 hover:translate-y-[-5px]">
+              <StoryCarousel
+                title="Bride's Story"
+                content={coupleStory.brideStory}
+                images={storyImages}
+                storyType="bride"
+                styleVariant="left"
+              />
             </div>
           )}
           
-          {/* Groom's Story Card */}
           {coupleStory.groomStory && (
-            <div className="bg-secondary/10 p-6 rounded-lg shadow-md border border-wedding-gold/10 transform transition-transform hover:scale-[1.01] duration-300">
-              <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">
-                Groom&apos;s Story
-              </h3>
-              
-              <div className="flex flex-col gap-6">
-                {/* Groom's images first */}
-                <div className="w-full">
-                  <ImageGallery 
-                    images={storyImages}
-                    storyType="groom"
-                    displayMode="sideBySide"
-                    isEditMode={false}
-                  />
-                </div>
-                
-                {/* Groom's story text */}
-                <div className="w-full prose prose-sm max-w-none">
-                  {coupleStory.groomStory.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
-                  ))}
-                </div>
-              </div>
+            <div className="transform transition-all duration-300 hover:translate-y-[-5px]">
+              <StoryCarousel
+                title="Groom's Story"
+                content={coupleStory.groomStory}
+                images={storyImages}
+                storyType="groom"
+                styleVariant="right"
+              />
             </div>
           )}
         </div>

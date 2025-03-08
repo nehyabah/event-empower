@@ -436,7 +436,10 @@ const StoryEditor = ({
                           type="text" 
                           placeholder="Caption (optional)"
                           value={currentStoryType === 'bride' ? imageCaption : ''}
-                          onChange={(e) => setCurrentStoryType('bride') || setImageCaption(e.target.value)}
+                          onChange={(e) => {
+                            setCurrentStoryType('bride');
+                            setImageCaption(e.target.value);
+                          }}
                           className="w-40 text-xs inline-block"
                         />
                         <Button 
@@ -500,7 +503,10 @@ const StoryEditor = ({
                           type="text" 
                           placeholder="Caption (optional)"
                           value={currentStoryType === 'groom' ? imageCaption : ''}
-                          onChange={(e) => setCurrentStoryType('groom') || setImageCaption(e.target.value)}
+                          onChange={(e) => {
+                            setCurrentStoryType('groom');
+                            setImageCaption(e.target.value);
+                          }}
                           className="w-40 text-xs inline-block"
                         />
                         <Button 
@@ -581,7 +587,7 @@ const StoryEditor = ({
                 ref={fileInputRef}
                 className="hidden"
                 accept="image/*"
-                onChange={handleImageUpload}
+                onChange={(e) => handleImageUpload(e, currentStoryType)}
               />
             </div>
             
