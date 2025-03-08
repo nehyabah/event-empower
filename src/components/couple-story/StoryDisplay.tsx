@@ -115,7 +115,7 @@ const StoryDisplay = ({
         
         {/* Love Quote */}
         {coupleStory.loveQuote && (
-          <div className="my-12 italic text-xl relative px-8 py-4 before:content-['"'] before:absolute before:-top-4 before:left-0 before:text-6xl before:text-wedding-gold/30 before:font-serif after:content-['"'] after:absolute after:-bottom-10 after:right-0 after:text-6xl after:text-wedding-gold/30 after:font-serif">
+          <div className="my-12 italic text-xl relative px-8 py-4 before:content-['\u201C'] before:absolute before:-top-4 before:left-0 before:text-6xl before:text-wedding-gold/30 before:font-serif after:content-['\u201D'] after:absolute after:-bottom-10 after:right-0 after:text-6xl after:text-wedding-gold/30 after:font-serif">
             <p className="text-gray-700 leading-relaxed">{coupleStory.loveQuote}</p>
           </div>
         )}
@@ -133,7 +133,7 @@ const StoryDisplay = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 my-16">
           {coupleStory.brideStory && (
             <div className="bg-secondary/10 p-8 rounded-lg shadow-md border border-wedding-gold/10 transform transition-transform hover:scale-[1.01] duration-300">
-              <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">Bride's Story</h3>
+              <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">Bride&apos;s Story</h3>
               
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Bride's images */}
@@ -158,7 +158,7 @@ const StoryDisplay = ({
           
           {coupleStory.groomStory && (
             <div className="bg-secondary/10 p-8 rounded-lg shadow-md border border-wedding-gold/10 transform transition-transform hover:scale-[1.01] duration-300">
-              <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">Groom's Story</h3>
+              <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">Groom&apos;s Story</h3>
               
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Groom's story text */}
