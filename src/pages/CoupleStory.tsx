@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from "@/components/layout/Navbar";
@@ -24,28 +25,60 @@ const CoupleStory = () => {
   
   const [isEditingStory, setIsEditingStory] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  
+  // Load story images with error handling
   const [storyImages, setStoryImages] = useState<StoryImage[]>(() => {
-    const savedImages = localStorage.getItem("storyImages");
-    return savedImages ? JSON.parse(savedImages) : [];
+    try {
+      const savedImages = localStorage.getItem("storyImages");
+      return savedImages ? JSON.parse(savedImages) : [];
+    } catch (error) {
+      console.error("Error loading story images:", error);
+      return [];
+    }
   });
+  
+  // Load comments with error handling
   const [comments, setComments] = useState<Comment[]>(() => {
-    const savedComments = localStorage.getItem("storyComments");
-    return savedComments ? JSON.parse(savedComments) : [];
+    try {
+      const savedComments = localStorage.getItem("storyComments");
+      return savedComments ? JSON.parse(savedComments) : [];
+    } catch (error) {
+      console.error("Error loading comments:", error);
+      return [];
+    }
   });
+  
+  // Load couple story with error handling
   const [coupleStory, setCoupleStory] = useState(() => {
-    const savedStory = localStorage.getItem("coupleStory");
-    return savedStory ? JSON.parse(savedStory) : {
-      title: "Our Love Story",
-      content: "Share your story here! How you met, your journey together, and your plans for the future.",
-      hashtag: "OurWedding",
-      weddingDate: "",
-      weddingTime: "",
-      venue: "Beautiful Wedding Venue",
-      loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
-      selectedIcon: "heart",
-      brideStory: "",
-      groomStory: ""
-    };
+    try {
+      const savedStory = localStorage.getItem("coupleStory");
+      return savedStory ? JSON.parse(savedStory) : {
+        title: "Our Love Story",
+        content: "Share your story here! How you met, your journey together, and your plans for the future.",
+        hashtag: "OurWedding",
+        weddingDate: "",
+        weddingTime: "",
+        venue: "Beautiful Wedding Venue",
+        loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
+        selectedIcon: "heart",
+        brideStory: "",
+        groomStory: ""
+      };
+    } catch (error) {
+      console.error("Error loading couple story:", error);
+      return {
+        title: "Our Love Story",
+        content: "Share your story here! How you met, your journey together, and your plans for the future.",
+        hashtag: "OurWedding",
+        weddingDate: "",
+        weddingTime: "",
+        venue: "Beautiful Wedding Venue",
+        loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
+        selectedIcon: "heart",
+        brideStory: "",
+        groomStory: ""
+      };
+    }
   });
   
   const [showBankForm, setShowBankForm] = useState(false);
@@ -58,12 +91,26 @@ const CoupleStory = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Save story images with error handling
   useEffect(() => {
-    localStorage.setItem("storyImages", JSON.stringify(storyImages));
+    try {
+      // If there are too many images, trim the list to prevent localStorage quota issues
+      const imagesToSave = storyImages.length > 20 ? storyImages.slice(-20) : storyImages;
+      localStorage.setItem("storyImages", JSON.stringify(imagesToSave));
+    } catch (error) {
+      console.error("Error saving story images:", error);
+      toast.error("Failed to save images. Try removing some old images.");
+    }
   }, [storyImages]);
 
+  // Save comments with error handling
   useEffect(() => {
-    localStorage.setItem("storyComments", JSON.stringify(comments));
+    try {
+      localStorage.setItem("storyComments", JSON.stringify(comments));
+    } catch (error) {
+      console.error("Error saving comments:", error);
+      toast.error("Failed to save comments.");
+    }
   }, [comments]);
 
   if (!isAuthenticated) {

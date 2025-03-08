@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -72,6 +71,64 @@ interface StoryEditorProps {
   onStoryUpdated: () => void;
 }
 
+// Helper function to compress image
+const compressImage = (file: File, maxWidth = 800, maxHeight = 600): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const img = new Image();
+      img.onload = () => {
+        // Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+        
+        // Create canvas and draw image
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to data URL with reduced quality
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressedDataUrl);
+      };
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'));
+      };
+      
+      if (typeof readerEvent.target?.result === 'string') {
+        img.src = readerEvent.target.result;
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+    
+    reader.readAsDataURL(file);
+  });
+};
+
 const StoryEditor = ({
   coupleStory,
   storyImages,
@@ -81,6 +138,7 @@ const StoryEditor = ({
 }: StoryEditorProps) => {
   const [imageCaption, setImageCaption] = useState("");
   const [currentStoryType, setCurrentStoryType] = useState<'general' | 'bride' | 'groom'>('general');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const brideFileInputRef = useRef<HTMLInputElement>(null);
@@ -118,58 +176,97 @@ const StoryEditor = ({
       groomStory: values.groomStory,
     };
     setCoupleStory(newStory);
-    localStorage.setItem("coupleStory", JSON.stringify(newStory));
-    onStoryUpdated();
-    toast.success("Your story has been saved!");
+    
+    try {
+      localStorage.setItem("coupleStory", JSON.stringify(newStory));
+      onStoryUpdated();
+      toast.success("Your story has been saved!");
+    } catch (error) {
+      toast.error("Failed to save story. Try reducing content size.");
+      console.error("Error saving story:", error);
+    }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, storyType: 'general' | 'bride' | 'groom' = 'general') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, storyType: 'general' | 'bride' | 'groom' = 'general') => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    setIsUploading(true);
 
-    // Convert the file to a data URL
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const newImage: StoryImage = {
-          id: crypto.randomUUID(),
-          url: event.target.result as string,
-          caption: imageCaption,
-          storyType: storyType
-        };
-        setStoryImages(prev => [...prev, newImage]);
+    try {
+      // Compress the image
+      const compressedDataUrl = await compressImage(file, 800, 600);
+      
+      // Add the compressed image
+      const newImage: StoryImage = {
+        id: crypto.randomUUID(),
+        url: compressedDataUrl,
+        caption: imageCaption,
+        storyType: storyType
+      };
+
+      // Try to update the images safely with error handling for localStorage
+      try {
+        setStoryImages(prev => {
+          const newImages = [...prev, newImage];
+          // Optional: If we have too many images, remove the oldest ones
+          if (newImages.length > 20) {
+            return newImages.slice(-20);
+          }
+          return newImages;
+        });
+        
         setImageCaption("");
         toast.success(`Image added to ${storyType === 'general' ? 'your story' : 
-                      storyType === 'bride' ? 'bride\'s story' : 'groom\'s story'}!`);
+                     storyType === 'bride' ? 'bride\'s story' : 'groom\'s story'}!`);
+      } catch (err) {
+        console.error("Failed to update images:", err);
+        toast.error("Failed to add image. Storage limit may be reached.");
       }
-    };
-    reader.readAsDataURL(file);
-    
-    // Clear the file input
-    e.target.value = "";
+    } catch (error) {
+      console.error("Error processing image:", error);
+      toast.error("Failed to process image");
+    } finally {
+      setIsUploading(false);
+      // Clear the file input
+      e.target.value = "";
+    }
   };
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Convert the file to a data URL
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const updatedStory = {
-          ...coupleStory,
-          bannerImage: event.target.result as string
-        };
-        setCoupleStory(updatedStory);
-        toast.success("Banner image updated!");
-      }
-    };
-    reader.readAsDataURL(file);
     
-    // Clear the file input
-    if (bannerInputRef.current) {
-      bannerInputRef.current.value = "";
+    setIsUploading(true);
+
+    try {
+      // Compress the banner image (with higher quality since it's important)
+      const compressedDataUrl = await compressImage(file, 1200, 400);
+      
+      // Update the story with the compressed banner
+      const updatedStory = {
+        ...coupleStory,
+        bannerImage: compressedDataUrl
+      };
+      
+      setCoupleStory(updatedStory);
+      
+      try {
+        localStorage.setItem("coupleStory", JSON.stringify(updatedStory));
+        toast.success("Banner image updated!");
+      } catch (error) {
+        toast.error("Failed to save banner. Try reducing image size.");
+        console.error("Error saving banner:", error);
+      }
+    } catch (error) {
+      console.error("Error processing banner:", error);
+      toast.error("Failed to process banner image");
+    } finally {
+      setIsUploading(false);
+      // Clear the file input
+      if (bannerInputRef.current) {
+        bannerInputRef.current.value = "";
+      }
     }
   };
 
@@ -184,8 +281,19 @@ const StoryEditor = ({
       bannerImage: undefined
     };
     setCoupleStory(updatedStory);
-    toast.success("Banner image removed");
+    
+    try {
+      localStorage.setItem("coupleStory", JSON.stringify(updatedStory));
+      toast.success("Banner image removed");
+    } catch (error) {
+      toast.error("Failed to update story settings");
+      console.error("Error removing banner:", error);
+    }
   };
+
+  const managedStoryImageCount = storyImages.length > 20 
+    ? ` (${storyImages.length}/20 - Consider removing some images to save space)`
+    : ` (${storyImages.length}/20)`;
 
   return (
     <div className="space-y-6">
@@ -193,7 +301,7 @@ const StoryEditor = ({
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="basic">Basic Information</TabsTrigger>
           <TabsTrigger value="stories">Bride & Groom Stories</TabsTrigger>
-          <TabsTrigger value="images">Images</TabsTrigger>
+          <TabsTrigger value="images">Images{managedStoryImageCount}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-4">
@@ -227,9 +335,16 @@ const StoryEditor = ({
                             type="button" 
                             variant="outline" 
                             onClick={() => bannerInputRef.current?.click()}
+                            disabled={isUploading}
                           >
-                            <Camera className="mr-2 h-4 w-4" />
-                            Upload Banner Image
+                            {isUploading ? (
+                              "Processing..."
+                            ) : (
+                              <>
+                                <Camera className="mr-2 h-4 w-4" />
+                                Upload Banner Image
+                              </>
+                            )}
                           </Button>
                           <input
                             type="file"
@@ -447,9 +562,14 @@ const StoryEditor = ({
                           variant="outline" 
                           size="sm"
                           onClick={() => brideFileInputRef.current?.click()}
+                          disabled={isUploading}
                         >
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          Add Photo
+                          {isUploading ? "Processing..." : (
+                            <>
+                              <ImageIcon className="mr-2 h-4 w-4" />
+                              Add Photo
+                            </>
+                          )}
                         </Button>
                         <input
                           type="file"
@@ -514,9 +634,14 @@ const StoryEditor = ({
                           variant="outline" 
                           size="sm"
                           onClick={() => groomFileInputRef.current?.click()}
+                          disabled={isUploading}
                         >
-                          <ImageIcon className="mr-2 h-4 w-4" />
-                          Add Photo
+                          {isUploading ? "Processing..." : (
+                            <>
+                              <ImageIcon className="mr-2 h-4 w-4" />
+                              Add Photo
+                            </>
+                          )}
                         </Button>
                         <input
                           type="file"
@@ -578,9 +703,14 @@ const StoryEditor = ({
                 type="button" 
                 variant="outline" 
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
               >
-                <Camera className="mr-2 h-4 w-4" />
-                Upload Image
+                {isUploading ? "Processing..." : (
+                  <>
+                    <Camera className="mr-2 h-4 w-4" />
+                    Upload Image
+                  </>
+                )}
               </Button>
               <input
                 type="file"
