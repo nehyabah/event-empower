@@ -107,7 +107,7 @@ const UserHomepage = () => {
     toast.success("RSVP link copied to clipboard!");
   };
 
-  // Add the missing functions
+  // Update the generate guest invite link function to produce a properly formatted URL
   const generateGuestInviteLink = (guest: Guest) => {
     setSelectedGuest(guest);
     const baseUrl = window.location.origin;

@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,16 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 const InvitationPage = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const { code } = useParams();
+  const queryParams = new URLSearchParams(location.search);
+  
+  // Extract guest details from URL if available
+  const guestNameFromURL = queryParams.get("name") || "";
+  const guestEmailFromURL = queryParams.get("email") || "";
+  
+  const [name, setName] = useState(guestNameFromURL);
+  const [email, setEmail] = useState(guestEmailFromURL);
   const [phone, setPhone] = useState("");
   const [attending, setAttending] = useState<boolean | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -27,6 +35,15 @@ const InvitationPage = () => {
   const firstName = userEmail.split('@')[0].split('.')[0];
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   const coupleName = `${capitalizedName} & Partner`;
+  
+  // Check if an invitation code was provided
+  useEffect(() => {
+    if (code) {
+      // In a real app, you would fetch guest details from a database using this code
+      console.log("Invitation code:", code);
+      toast.info("Loading invitation details...");
+    }
+  }, [code]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +71,15 @@ const InvitationPage = () => {
     // Add to guest list in localStorage
     const existingGuests = localStorage.getItem("weddingGuests");
     const guestList = existingGuests ? JSON.parse(existingGuests) : [];
-    guestList.push(guest);
+    
+    // Check if guest already exists (by email) and update rather than adding duplicate
+    const existingGuestIndex = guestList.findIndex((g: any) => g.email === email);
+    if (existingGuestIndex >= 0) {
+      guestList[existingGuestIndex] = guest;
+    } else {
+      guestList.push(guest);
+    }
+    
     localStorage.setItem("weddingGuests", JSON.stringify(guestList));
     
     // Show success message

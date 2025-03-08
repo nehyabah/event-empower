@@ -114,6 +114,7 @@ const App = () => {
               } />
               <Route path="/features" element={<Features />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/invitation" element={<InvitationPage />} />
               <Route path="/invitation/:code" element={<InvitationPage />} />
               
               {/* Authenticated user homepage - client only */}
