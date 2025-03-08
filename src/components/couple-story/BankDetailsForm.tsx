@@ -31,7 +31,11 @@ const bankDetailSchema = z.object({
   description: z.string().optional(),
 });
 
-const BankDetailsForm = () => {
+interface BankDetailsFormProps {
+  onSuccess?: () => void;
+}
+
+const BankDetailsForm = ({ onSuccess }: BankDetailsFormProps) => {
   const { addBankDetail } = useWishlist();
 
   const form = useForm<z.infer<typeof bankDetailSchema>>({
@@ -55,6 +59,11 @@ const BankDetailsForm = () => {
       description: values.description,
     });
     form.reset();
+    
+    // Call the onSuccess callback if provided
+    if (onSuccess) {
+      onSuccess();
+    }
   };
 
   return (
@@ -129,7 +138,9 @@ const BankDetailsForm = () => {
             </FormItem>
           )}
         />
-        <Button type="submit">Add Bank Detail</Button>
+        <div className="flex justify-end gap-2">
+          <Button type="submit">Add Bank Detail</Button>
+        </div>
       </form>
     </Form>
   );

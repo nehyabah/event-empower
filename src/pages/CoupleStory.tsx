@@ -10,7 +10,7 @@ import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
 import { toast } from "sonner";
 import { useWishlist } from "@/context/useWishlist";
-import { Share2 } from "lucide-react";
+import { Share2, Plus, X } from "lucide-react";
 
 // Import the new components
 import StoryEditor, { StoryImage } from "@/components/couple-story/StoryEditor";
@@ -41,6 +41,9 @@ const CoupleStory = () => {
       content: "Share your story here! How you met, your journey together, and your plans for the future."
     };
   });
+  
+  // State for bank details form visibility
+  const [showBankForm, setShowBankForm] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -143,15 +146,38 @@ const CoupleStory = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="bank-details">
-            <Card>
-              <CardContent>
-                <BankDetailsForm />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="space-y-2">
+          <TabsContent value="bank-details" className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-medium">Your Bank Details</h2>
+              <Button
+                onClick={() => setShowBankForm(!showBankForm)}
+                variant="outline"
+                size="sm"
+              >
+                {showBankForm ? (
+                  <>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New Bank Detail
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {showBankForm && (
+              <Card className="mb-6">
+                <CardContent className="pt-6">
+                  <BankDetailsForm onSuccess={() => setShowBankForm(false)} />
+                </CardContent>
+              </Card>
+            )}
+            
+            {bankDetails.length > 0 ? (
+              <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
                 {bankDetails.map((detail, index) => (
                   <BankDetailCard
                     key={index}
@@ -161,8 +187,16 @@ const CoupleStory = () => {
                     isEditable={true}
                   />
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">
+                    No bank details added yet. Add your first bank detail to receive gifts.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
