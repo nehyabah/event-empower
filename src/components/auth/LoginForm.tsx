@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import { useNavigate } from "react-router-dom";
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  userType: z.enum(["client", "vendor"]).default("client"),
+  userType: z.enum(["client", "vendor", "planner"]).default("client"),
 });
 
 type LoginFormValues = z.infer<typeof formSchema>;
@@ -63,7 +64,13 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       
       if (onSuccess) onSuccess();
       
-      navigate("/home");
+      if (data.userType === "planner") {
+        navigate("/planner-home");
+      } else if (data.userType === "vendor") {
+        navigate("/vendor-home");
+      } else {
+        navigate("/home");
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed", {
@@ -122,7 +129,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
               <FormItem className="space-y-3">
                 <FormLabel>I am a:</FormLabel>
                 <FormControl>
-                  <div className="flex space-x-4">
+                  <div className="flex flex-wrap space-x-4">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="radio"
@@ -132,6 +139,16 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
                         onChange={() => field.onChange("client")}
                       />
                       <span>Client (Couple)</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        className="form-radio h-4 w-4 text-primary"
+                        value="planner"
+                        checked={field.value === "planner"}
+                        onChange={() => field.onChange("planner")}
+                      />
+                      <span>Planner</span>
                     </label>
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input

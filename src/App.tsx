@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import UserHomepage from "./pages/UserHomepage";
 import VendorHomepage from "./pages/VendorHomepage";
+import PlannerHomepage from "./pages/PlannerHomepage";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Vendors from "./pages/Vendors";
@@ -19,6 +20,9 @@ import VendorProfile from "./pages/VendorProfile";
 import InvitationPage from "./pages/InvitationPage";
 import NotFound from "./pages/NotFound";
 import { TodoProvider } from "./context/TodoContext";
+import PlannerTasks from "./pages/PlannerTasks";
+import PlannerCalendar from "./pages/PlannerCalendar";
+import PlannerClients from "./pages/PlannerClients";
 
 const queryClient = new QueryClient();
 
@@ -28,9 +32,16 @@ interface ProtectedRouteProps {
   requireAuth: boolean;
   vendorOnly?: boolean;
   clientOnly?: boolean;
+  plannerOnly?: boolean;
 }
 
-const ProtectedRoute = ({ children, requireAuth, vendorOnly = false, clientOnly = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ 
+  children, 
+  requireAuth, 
+  vendorOnly = false, 
+  clientOnly = false,
+  plannerOnly = false 
+}: ProtectedRouteProps) => {
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
   const userType = localStorage.getItem("userType");
   
@@ -41,16 +52,33 @@ const ProtectedRoute = ({ children, requireAuth, vendorOnly = false, clientOnly 
   if (!requireAuth && isAuthenticated) {
     if (userType === "vendor") {
       return <Navigate to="/vendor-home" replace />;
+    } else if (userType === "planner") {
+      return <Navigate to="/planner-home" replace />;
     }
     return <Navigate to="/home" replace />;
   }
   
   if (vendorOnly && userType !== "vendor") {
+    if (userType === "planner") {
+      return <Navigate to="/planner-home" replace />;
+    }
     return <Navigate to="/home" replace />;
   }
   
-  if (clientOnly && userType === "vendor") {
-    return <Navigate to="/vendor-home" replace />;
+  if (clientOnly && userType !== "client") {
+    if (userType === "vendor") {
+      return <Navigate to="/vendor-home" replace />;
+    } else if (userType === "planner") {
+      return <Navigate to="/planner-home" replace />;
+    }
+    return <Navigate to="/home" replace />;
+  }
+  
+  if (plannerOnly && userType !== "planner") {
+    if (userType === "vendor") {
+      return <Navigate to="/vendor-home" replace />;
+    }
+    return <Navigate to="/home" replace />;
   }
   
   return <>{children}</>;
@@ -102,6 +130,13 @@ const App = () => {
                 </ProtectedRoute>
               } />
               
+              {/* Authenticated planner homepage - planner only */}
+              <Route path="/planner-home" element={
+                <ProtectedRoute requireAuth={true} plannerOnly={true}>
+                  <PlannerHomepage />
+                </ProtectedRoute>
+              } />
+              
               {/* Protected routes - primarily for clients */}
               <Route path="/dashboard" element={
                 <ProtectedRoute requireAuth={true} clientOnly={true}>
@@ -121,6 +156,23 @@ const App = () => {
               <Route path="/todo-lists" element={
                 <ProtectedRoute requireAuth={true} clientOnly={true}>
                   <TodoLists />
+                </ProtectedRoute>
+              } />
+              
+              {/* Protected routes - planner only */}
+              <Route path="/planner-tasks" element={
+                <ProtectedRoute requireAuth={true} plannerOnly={true}>
+                  <PlannerTasks />
+                </ProtectedRoute>
+              } />
+              <Route path="/planner-calendar" element={
+                <ProtectedRoute requireAuth={true} plannerOnly={true}>
+                  <PlannerCalendar />
+                </ProtectedRoute>
+              } />
+              <Route path="/clients" element={
+                <ProtectedRoute requireAuth={true} plannerOnly={true}>
+                  <PlannerClients />
                 </ProtectedRoute>
               } />
               

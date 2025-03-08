@@ -1,5 +1,5 @@
 
-import { Home, Calendar, Users, BookOpen, Filter } from "lucide-react";
+import { Home, Calendar, Users, BookOpen, Filter, Briefcase, CheckSquare } from "lucide-react";
 import NavLink from "./NavLink";
 
 interface MobileNavProps {
@@ -9,6 +9,10 @@ interface MobileNavProps {
 
 const MobileNav = ({ isAuthenticated, isOpen }: MobileNavProps) => {
   if (!isOpen) return null;
+  
+  const userType = localStorage.getItem("userType");
+  const isVendor = userType === "vendor";
+  const isPlanner = userType === "planner";
 
   return (
     <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg border-b border-border/50 shadow-elegant animate-fade-in-down">
@@ -27,6 +31,36 @@ const MobileNav = ({ isAuthenticated, isOpen }: MobileNavProps) => {
             </NavLink>
             <NavLink to="/vendors" className="px-4 py-2" showIcon icon={<Users className="w-5 h-5" />}>
               Vendors
+            </NavLink>
+          </>
+        ) : isVendor ? (
+          <>
+            <NavLink to="/vendor-home" className="px-4 py-2" showIcon icon={<Briefcase className="w-5 h-5" />}>
+              Dashboard
+            </NavLink>
+            <NavLink to="/vendors" className="px-4 py-2" showIcon icon={<Users className="w-5 h-5" />}>
+              Marketplace
+            </NavLink>
+            <NavLink to="/vendor-profile" className="px-4 py-2" showIcon icon={<Users className="w-5 h-5" />}>
+              My Profile
+            </NavLink>
+          </>
+        ) : isPlanner ? (
+          <>
+            <NavLink to="/planner-home" className="px-4 py-2" showIcon icon={<Briefcase className="w-5 h-5" />}>
+              Dashboard
+            </NavLink>
+            <NavLink to="/clients" className="px-4 py-2" showIcon icon={<Users className="w-5 h-5" />}>
+              Clients
+            </NavLink>
+            <NavLink to="/vendors" className="px-4 py-2" showIcon icon={<Users className="w-5 h-5" />}>
+              Vendors
+            </NavLink>
+            <NavLink to="/planner-tasks" className="px-4 py-2" showIcon icon={<CheckSquare className="w-5 h-5" />}>
+              Tasks
+            </NavLink>
+            <NavLink to="/planner-calendar" className="px-4 py-2" showIcon icon={<Calendar className="w-5 h-5" />}>
+              Calendar
             </NavLink>
           </>
         ) : (
