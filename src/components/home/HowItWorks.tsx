@@ -20,7 +20,7 @@ const HowItWorks = () => {
             Simple Steps to Your Perfect Day
           </h2>
           <p className="text-muted-foreground text-lg">
-            Our seamless process helps you plan your dream Nigerian wedding from start to finish.
+            Our seamless process helps you plan your dream celebration from start to finish.
           </p>
         </div>
         
@@ -34,7 +34,7 @@ const HowItWorks = () => {
             </div>
             <h3 className="text-2xl font-medium font-serif mb-4">Create Your Event</h3>
             <p className="text-muted-foreground">
-              Sign up and create your wedding profile. Choose your region, wedding type, and set your date.
+              Sign up and create your celebration profile. Choose your region, ceremony type, and set your date.
             </p>
           </div>
           
@@ -70,10 +70,10 @@ const HowItWorks = () => {
                 Ready to Begin?
               </span>
               <h3 className="text-3xl md:text-4xl font-serif mb-6 font-medium tracking-tight">
-                Start Planning Your Dream Wedding
+                Start Planning Your Dream Celebration
               </h3>
               <p className="text-muted-foreground text-lg mb-8">
-                Join thousands of couples who have planned successful Nigerian weddings with Planr. Our platform understands local traditions, vendors, and timelines.
+                Join thousands of couples who have planned successful ceremonies with Planr. Our platform understands local traditions, vendors, and timelines.
               </p>
               <div className="flex flex-wrap gap-4">
                 <AuthModal 
@@ -98,7 +98,7 @@ const HowItWorks = () => {
               <div className="aspect-square rounded-xl overflow-hidden shadow-elegant">
                 <img 
                   src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=869&q=80" 
-                  alt="Couple planning their wedding"
+                  alt="Couple planning their celebration"
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
                 />
               </div>

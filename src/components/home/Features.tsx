@@ -53,10 +53,10 @@ const Features = () => {
             Features
           </span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif mb-6 font-medium tracking-tight">
-            Curated for Your <span className="text-gradient">Nigerian Wedding</span>
+            Curated for Your <span className="text-gradient">Traditional Celebration</span>
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Our platform embraces Nigerian cultural nuances, providing tools that respect tradition 
+            Our platform embraces cultural nuances, providing tools that respect tradition 
             while offering modern planning solutions.
           </p>
         </div>
@@ -65,14 +65,14 @@ const Features = () => {
           <FeatureCard
             icon={<MapPin className="w-6 h-6" />}
             title="Region-Specific Planning"
-            description="Find vendors and event details tailored to your specific Nigerian region, from Lagos to Abuja and beyond."
+            description="Find vendors and event details tailored to your specific region, from Lagos to Abuja and beyond."
             className="animate-fade-in-up"
           />
           
           <FeatureCard
             icon={<Calendar className="w-6 h-6" />}
             title="Cultural Event Templates"
-            description="Access templates for traditional engagement, white wedding, and other culturally significant ceremonies."
+            description="Access templates for traditional engagement, ceremonial events, and other culturally significant celebrations."
             className="animate-fade-in-up"
             iconClassName="bg-wedding-sage/20 text-wedding-sage"
             style={{ animationDelay: "100ms" }}
@@ -81,7 +81,7 @@ const Features = () => {
           <FeatureCard
             icon={<Users className="w-6 h-6" />}
             title="Vendor Directory"
-            description="Connect with trusted local vendors who understand Nigerian wedding traditions and expectations."
+            description="Connect with trusted local vendors who understand traditional customs and expectations."
             className="animate-fade-in-up"
             iconClassName="bg-wedding-blush/20 text-wedding-burgundy"
             style={{ animationDelay: "200ms" }}
@@ -90,7 +90,7 @@ const Features = () => {
           <FeatureCard
             icon={<ListChecks className="w-6 h-6" />}
             title="Smart Task Management"
-            description="Auto-generated task lists based on your wedding type with timelines customized for Nigerian events."
+            description="Auto-generated task lists based on your celebration type with timelines customized for traditional events."
             className="animate-fade-in-up"
             iconClassName="bg-wedding-burgundy/20 text-wedding-burgundy"
             style={{ animationDelay: "300ms" }}
@@ -99,7 +99,7 @@ const Features = () => {
           <FeatureCard
             icon={<Camera className="w-6 h-6" />}
             title="Photo Collections"
-            description="Create and share beautiful galleries of your wedding preparations and special day with family and friends."
+            description="Create and share beautiful galleries of your celebration preparations and special day with family and friends."
             className="animate-fade-in-up"
             iconClassName="bg-wedding-navy/20 text-wedding-navy"
             style={{ animationDelay: "400ms" }}
@@ -108,7 +108,7 @@ const Features = () => {
           <FeatureCard
             icon={<BarChart4 className="w-6 h-6" />}
             title="Budget Management"
-            description="Track expenses, manage vendor payments, and stay on budget with tools designed for Nigerian wedding costs."
+            description="Track expenses, manage vendor payments, and stay on budget with tools designed for ceremonial event costs."
             className="animate-fade-in-up"
             iconClassName="bg-wedding-gold/20 text-wedding-gold"
             style={{ animationDelay: "500ms" }}

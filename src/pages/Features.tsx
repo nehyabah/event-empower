@@ -14,10 +14,10 @@ const FeaturesPage = () => {
         <div className="container max-w-4xl mx-auto px-4 py-20">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-serif mb-6 font-medium tracking-tight">
-              Elegant <span className="text-gradient">Features</span> for Your Dream Wedding
+              Elegant <span className="text-gradient">Features</span> for Your Dream Celebration
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-              Discover how Planr makes planning Nigerian weddings simpler, 
+              Discover how Planr makes planning cultural ceremonies simpler, 
               more organized, and culturally appropriate with our thoughtfully designed features.
             </p>
             <div className="mt-8">
