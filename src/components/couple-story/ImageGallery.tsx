@@ -25,6 +25,13 @@ const ImageGallery = ({
     ? images 
     : images.filter(img => img.storyType === storyType);
 
+  useEffect(() => {
+    // Cleanup function to re-enable scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   if (filteredImages.length === 0) {
     return null;
   }
