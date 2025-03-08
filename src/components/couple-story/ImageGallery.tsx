@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StoryImage } from "./StoryEditor";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,16 @@ import { Button } from "@/components/ui/button";
 interface ImageGalleryProps {
   images: StoryImage[];
   storyType?: 'general' | 'bride' | 'groom';
+  onRemove?: (id: string) => void;
+  isEditMode?: boolean;
 }
 
-const ImageGallery = ({ images, storyType = 'general' }: ImageGalleryProps) => {
+const ImageGallery = ({ 
+  images, 
+  storyType = 'general', 
+  onRemove,
+  isEditMode = false
+}: ImageGalleryProps) => {
   const [selectedImage, setSelectedImage] = useState<StoryImage | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -66,18 +73,35 @@ const ImageGallery = ({ images, storyType = 'general' }: ImageGalleryProps) => {
         {filteredImages.map((image, index) => (
           <div 
             key={image.id} 
-            className="border rounded-md overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => openLightbox(image, index)}
+            className="relative group rounded-md overflow-hidden shadow-md border border-wedding-gold/20 hover:shadow-lg transition-all duration-300"
           >
-            <div className="h-64 overflow-hidden">
+            <div 
+              className="h-64 overflow-hidden cursor-pointer"
+              onClick={() => openLightbox(image, index)}
+            >
               <img
                 src={image.url}
-                alt={image.caption || "Our story"}
-                className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+                alt={image.caption || `${storyType} story image`}
+                className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
               />
             </div>
+            {isEditMode && onRemove && (
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(image.id);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
             {image.caption && (
-              <p className="p-3 text-sm text-center bg-gray-50 border-t">{image.caption}</p>
+              <p className="p-3 text-sm text-center bg-secondary/20 border-t border-wedding-gold/20">
+                {image.caption}
+              </p>
             )}
           </div>
         ))}
@@ -86,7 +110,7 @@ const ImageGallery = ({ images, storyType = 'general' }: ImageGalleryProps) => {
       {/* Lightbox */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fade-in"
           onKeyDown={handleKeyDown}
           tabIndex={0}
           onClick={closeLightbox}
@@ -120,10 +144,10 @@ const ImageGallery = ({ images, storyType = 'general' }: ImageGalleryProps) => {
               <img 
                 src={selectedImage.url} 
                 alt={selectedImage.caption || "Gallery image"} 
-                className="max-h-[80vh] max-w-full object-contain rounded" 
+                className="max-h-[80vh] max-w-full object-contain rounded shadow-2xl" 
               />
               {selectedImage.caption && (
-                <p className="text-white text-center mt-4 bg-black/20 p-2 rounded w-full">
+                <p className="text-white text-center mt-4 bg-black/30 p-2 rounded w-full backdrop-blur-sm">
                   {selectedImage.caption}
                 </p>
               )}

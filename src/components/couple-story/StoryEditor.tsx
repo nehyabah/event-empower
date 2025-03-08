@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -82,6 +83,8 @@ const StoryEditor = ({
   const [currentStoryType, setCurrentStoryType] = useState<'general' | 'bride' | 'groom'>('general');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const brideFileInputRef = useRef<HTMLInputElement>(null);
+  const groomFileInputRef = useRef<HTMLInputElement>(null);
 
   // Story form
   const storyForm = useForm<z.infer<typeof storySchema>>({
@@ -120,7 +123,7 @@ const StoryEditor = ({
     toast.success("Your story has been saved!");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, storyType: 'general' | 'bride' | 'groom' = 'general') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -132,20 +135,18 @@ const StoryEditor = ({
           id: crypto.randomUUID(),
           url: event.target.result as string,
           caption: imageCaption,
-          storyType: currentStoryType
+          storyType: storyType
         };
         setStoryImages(prev => [...prev, newImage]);
         setImageCaption("");
-        toast.success(`Image added to ${currentStoryType === 'general' ? 'your story' : 
-                      currentStoryType === 'bride' ? 'bride\'s story' : 'groom\'s story'}!`);
+        toast.success(`Image added to ${storyType === 'general' ? 'your story' : 
+                      storyType === 'bride' ? 'bride\'s story' : 'groom\'s story'}!`);
       }
     };
     reader.readAsDataURL(file);
     
     // Clear the file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    e.target.value = "";
   };
 
   const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -430,23 +431,38 @@ const StoryEditor = ({
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium">Bride's Photos</h4>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setCurrentStoryType('bride');
-                          fileInputRef.current?.click();
-                        }}
-                      >
-                        <ImageIcon className="mr-2 h-4 w-4" />
-                        Add Photo
-                      </Button>
+                      <div className="space-x-2">
+                        <Input 
+                          type="text" 
+                          placeholder="Caption (optional)"
+                          value={currentStoryType === 'bride' ? imageCaption : ''}
+                          onChange={(e) => setCurrentStoryType('bride') || setImageCaption(e.target.value)}
+                          className="w-40 text-xs inline-block"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => brideFileInputRef.current?.click()}
+                        >
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          Add Photo
+                        </Button>
+                        <input
+                          type="file"
+                          ref={brideFileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, 'bride')}
+                        />
+                      </div>
                     </div>
                     <div className="bg-muted/30 rounded-md p-3">
                       <ImageGallery 
                         images={storyImages} 
-                        storyType="bride" 
+                        storyType="bride"
+                        onRemove={removeImage}
+                        isEditMode={true}
                       />
                       {!storyImages.some(img => img.storyType === 'bride') && (
                         <p className="text-center text-sm text-muted-foreground py-4">
@@ -479,23 +495,38 @@ const StoryEditor = ({
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium">Groom's Photos</h4>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setCurrentStoryType('groom');
-                          fileInputRef.current?.click();
-                        }}
-                      >
-                        <ImageIcon className="mr-2 h-4 w-4" />
-                        Add Photo
-                      </Button>
+                      <div className="space-x-2">
+                        <Input 
+                          type="text" 
+                          placeholder="Caption (optional)"
+                          value={currentStoryType === 'groom' ? imageCaption : ''}
+                          onChange={(e) => setCurrentStoryType('groom') || setImageCaption(e.target.value)}
+                          className="w-40 text-xs inline-block"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => groomFileInputRef.current?.click()}
+                        >
+                          <ImageIcon className="mr-2 h-4 w-4" />
+                          Add Photo
+                        </Button>
+                        <input
+                          type="file"
+                          ref={groomFileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, 'groom')}
+                        />
+                      </div>
                     </div>
                     <div className="bg-muted/30 rounded-md p-3">
                       <ImageGallery 
                         images={storyImages} 
                         storyType="groom" 
+                        onRemove={removeImage}
+                        isEditMode={true}
                       />
                       {!storyImages.some(img => img.storyType === 'groom') && (
                         <p className="text-center text-sm text-muted-foreground py-4">
@@ -507,7 +538,7 @@ const StoryEditor = ({
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button type="submit">Save Stories</Button>
+                <Button type="submit" className="bg-wedding-gold hover:bg-wedding-gold/90">Save Stories</Button>
               </div>
             </form>
           </Form>
@@ -593,7 +624,7 @@ const StoryEditor = ({
         ref={fileInputRef}
         className="hidden"
         accept="image/*"
-        onChange={handleImageUpload}
+        onChange={(e) => handleImageUpload(e, currentStoryType)}
       />
     </div>
   );
