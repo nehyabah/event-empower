@@ -134,19 +134,24 @@ const StoryDisplay = ({
           {coupleStory.brideStory && (
             <div className="bg-secondary/10 p-8 rounded-lg shadow-md border border-wedding-gold/10 transform transition-transform hover:scale-[1.01] duration-300">
               <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">Bride's Story</h3>
-              <div className="prose max-w-none">
-                {coupleStory.brideStory.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
-                ))}
-              </div>
               
-              {/* Bride's images */}
-              <div className="mt-8">
-                <h4 className="text-lg text-center mb-4 font-serif text-wedding-gold/80">Bride's Photos</h4>
-                <ImageGallery 
-                  images={storyImages}
-                  storyType="bride"
-                />
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Bride's images */}
+                <div className="md:w-2/5">
+                  <ImageGallery 
+                    images={storyImages}
+                    storyType="bride"
+                    displayMode="sideBySide"
+                    isEditMode={false}
+                  />
+                </div>
+                
+                {/* Bride's story text */}
+                <div className="md:w-3/5 prose max-w-none">
+                  {coupleStory.brideStory.split('\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -154,19 +159,24 @@ const StoryDisplay = ({
           {coupleStory.groomStory && (
             <div className="bg-secondary/10 p-8 rounded-lg shadow-md border border-wedding-gold/10 transform transition-transform hover:scale-[1.01] duration-300">
               <h3 className="text-2xl font-serif text-wedding-gold mb-6 text-center font-light tracking-wide">Groom's Story</h3>
-              <div className="prose max-w-none">
-                {coupleStory.groomStory.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
-                ))}
-              </div>
               
-              {/* Groom's images */}
-              <div className="mt-8">
-                <h4 className="text-lg text-center mb-4 font-serif text-wedding-gold/80">Groom's Photos</h4>
-                <ImageGallery 
-                  images={storyImages}
-                  storyType="groom"
-                />
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Groom's story text */}
+                <div className="md:w-3/5 prose max-w-none">
+                  {coupleStory.groomStory.split('\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
+                  ))}
+                </div>
+                
+                {/* Groom's images */}
+                <div className="md:w-2/5">
+                  <ImageGallery 
+                    images={storyImages}
+                    storyType="groom"
+                    displayMode="sideBySide"
+                    isEditMode={false}
+                  />
+                </div>
               </div>
             </div>
           )}
