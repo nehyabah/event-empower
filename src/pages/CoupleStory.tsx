@@ -9,9 +9,8 @@ import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
 import { toast } from "sonner";
 import { useWishlist } from "@/context/useWishlist";
-import { Share2, Plus, X, Gift, ExternalLink } from "lucide-react";
+import { Share2, Plus, X, Gift, ExternalLink, Heart, Edit } from "lucide-react";
 
-// Import the new components
 import StoryEditor, { StoryImage } from "@/components/couple-story/StoryEditor";
 import StoryDisplay from "@/components/couple-story/StoryDisplay";
 import BankDetailsForm from "@/components/couple-story/BankDetailsForm";
@@ -72,30 +71,42 @@ const CoupleStory = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="container pt-24 flex-grow">
+      <div className="container pt-24 flex-grow pb-16">
         <Tabs defaultValue="story" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="story">Our Story</TabsTrigger>
-            <TabsTrigger value="wishlist">Our Wishlist</TabsTrigger>
-            <TabsTrigger value="bank-details">Bank Details</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="story" className="text-base">Our Story</TabsTrigger>
+            <TabsTrigger value="wishlist" className="text-base">Our Wishlist</TabsTrigger>
+            <TabsTrigger value="bank-details" className="text-base">Bank Details</TabsTrigger>
           </TabsList>
           
           <TabsContent value="story" className="space-y-4">
-            <Card>
+            <Card className="border-wedding-gold/20 shadow-md">
               <CardContent className="pt-6">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-6">
                   <div className="flex gap-2">
                     {!isPreviewMode && (
                       <Button 
                         variant={isEditingStory ? "default" : "outline"} 
                         onClick={() => setIsEditingStory(!isEditingStory)}
+                        className={isEditingStory ? "bg-wedding-gold hover:bg-wedding-gold/90" : ""}
                       >
-                        {isEditingStory ? "Cancel Editing" : "Edit Story"}
+                        {isEditingStory ? (
+                          <>
+                            <X className="mr-2 h-4 w-4" />
+                            Cancel Editing
+                          </>
+                        ) : (
+                          <>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Story
+                          </>
+                        )}
                       </Button>
                     )}
                     <Button 
                       variant={isPreviewMode ? "default" : "outline"} 
                       onClick={() => setIsPreviewMode(!isPreviewMode)}
+                      className={isPreviewMode ? "bg-wedding-gold hover:bg-wedding-gold/90" : ""}
                     >
                       {isPreviewMode ? "Exit Preview" : "Preview Story"}
                     </Button>
@@ -106,23 +117,25 @@ const CoupleStory = () => {
                   </Button>
                 </div>
                 
-                {isEditingStory && !isPreviewMode ? (
-                  <StoryEditor 
-                    coupleStory={coupleStory}
-                    storyImages={storyImages}
-                    setStoryImages={setStoryImages}
-                    setCoupleStory={setCoupleStory}
-                    onStoryUpdated={() => setIsEditingStory(false)}
-                  />
-                ) : (
-                  <StoryDisplay 
-                    coupleStory={coupleStory}
-                    storyImages={storyImages}
-                    comments={comments}
-                    setComments={setComments}
-                    isEditingStory={isEditingStory}
-                  />
-                )}
+                <div className={isEditingStory && !isPreviewMode ? "" : "max-w-5xl mx-auto"}>
+                  {isEditingStory && !isPreviewMode ? (
+                    <StoryEditor 
+                      coupleStory={coupleStory}
+                      storyImages={storyImages}
+                      setStoryImages={setStoryImages}
+                      setCoupleStory={setCoupleStory}
+                      onStoryUpdated={() => setIsEditingStory(false)}
+                    />
+                  ) : (
+                    <StoryDisplay 
+                      coupleStory={coupleStory}
+                      storyImages={storyImages}
+                      comments={comments}
+                      setComments={setComments}
+                      isEditingStory={isEditingStory}
+                    />
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,5 +1,5 @@
 
-import { Share2 } from "lucide-react";
+import { Heart, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ImageGallery from "./ImageGallery";
@@ -32,20 +32,41 @@ const StoryDisplay = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-center mb-6">{coupleStory.title}</h2>
+    <div className="space-y-8">
+      <div className="text-center max-w-3xl mx-auto">
+        <h1 className="text-4xl md:text-5xl font-serif mb-6 text-wedding-gold">{coupleStory.title}</h1>
+        
+        <div className="flex items-center justify-center space-x-6 mb-8">
+          <div className="flex items-center space-x-2">
+            <Heart className="text-wedding-gold h-5 w-5" />
+            <span className="text-gray-700">Love Journey</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Calendar className="text-wedding-gold h-5 w-5" />
+            <span className="text-gray-700">Our Date</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <MapPin className="text-wedding-gold h-5 w-5" />
+            <span className="text-gray-700">Our Venue</span>
+          </div>
+        </div>
+        
         <div className="prose max-w-none">
           {coupleStory.content.split('\n').map((paragraph, index) => (
-            <p key={index} className="mb-4 text-gray-700">{paragraph}</p>
+            <p key={index} className="mb-6 text-gray-700 text-lg leading-relaxed">{paragraph}</p>
           ))}
         </div>
       </div>
       
-      <ImageGallery images={storyImages} />
+      <div className="my-12">
+        <h2 className="text-2xl font-serif text-center mb-8 text-wedding-gold">Our Journey in Pictures</h2>
+        <ImageGallery images={storyImages} />
+      </div>
       
       {!isEditingStory && (
-        <CommentsSection comments={comments} setComments={setComments} />
+        <div className="mt-16 border-t pt-8">
+          <CommentsSection comments={comments} setComments={setComments} />
+        </div>
       )}
     </div>
   );
