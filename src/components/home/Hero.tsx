@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/auth/AuthModal";
-import { Heart, CheckCircle2, ArrowRight, Calendar, Camera, Music, Gift, Sparkles, Ring, Cake } from "lucide-react";
+import { Heart, CheckCircle2, ArrowRight, Calendar, Camera, Music, Gift, Sparkles, Diamond, Cake } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import {
@@ -15,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const Hero = () => {
-  // Get the wedding date from localStorage or use default date
   const [date, setDate] = useState<Date | undefined>(
     localStorage.getItem("weddingDate") 
       ? new Date(localStorage.getItem("weddingDate") as string)
@@ -29,14 +27,11 @@ const Hero = () => {
     
     setDate(newDate);
     
-    // Format the date as ISO string and store in localStorage
     const isoDate = newDate.toISOString().split('T')[0];
     localStorage.setItem("weddingDate", isoDate);
     
-    // Show success message
     toast.success("Wedding date updated successfully!");
     
-    // Close the date picker
     setIsEditing(false);
   };
   
@@ -44,7 +39,6 @@ const Hero = () => {
   
   return (
     <section className="relative pt-24 md:pt-32 pb-20 overflow-hidden">
-      {/* Enhanced background elements with improved visibility and positioning */}
       <div className="absolute top-0 right-0 w-3/4 h-2/3 bg-gradient-to-bl from-wedding-gold/30 to-transparent rounded-full blur-3xl animate-pulse-soft" />
       <div className="absolute -bottom-10 left-0 w-2/3 h-2/3 bg-gradient-to-tr from-wedding-sage/30 to-transparent rounded-full blur-3xl animate-pulse-soft" style={{ animationDelay: "2s" }} />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-wedding-blush/15 rounded-full blur-3xl animate-pulse-soft" style={{ animationDelay: "1s" }} />
@@ -72,7 +66,6 @@ const Hero = () => {
             Connect with local vendors, manage tasks, and create unforgettable celebrations.
           </p>
           
-          {/* Wedding Date Display and Edit */}
           <div className="flex flex-col items-center animate-fade-in-up" style={{ animationDelay: "250ms" }}>
             <Popover open={isEditing} onOpenChange={setIsEditing}>
               <div className="flex items-center gap-2 mb-2">
@@ -120,7 +113,6 @@ const Hero = () => {
             </Link>
           </div>
           
-          {/* Enhanced feature highlights with icons */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 pt-6 text-sm text-muted-foreground animate-fade-in-up" style={{ animationDelay: "400ms" }}>
             <span className="flex items-center">
               <CheckCircle2 className="w-4 h-4 mr-2 text-wedding-gold" />
@@ -141,7 +133,6 @@ const Hero = () => {
           </div>
         </div>
         
-        {/* Improved floating elements with clear visibility */}
         <div className="w-full relative h-40 mt-6 pointer-events-none">
           <div className="absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-wedding-gold/20 border border-wedding-gold/30 shadow-lg animate-float z-30" style={{ animationDelay: "0s" }}>
             <div className="absolute inset-0 flex items-center justify-center text-wedding-gold">
@@ -151,7 +142,7 @@ const Hero = () => {
           
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-wedding-burgundy/20 border border-wedding-burgundy/30 shadow-lg animate-float z-30" style={{ animationDelay: "1.5s" }}>
             <div className="absolute inset-0 flex items-center justify-center text-wedding-burgundy">
-              <Ring className="w-6 h-6" />
+              <Diamond className="w-6 h-6" />
             </div>
           </div>
           
@@ -174,7 +165,6 @@ const Hero = () => {
           </div>
         </div>
         
-        {/* Image gallery section with enhanced layout and more images */}
         <div className="pt-8 w-full max-w-5xl mx-auto animate-fade-in-up" style={{ animationDelay: "500ms" }}>
           <div className="glass p-4 rounded-2xl shadow-elegant overflow-hidden">
             <div className="aspect-[16/7] overflow-hidden rounded-xl">
@@ -187,7 +177,6 @@ const Hero = () => {
           </div>
         </div>
         
-        {/* Expanded photo gallery with more dynamic hover effects */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-5xl mx-auto pt-4 animate-fade-in-up" style={{ animationDelay: "600ms" }}>
           <div className="glass rounded-xl overflow-hidden shadow-elegant group">
             <div className="aspect-square overflow-hidden relative">
@@ -262,7 +251,6 @@ const Hero = () => {
           </div>
         </div>
         
-        {/* Bottom gallery with wider images */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-5xl mx-auto pt-4 animate-fade-in-up" style={{ animationDelay: "700ms" }}>
           <div className="glass rounded-xl overflow-hidden shadow-elegant group">
             <div className="aspect-video overflow-hidden relative">
@@ -306,4 +294,3 @@ const Hero = () => {
 };
 
 export default Hero;
-
