@@ -16,12 +16,12 @@ const Hero = () => {
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto space-y-8">
           <span className="inline-flex items-center px-4 py-1.5 text-sm font-medium bg-primary/10 text-primary rounded-full animate-fade-in-up">
             <Heart className="w-4 h-4 mr-2" />
-            <span>Your Dream Celebration Awaits</span>
+            <span>Your Dream Wedding Awaits</span>
           </span>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-serif font-medium tracking-tight animate-fade-in-up" style={{ animationDelay: "100ms" }}>
             Plan Your Perfect <span className="text-gradient relative">
-              Cultural Celebration
+              Wedding
               <svg className="absolute -bottom-3 left-0 w-full h-2 text-wedding-gold/30" viewBox="0 0 100 8" preserveAspectRatio="none">
                 <path d="M0,5 C30,2 70,2 100,5 L100,8 L0,8 Z" fill="currentColor" />
               </svg>
@@ -29,7 +29,7 @@ const Hero = () => {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-            Your all-in-one platform for planning authentic traditional ceremonies.
+            Your all-in-one platform for planning beautiful weddings.
             Connect with local vendors, manage tasks, and create unforgettable celebrations.
           </p>
           
@@ -58,7 +58,7 @@ const Hero = () => {
             </span>
             <span className="flex items-center">
               <CheckCircle2 className="w-4 h-4 mr-2 text-wedding-gold" />
-              Cultural ceremony templates
+              Wedding templates
             </span>
             <span className="flex items-center">
               <CheckCircle2 className="w-4 h-4 mr-2 text-wedding-gold" />
@@ -71,7 +71,7 @@ const Hero = () => {
               <div className="aspect-[16/7] overflow-hidden rounded-xl">
                 <img 
                   src="https://res.cloudinary.com/dfjv35kht/image/upload/v1741387649/pexels-ashleyrae-697740_osqcbb.jpg" 
-                  alt="Traditional celebration"
+                  alt="Wedding celebration"
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
                 />
               </div>

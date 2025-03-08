@@ -141,7 +141,7 @@ const UserHomepage = () => {
               Welcome back, <span className="text-primary">{capitalizedName}</span>!
             </h1>
             <p className="text-muted-foreground text-base md:text-lg max-w-2xl">
-              Continue planning your perfect Nigerian wedding. Here's what needs your attention.
+              Continue planning your perfect wedding. Here's what needs your attention.
             </p>
           </section>
           
@@ -578,8 +578,8 @@ const UserHomepage = () => {
               />
               <TimelineItem 
                 date="6 weeks before" 
-                title="Traditional Outfits" 
-                description="Final fittings for traditional attire" 
+                title="Wedding Outfits" 
+                description="Final fittings for wedding attire" 
                 active={true}
               />
               <TimelineItem 

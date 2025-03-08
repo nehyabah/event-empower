@@ -26,8 +26,8 @@ const VendorHomepage = () => {
   const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
   
   const [upcomingEvents] = useState([
-    { id: 1, name: "Ayomide & Daniel", date: "Jun 15, 2024", type: "Traditional Wedding", status: "confirmed" },
-    { id: 2, name: "Blessing & Michael", date: "Jul 22, 2024", type: "White Wedding", status: "pending" },
+    { id: 1, name: "Ayomide & Daniel", date: "Jun 15, 2024", type: "Wedding", status: "confirmed" },
+    { id: 2, name: "Blessing & Michael", date: "Jul 22, 2024", type: "Wedding", status: "pending" },
     { id: 3, name: "Ngozi & Chijioke", date: "Aug 10, 2024", type: "Engagement", status: "confirmed" }
   ]);
   
