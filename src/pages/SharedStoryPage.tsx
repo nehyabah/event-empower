@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import StoryDisplay from "@/components/couple-story/StoryDisplay";
-import { Comment } from "@/components/couple-story/CommentsSection";
+import CommentsSection, { Comment } from "@/components/couple-story/CommentsSection";
 import { StoryImage } from "@/components/couple-story/StoryEditor";
 import { useWishlist } from "@/context/useWishlist";
 import WishlistItem from "@/components/wishlist/WishlistItem";
