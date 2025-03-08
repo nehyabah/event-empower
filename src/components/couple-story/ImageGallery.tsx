@@ -19,10 +19,14 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
   const openLightbox = (image: StoryImage, index: number) => {
     setSelectedImage(image);
     setCurrentIndex(index);
+    // Prevent scrolling when lightbox is open
+    document.body.style.overflow = 'hidden';
   };
 
   const closeLightbox = () => {
     setSelectedImage(null);
+    // Re-enable scrolling
+    document.body.style.overflow = 'auto';
   };
 
   const goToPrevious = () => {
@@ -35,6 +39,19 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
     const newIndex = (currentIndex + 1) % images.length;
     setSelectedImage(images[newIndex]);
     setCurrentIndex(newIndex);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (!selectedImage) return;
+    
+    if (event.key === 'ArrowLeft') {
+      goToPrevious();
+    } else if (event.key === 'ArrowRight') {
+      goToNext();
+    } else if (event.key === 'Escape') {
+      closeLightbox();
+    }
   };
 
   return (
@@ -62,8 +79,16 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
 
       {/* Lightbox */}
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-[90vh] w-full">
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
+          onClick={closeLightbox}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh] w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Button 
               variant="ghost" 
               size="icon" 
@@ -77,7 +102,10 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
               variant="ghost" 
               size="icon" 
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full z-10"
-              onClick={goToPrevious}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrevious();
+              }}
             >
               <ChevronLeft className="h-6 w-6" />
             </Button>
@@ -93,13 +121,19 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                   {selectedImage.caption}
                 </p>
               )}
+              <div className="text-white text-sm mt-2">
+                {currentIndex + 1} / {images.length}
+              </div>
             </div>
 
             <Button 
               variant="ghost" 
               size="icon" 
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full z-10"
-              onClick={goToNext}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
             >
               <ChevronRight className="h-6 w-6" />
             </Button>

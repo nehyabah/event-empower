@@ -36,7 +36,15 @@ const CoupleStory = () => {
     const savedStory = localStorage.getItem("coupleStory");
     return savedStory ? JSON.parse(savedStory) : {
       title: "Our Love Story",
-      content: "Share your story here! How you met, your journey together, and your plans for the future."
+      content: "Share your story here! How you met, your journey together, and your plans for the future.",
+      hashtag: "OurWedding",
+      weddingDate: "",
+      weddingTime: "",
+      venue: "Beautiful Wedding Venue",
+      loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
+      selectedIcon: "heart",
+      brideStory: "",
+      groomStory: ""
     };
   });
   
