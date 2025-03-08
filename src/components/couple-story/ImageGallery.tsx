@@ -35,7 +35,11 @@ const ImageGallery = ({
   }, []);
 
   if (filteredImages.length === 0) {
-    return <div className="text-center text-sm text-gray-500 italic py-2">No images to display</div>;
+    return (
+      <div className="text-center text-sm text-gray-500 italic py-6 border border-dashed border-wedding-gold/20 rounded-md bg-secondary/5">
+        No images to display
+      </div>
+    );
   }
 
   const openLightbox = (image: StoryImage, index: number) => {
@@ -78,40 +82,20 @@ const ImageGallery = ({
 
   // Side by side mode (used for bride/groom stories)
   if (displayMode === 'sideBySide') {
-    // Show the first image or a small gallery if there are multiple
-    if (filteredImages.length === 1) {
+    // If no images, show a placeholder
+    if (filteredImages.length === 0) {
       return (
-        <div 
-          className="relative h-full aspect-square rounded-md overflow-hidden shadow-md border border-wedding-gold/20 cursor-pointer"
-          onClick={() => openLightbox(filteredImages[0], 0)}
-        >
-          <img
-            src={filteredImages[0].url}
-            alt={filteredImages[0].caption || `${storyType} story image`}
-            className="w-full h-full object-cover"
-          />
-          {isEditMode && onRemove && (
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute top-2 right-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(filteredImages[0].id);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+        <div className="bg-secondary/5 border border-dashed border-wedding-gold/20 rounded-md p-4 text-center text-sm text-gray-500 italic">
+          No {storyType} images to display
         </div>
       );
     }
     
-    // Multiple images - show main image with thumbnails
+    // Show the first image prominently with thumbnails below if there are multiple
     return (
       <div className="space-y-2">
         <div 
-          className="relative h-48 rounded-md overflow-hidden shadow-md border border-wedding-gold/20 cursor-pointer"
+          className="relative aspect-video rounded-md overflow-hidden shadow-md border border-wedding-gold/20 cursor-pointer"
           onClick={() => openLightbox(filteredImages[0], 0)}
         >
           <img
@@ -132,14 +116,20 @@ const ImageGallery = ({
               <X className="h-4 w-4" />
             </Button>
           )}
+          
+          {filteredImages[0].caption && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-sm backdrop-blur-sm">
+              {filteredImages[0].caption}
+            </div>
+          )}
         </div>
         
         {filteredImages.length > 1 && (
-          <div className="flex gap-1 overflow-x-auto">
-            {filteredImages.slice(1, 4).map((image, index) => (
+          <div className="flex gap-2 overflow-x-auto py-1">
+            {filteredImages.slice(1).map((image, index) => (
               <div 
                 key={image.id} 
-                className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer"
+                className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden cursor-pointer border border-wedding-gold/20"
                 onClick={() => openLightbox(image, index + 1)}
               >
                 <img
@@ -147,16 +137,21 @@ const ImageGallery = ({
                   alt={image.caption || `${storyType} story image`}
                   className="w-full h-full object-cover"
                 />
+                {isEditMode && onRemove && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-5 w-5 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(image.id);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             ))}
-            {filteredImages.length > 4 && (
-              <div 
-                className="relative w-16 h-16 flex-shrink-0 rounded overflow-hidden cursor-pointer bg-black/50 flex items-center justify-center text-white"
-                onClick={() => openLightbox(filteredImages[4], 4)}
-              >
-                +{filteredImages.length - 4}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -166,14 +161,14 @@ const ImageGallery = ({
   // Default grid mode
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {filteredImages.map((image, index) => (
           <div 
             key={image.id} 
             className="relative group rounded-md overflow-hidden shadow-md border border-wedding-gold/20 hover:shadow-lg transition-all duration-300"
           >
             <div 
-              className="h-64 overflow-hidden cursor-pointer"
+              className="aspect-[4/3] overflow-hidden cursor-pointer"
               onClick={() => openLightbox(image, index)}
             >
               <img
