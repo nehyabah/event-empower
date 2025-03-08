@@ -5,12 +5,12 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
 import { toast } from "sonner";
 import { useWishlist } from "@/context/useWishlist";
-import { Share2, Plus, X } from "lucide-react";
+import { Share2, Plus, X, Gift, ExternalLink } from "lucide-react";
 
 // Import the new components
 import StoryEditor, { StoryImage } from "@/components/couple-story/StoryEditor";
@@ -21,7 +21,7 @@ import { Comment } from "@/components/couple-story/CommentsSection";
 const CoupleStory = () => {
   const navigate = useNavigate();
   const isAuthenticated = localStorage.getItem("authenticated") === "true";
-  const { wishlistItems, bankDetails, removeBankDetail } = useWishlist();
+  const { wishlistItems, bankDetails, removeBankDetail, addWishlistItem } = useWishlist();
   
   // State for couple's story
   const [isEditingStory, setIsEditingStory] = useState(false);
@@ -44,6 +44,9 @@ const CoupleStory = () => {
   
   // State for bank details form visibility
   const [showBankForm, setShowBankForm] = useState(false);
+  
+  // State for wishlist visibility
+  const [showWishlistForm, setShowWishlistForm] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -131,17 +134,59 @@ const CoupleStory = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="wishlist" className="space-y-4">
-            <Card>
-              <CardContent className="space-y-2">
-                {wishlistItems.map((item) => (
-                  <WishlistItem
-                    key={item.id}
-                    item={item}
-                    isPreviewMode={false}
-                    isPublicView={false}
-                  />
-                ))}
+          <TabsContent value="wishlist" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-medium">Gift Registry</h2>
+                <p className="text-muted-foreground">Items we'd love to receive for our new journey together</p>
+              </div>
+              <Button className="bg-wedding-gold hover:bg-wedding-gold/90 text-white">
+                <Gift className="mr-2 h-4 w-4" />
+                View Public Registry
+              </Button>
+            </div>
+
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {wishlistItems.map((item) => (
+                <WishlistItem
+                  key={item.id}
+                  item={item}
+                  isPreviewMode={false}
+                  isPublicView={false}
+                />
+              ))}
+            </div>
+
+            {wishlistItems.length === 0 && (
+              <Card className="border-dashed border-2">
+                <CardContent className="py-10 text-center">
+                  <Gift className="mx-auto h-10 w-10 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No wishlist items added yet.</p>
+                  <p className="text-sm text-muted-foreground mt-1">Add your first item to start building your gift registry.</p>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="bg-secondary/40">
+              <CardHeader>
+                <CardTitle className="text-lg">Need Gift Ideas?</CardTitle>
+                <CardDescription>
+                  Consider adding some of these popular items to your registry
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="p-2 border bg-background rounded-md hover:bg-accent/30 transition-colors">
+                  <p className="font-medium">Kitchen Equipment</p>
+                  <p className="text-sm text-muted-foreground">Blender, Mixer, Coffee Machine</p>
+                </div>
+                <div className="p-2 border bg-background rounded-md hover:bg-accent/30 transition-colors">
+                  <p className="font-medium">Home Decor</p>
+                  <p className="text-sm text-muted-foreground">Picture Frames, Cushions, Lamps</p>
+                </div>
+                <div className="p-2 border bg-background rounded-md hover:bg-accent/30 transition-colors">
+                  <p className="font-medium">Home Essentials</p>
+                  <p className="text-sm text-muted-foreground">Bedding, Towels, Dinner Set</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

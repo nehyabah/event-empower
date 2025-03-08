@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Check, X, Gift, ExternalLink } from "lucide-react";
+import { Check, X, Gift, ExternalLink, Tag } from "lucide-react";
 import { WishlistItem as WishlistItemType } from "@/context/types";
 import { useWishlist } from "@/context/useWishlist";
+import { cn } from "@/lib/utils";
 
 interface WishlistItemProps {
   item: WishlistItemType;
@@ -38,11 +39,18 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
     low: "bg-blue-400"
   };
   
+  const priorityLabels = {
+    high: "High Priority",
+    medium: "Medium Priority",
+    low: "Nice to Have"
+  };
+  
   return (
-    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${item.purchasedBy ? "bg-gray-50" : ""}`}>
-      <div className={`h-2 ${
-        priorityColors[item.priority]
-      }`}></div>
+    <Card className={cn(
+      "overflow-hidden hover:shadow-md transition-shadow border-t-4",
+      item.purchasedBy ? "bg-muted/30" : "",
+      priorityColors[item.priority]
+    )}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
           <div className="space-y-2">
@@ -50,39 +58,47 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
               {item.name}
             </h3>
             
+            <div className="flex items-center gap-2">
+              <Tag className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                {priorityLabels[item.priority]}
+              </span>
+            </div>
+            
             {item.purchasedBy && (
-              <p className="text-sm text-primary">
+              <p className="text-sm text-primary font-medium mt-2">
+                <Check className="inline-block h-4 w-4 mr-1" />
                 Being purchased by: {item.purchasedBy}
               </p>
             )}
           </div>
           
           {item.price && (
-            <span className="text-sm font-medium px-2 py-1 bg-secondary rounded-full">
+            <span className="text-sm font-medium px-3 py-1 bg-secondary rounded-full">
               {item.price}
             </span>
           )}
         </div>
         
-        <div className="flex gap-2 mt-4">
+        <div className="mt-4 flex items-center justify-between">
           {item.link && (
             <a 
               href={item.link} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline flex items-center gap-1"
+              className="text-sm text-primary hover:underline flex items-center gap-1 hover:text-primary/80 transition-colors"
             >
               <ExternalLink size={14} />
               View Item
             </a>
           )}
-        </div>
-        
-        <div className="mt-4">
+          
+          {!item.link && <div />}
+          
           {!item.purchasedBy ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="rounded-full">
                   <Gift className="mr-2 h-4 w-4" />
                   I'll get this!
                 </Button>
@@ -113,11 +129,11 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
               </DialogContent>
             </Dialog>
           ) : (
-            item.purchasedBy && (
+            item.purchasedBy && !isPublicView && (
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="w-full text-muted-foreground"
+                className="rounded-full"
                 onClick={handleRemovePurchaser}
               >
                 <X className="mr-2 h-4 w-4" />
