@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/auth/AuthModal";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Compass } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Hero = () => {
@@ -47,9 +47,10 @@ const Hero = () => {
             <Link to="/features">
               <Button 
                 variant="outline" 
-                className="px-7 py-6 text-base font-medium border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
+                className="px-7 py-6 text-base font-medium bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
               >
                 Explore Features
+                <Compass className="ml-2 w-4 h-4" />
               </Button>
             </Link>
           </div>
