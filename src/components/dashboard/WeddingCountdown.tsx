@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Heart } from "lucide-react";
+import { CalendarIcon, Heart, Edit } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -11,6 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface TimeLeft {
   days: number;
@@ -72,6 +73,9 @@ const WeddingCountdown = ({
       onDateChange(isoDate);
     }
     
+    // Show success message
+    toast.success("Wedding date updated successfully!");
+    
     // Close the date picker
     setIsEditing(false);
   };
@@ -93,7 +97,7 @@ const WeddingCountdown = ({
       <CardContent className="p-0">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
           {/* Left column: Date display */}
-          <div className="bg-gradient-to-br from-wedding-gold/10 via-wedding-gold/5 to-transparent p-6 md:p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-wedding-gold/10">
+          <div className="bg-gradient-to-br from-wedding-gold/10 via-wedding-gold/5 to-transparent p-6 md:p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-wedding-gold/10 relative">
             <div className="text-4xl md:text-5xl font-serif font-light text-wedding-gold mb-1 md:mb-2">{weddingMonth}</div>
             <div className="text-7xl md:text-8xl font-serif font-bold bg-gradient-to-br from-wedding-gold to-wedding-burgundy/80 bg-clip-text text-transparent">{weddingDay}</div>
             <div className="text-2xl md:text-3xl font-serif text-muted-foreground mt-0 md:mt-1">{weddingYear}</div>
@@ -101,12 +105,12 @@ const WeddingCountdown = ({
             <Popover open={isEditing} onOpenChange={setIsEditing}>
               <PopoverTrigger asChild>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm" 
-                  className="mt-4 text-xs text-primary hover:bg-primary/5 hover:text-primary gap-2 group"
+                  className="mt-4 text-xs border-wedding-gold/20 text-wedding-gold hover:bg-wedding-gold/5 hover:text-wedding-gold/90 gap-2 group absolute top-2 right-2"
                 >
-                  <CalendarIcon className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
-                  Edit Date
+                  <Edit className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+                  Edit
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">

@@ -1,10 +1,47 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/auth/AuthModal";
-import { Heart, CheckCircle2, ArrowRight } from "lucide-react";
+import { Heart, CheckCircle2, ArrowRight, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const Hero = () => {
+  // Get the wedding date from localStorage or use default date
+  const [date, setDate] = useState<Date | undefined>(
+    localStorage.getItem("weddingDate") 
+      ? new Date(localStorage.getItem("weddingDate") as string)
+      : new Date(new Date().setMonth(new Date().getMonth() + 6))
+  );
+  
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (!newDate) return;
+    
+    setDate(newDate);
+    
+    // Format the date as ISO string and store in localStorage
+    const isoDate = newDate.toISOString().split('T')[0];
+    localStorage.setItem("weddingDate", isoDate);
+    
+    // Show success message
+    toast.success("Wedding date updated successfully!");
+    
+    // Close the date picker
+    setIsEditing(false);
+  };
+  
+  const formattedDate = date ? format(date, "MMMM d, yyyy") : "";
+  
   return (
     <section className="relative pt-28 md:pt-36 pb-24 overflow-hidden">
       {/* Decorative gradient elements */}
@@ -32,6 +69,36 @@ const Hero = () => {
             Your all-in-one platform for planning beautiful weddings.
             Connect with local vendors, manage tasks, and create unforgettable celebrations.
           </p>
+          
+          {/* Wedding Date Display and Edit */}
+          <div className="flex flex-col items-center animate-fade-in-up" style={{ animationDelay: "250ms" }}>
+            <Popover open={isEditing} onOpenChange={setIsEditing}>
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 text-wedding-gold" />
+                <span className="text-lg font-medium">{formattedDate}</span>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs text-primary hover:bg-primary/5 hover:text-primary gap-1 p-1 h-auto"
+                  >
+                    Edit
+                  </Button>
+                </PopoverTrigger>
+              </div>
+              <PopoverContent className="w-auto p-0" align="center">
+                <CalendarComponent
+                  mode="single"
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                  disabled={(calendarDate) => calendarDate < new Date()}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-sm text-muted-foreground">Set your wedding date</p>
+          </div>
           
           <div className="flex flex-wrap justify-center gap-5 pt-6 animate-fade-in-up" style={{ animationDelay: "300ms" }}>
             <AuthModal 
