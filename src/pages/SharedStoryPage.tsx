@@ -47,9 +47,67 @@ const SharedStoryPage = () => {
       });
       
       setStoryImages(savedImages ? JSON.parse(savedImages) : []);
-      setComments(savedComments ? JSON.parse(savedComments) : []);
+      
+      // If there are no comments, add some sample well wishes
+      const parsedComments = savedComments ? JSON.parse(savedComments) : [];
+      if (parsedComments.length === 0) {
+        setComments([
+          {
+            id: "1",
+            name: "Sarah & David",
+            text: "Congratulations on your upcoming wedding! Wishing you a lifetime of love and happiness together. May your special day be everything you've dreamed of!",
+            date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+          },
+          {
+            id: "2",
+            name: "Michael & Jennifer",
+            text: "So happy for you both! Your love story is truly inspiring. Wishing you a beautiful wedding day and a marriage filled with joy, laughter and endless adventures.",
+            date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+          },
+          {
+            id: "3",
+            name: "Aunt Mary",
+            text: "My dearest niece and her wonderful partner, may God bless your union with love and prosperity. Looking forward to celebrating with you on your big day!",
+            date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+          }
+        ]);
+      } else {
+        setComments(parsedComments);
+      }
     } catch (error) {
       console.error("Error loading story data:", error);
+      // Set default values if there's an error
+      setCoupleStory({
+        title: "Our Love Story",
+        content: "Share your story here! How you met, your journey together, and your plans for the future.",
+        hashtag: "OurWedding",
+        weddingDate: "",
+        weddingTime: "",
+        venue: "Beautiful Wedding Venue",
+        loveQuote: "My heart is yours to hold and cherish for the rest of my days.",
+        selectedIcon: "heart"
+      });
+      setStoryImages([]);
+      setComments([
+        {
+          id: "1",
+          name: "Sarah & David",
+          text: "Congratulations on your upcoming wedding! Wishing you a lifetime of love and happiness together. May your special day be everything you've dreamed of!",
+          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: "2",
+          name: "Michael & Jennifer",
+          text: "So happy for you both! Your love story is truly inspiring. Wishing you a beautiful wedding day and a marriage filled with joy, laughter and endless adventures.",
+          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: "3",
+          name: "Aunt Mary",
+          text: "My dearest niece and her wonderful partner, may God bless your union with love and prosperity. Looking forward to celebrating with you on your big day!",
+          date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        }
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -180,25 +238,7 @@ const SharedStoryPage = () => {
                   <p className="text-muted-foreground">Share your thoughts and blessings with us</p>
                 </div>
                 
-                {/* Using the existing CommentsSection component but in standalone mode */}
                 <div className="mt-4 max-w-2xl mx-auto">
-                  <div id="comments-section" className="scroll-mt-20">
-                    <div className="space-y-4 mb-6">
-                      {comments.map((comment) => (
-                        <div key={comment.id} className="bg-gray-50 p-4 rounded-md">
-                          <div className="flex justify-between">
-                            <h4 className="font-medium">{comment.name}</h4>
-                            <span className="text-xs text-gray-500">
-                              {new Date(comment.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-gray-700">{comment.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Using the existing CommentsSection but imported directly */}
                   <CommentsSection
                     comments={comments}
                     setComments={setComments}
