@@ -1,22 +1,120 @@
-
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, CheckSquare, Users, Clock, ArrowRight, Plus } from "lucide-react";
+import plannerService, { DashboardStats, PlannerTask } from "@/services/api/plannerService";
 
 const PlannerHomepage = () => {
   const navigate = useNavigate();
-  
-  // Basic auth check - replace with your auth logic
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("authenticated");
-    if (!isAuthenticated) {
-      navigate("/");
-    }
-  }, [navigate]);
+    let isMounted = true;
+    const fetchDashboard = async () => {
+      try {
+        const data = await plannerService.getDashboardStats();
+        if (isMounted) {
+          setStats(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to load dashboard.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const nextEvent = stats?.upcomingEvents?.[0];
+  const nextEventLabel = useMemo(() => {
+    if (!nextEvent?.event_date) return null;
+    const date = new Date(nextEvent.event_date);
+    if (Number.isNaN(date.getTime())) return null;
+    const today = new Date();
+    const diffDays = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return "Happening today";
+    if (diffDays === 1) return "Tomorrow";
+    return `In ${diffDays} days`;
+  }, [nextEvent]);
+
+  const deadlineTasks = useMemo(() => {
+    if (!stats) return [];
+    const items = [...stats.overdueTasks, ...stats.dueSoonTasks];
+    const seen = new Set<string>();
+    return items.filter((task) => {
+      if (seen.has(task.id)) return false;
+      seen.add(task.id);
+      return true;
+    });
+  }, [stats]);
+
+  const taskCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    (stats?.taskCountsByClient || []).forEach((entry) => {
+      if (entry.client_id) {
+        map.set(entry.client_id, entry.total);
+      }
+    });
+    return map;
+  }, [stats]);
+
+  const clientsPageSize = 6;
+  const eventsPageSize = 5;
+  const upcomingClientsPageSize = 5;
+  const [clientsPage, setClientsPage] = useState(1);
+  const [eventsPage, setEventsPage] = useState(1);
+  const [upcomingClientsPage, setUpcomingClientsPage] = useState(1);
+
+  const combinedClients = useMemo(() => {
+    return [...(stats?.activeClients || []), ...(stats?.upcomingClients || [])];
+  }, [stats]);
+
+  const clientPageCount = Math.max(1, Math.ceil(combinedClients.length / clientsPageSize));
+  const pagedClients = combinedClients.slice(
+    (clientsPage - 1) * clientsPageSize,
+    clientsPage * clientsPageSize
+  );
+
+  const upcomingEvents = stats?.upcomingEvents || [];
+  const eventsPageCount = Math.max(1, Math.ceil(upcomingEvents.length / eventsPageSize));
+  const pagedEvents = upcomingEvents.slice(
+    (eventsPage - 1) * eventsPageSize,
+    eventsPage * eventsPageSize
+  );
+
+  const upcomingClientPageCount = Math.max(
+    1,
+    Math.ceil((stats?.upcomingClients?.length || 0) / upcomingClientsPageSize)
+  );
+  const pagedUpcomingClients = (stats?.upcomingClients || []).slice(
+    (upcomingClientsPage - 1) * upcomingClientsPageSize,
+    upcomingClientsPage * upcomingClientsPageSize
+  );
+
+  const renderDueLabel = (task: PlannerTask) => {
+    if (!task.due_date) return "No due date";
+    const due = new Date(task.due_date);
+    if (Number.isNaN(due.getTime())) return "No due date";
+    const today = new Date();
+    const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return "Overdue";
+    if (diffDays === 0) return "Due today";
+    if (diffDays === 1) return "Due tomorrow";
+    return `Due in ${diffDays} days`;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,6 +135,11 @@ const PlannerHomepage = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            {error && (
+              <Card className="border-destructive/40 bg-destructive/5">
+                <CardContent className="py-4 text-sm text-destructive">{error}</CardContent>
+              </Card>
+            )}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -44,8 +147,10 @@ const PlannerHomepage = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">3 new this month</p>
+                  <div className="text-2xl font-bold">{isLoading ? "--" : stats?.clients.active ?? 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {isLoading ? "Loading..." : `${stats?.clients.total ?? 0} total clients`}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -54,8 +159,14 @@ const PlannerHomepage = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8</div>
-                  <p className="text-xs text-muted-foreground">Next: Johnson Wedding (3 days)</p>
+                  <div className="text-2xl font-bold">{isLoading ? "--" : stats?.events.upcoming ?? 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {isLoading
+                      ? "Loading..."
+                      : nextEvent
+                      ? `Next: ${nextEvent.title} (${nextEventLabel || "soon"})`
+                      : "No upcoming events"}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
@@ -64,18 +175,22 @@ const PlannerHomepage = () => {
                   <CheckSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">24</div>
-                  <p className="text-xs text-muted-foreground">7 high priority</p>
+                  <div className="text-2xl font-bold">{isLoading ? "--" : stats?.tasks.pending ?? 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {isLoading ? "Loading..." : `${stats?.tasks.highPriority ?? 0} high priority`}
+                  </p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Hours Logged</CardTitle>
+                  <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">156</div>
-                  <p className="text-xs text-muted-foreground">This month</p>
+                  <div className="text-2xl font-bold">{isLoading ? "--" : stats?.overdueTasks.length ?? 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {isLoading ? "Loading..." : "Needs attention"}
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -87,30 +202,25 @@ const PlannerHomepage = () => {
                   <CardDescription>Your latest planning activities</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Updated Smith Wedding Task List</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span>Today at 10:34 AM</span>
+                  {(stats?.recentTasks || []).slice(0, 5).map((task) => (
+                    <div key={task.id} className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{task.title}</p>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <span>{task.client_name || "General"}</span>
+                          <span className="mx-2">•</span>
+                          <span>
+                            {task.created_at
+                              ? new Date(task.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                              : "Recent"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Added new vendor to Johnson Wedding</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span>Yesterday at 3:15 PM</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Sent budget update to Garcia couple</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span>Feb 28 at 9:20 AM</span>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
+                  {!isLoading && (!stats?.recentTasks || stats.recentTasks.length === 0) && (
+                    <p className="text-sm text-muted-foreground">No recent activity yet.</p>
+                  )}
                   <Button variant="link" size="sm" className="mt-2 w-full">
                     View all activities
                     <ArrowRight className="ml-1 h-4 w-4" />
@@ -124,30 +234,25 @@ const PlannerHomepage = () => {
                   <CardDescription>Tasks due in the next 7 days</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Confirm floral arrangements - Johnson Wedding</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span className="text-red-500 font-medium">Due tomorrow</span>
+                  {deadlineTasks.slice(0, 5).map((task) => {
+                    const dueLabel = renderDueLabel(task);
+                    const isOverdue = dueLabel === "Overdue";
+                    return (
+                      <div key={task.id} className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{task.title}</p>
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <span className={isOverdue ? "text-red-500 font-medium" : "text-amber-500 font-medium"}>
+                              {dueLabel}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Menu tasting - Smith Wedding</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span className="text-amber-500 font-medium">Due in 3 days</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Send final guest list to venue - Garcia Wedding</p>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <span className="text-amber-500 font-medium">Due in 5 days</span>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })}
+                  {!isLoading && deadlineTasks.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No deadlines in the next week.</p>
+                  )}
                   <Button variant="link" size="sm" className="mt-2 w-full">
                     View all deadlines
                     <ArrowRight className="ml-1 h-4 w-4" />
@@ -157,7 +262,7 @@ const PlannerHomepage = () => {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
-              <Button onClick={() => navigate("/clients")} className="flex-1">
+              <Button onClick={() => navigate("/planner-clients")} className="flex-1">
                 <Users className="mr-2 h-4 w-4" />
                 Manage Clients
               </Button>
@@ -175,37 +280,78 @@ const PlannerHomepage = () => {
           <TabsContent value="clients" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-medium">Your Client List</h2>
-              <Button>
+              <Button onClick={() => navigate("/planner-clients")}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Client
               </Button>
             </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {["Smith", "Johnson", "Garcia", "Chen", "Williams", "Rodriguez"].map((name, index) => (
-                <Card key={index} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{name} Wedding</CardTitle>
-                    <CardDescription>Event Date: {["Apr 15", "May 22", "Jun 10", "Jul 8", "Aug 14", "Sep 3"][index]}, 2024</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Venue: {["Grand Ballroom", "Sunset Gardens", "Lakeside Pavilion", "Mountain View", "Harbor Point", "Rose Garden"][index]}</p>
-                      <p className="text-sm text-muted-foreground">Guests: {[120, 85, 150, 100, 200, 75][index]}</p>
-                      <div className="flex justify-between text-sm pt-2">
-                        <span className="text-blue-500 font-medium">Tasks: {[12, 18, 15, 10, 22, 8][index]}</span>
-                        <span className="text-green-500 font-medium">Budget: ${[25000, 30000, 35000, 22000, 40000, 18000][index]}</span>
-                      </div>
-                      <Button variant="outline" size="sm" className="w-full mt-2">
-                        View Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {isLoading && (
+                <div className="col-span-full text-sm text-muted-foreground">Loading clients...</div>
+              )}
+              {!isLoading && pagedClients.length ? (
+                pagedClients.map((client) => (
+                    <Card key={client.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">
+                          {client.partner1_name} & {client.partner2_name}
+                        </CardTitle>
+                        <CardDescription>
+                          Event Date: {client.event_date ? new Date(client.event_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "TBD"}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Venue: {client.venue || "Venue TBD"}</p>
+                          <p className="text-sm text-muted-foreground">Guests: {client.guest_count || "TBD"}</p>
+                          <div className="flex justify-between text-sm pt-2">
+                            <span className="text-blue-500 font-medium">Status: {client.status}</span>
+                            <span className="text-green-500 font-medium">
+                              Budget: {client.budget ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(client.budget) : "TBD"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Tasks: {taskCountMap.get(client.id) ?? 0}
+                          </p>
+                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate("/planner-clients")}>
+                            View Details
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+              ) : (
+                !isLoading && (
+                  <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
+                    <p className="text-muted-foreground">No clients yet. Add your first client.</p>
+                  </div>
+                )
+              )}
             </div>
+
+            {clientPageCount > 1 && (
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setClientsPage((prev) => Math.max(1, prev - 1))}
+                  disabled={clientsPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setClientsPage((prev) => Math.min(clientPageCount, prev + 1))}
+                  disabled={clientsPage === clientPageCount}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
             
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" onClick={() => navigate("/planner-clients")}>
               View All Clients
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -213,44 +359,101 @@ const PlannerHomepage = () => {
 
           <TabsContent value="upcoming" className="space-y-6">
             <div className="bg-muted/50 p-4 rounded-lg mb-6">
-              <h2 className="text-xl font-medium mb-2">This Week's Events</h2>
+              <h2 className="text-xl font-medium mb-2">Upcoming Events</h2>
               <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
-                  <div>
-                    <p className="font-medium">Johnson Wedding</p>
-                    <p className="text-sm text-muted-foreground">March 15 • Grand Ballroom • 120 guests</p>
-                  </div>
-                  <Button size="sm">Details</Button>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
-                  <div>
-                    <p className="font-medium">Williams Engagement Party</p>
-                    <p className="text-sm text-muted-foreground">March 16 • Rooftop Gardens • 50 guests</p>
-                  </div>
-                  <Button size="sm">Details</Button>
-                </div>
+                {isLoading && <p className="text-sm text-muted-foreground">Loading events...</p>}
+                {!isLoading && pagedEvents.length ? (
+                  pagedEvents.map((event) => (
+                    <div key={event.id} className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
+                      <div>
+                        <p className="font-medium">{event.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(event.event_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })} - {event.location || "Location TBD"}
+                        </p>
+                      </div>
+                      <Button size="sm" onClick={() => navigate("/planner-calendar")}>Details</Button>
+                    </div>
+                  ))
+                ) : (
+                  !isLoading && (
+                    <div className="p-6 text-center bg-background rounded-md shadow-sm">
+                      <p className="text-sm text-muted-foreground">No upcoming events yet.</p>
+                    </div>
+                  )
+                )}
               </div>
             </div>
+
+            {eventsPageCount > 1 && (
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEventsPage((prev) => Math.max(1, prev - 1))}
+                  disabled={eventsPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEventsPage((prev) => Math.min(eventsPageCount, prev + 1))}
+                  disabled={eventsPage === eventsPageCount}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
             
             <div className="bg-muted/50 p-4 rounded-lg">
-              <h2 className="text-xl font-medium mb-2">Next Month</h2>
+              <h2 className="text-xl font-medium mb-2">Clients with Upcoming Dates</h2>
               <div className="space-y-4">
-                {[
-                  { name: "Smith Wedding", date: "April 5", venue: "Lakeside Pavilion", guests: 85 },
-                  { name: "Garcia Wedding", date: "April 12", venue: "Mountain View", guests: 150 },
-                  { name: "Chen Wedding", date: "April 19", venue: "Harbor Point", guests: 100 },
-                  { name: "Rodriguez Wedding", date: "April 26", venue: "Rose Garden", guests: 75 },
-                ].map((event, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
-                    <div>
-                      <p className="font-medium">{event.name}</p>
-                      <p className="text-sm text-muted-foreground">{event.date} • {event.venue} • {event.guests} guests</p>
+                {isLoading && <p className="text-sm text-muted-foreground">Loading clients...</p>}
+                {!isLoading && pagedUpcomingClients.length ? (
+                  pagedUpcomingClients.map((client) => (
+                    <div key={client.id} className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
+                      <div>
+                        <p className="font-medium">{client.partner1_name} & {client.partner2_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {client.event_date ? new Date(client.event_date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Date TBD"} - {client.venue || "Venue TBD"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Tasks: {taskCountMap.get(client.id) ?? 0}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => navigate("/planner-clients")}>Details</Button>
                     </div>
-                    <Button size="sm" variant="outline">Details</Button>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  !isLoading && (
+                    <div className="p-6 text-center bg-background rounded-md shadow-sm">
+                      <p className="text-sm text-muted-foreground">No upcoming client dates yet.</p>
+                    </div>
+                  )
+                )}
               </div>
             </div>
+
+            {upcomingClientPageCount > 1 && (
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUpcomingClientsPage((prev) => Math.max(1, prev - 1))}
+                  disabled={upcomingClientsPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUpcomingClientsPage((prev) => Math.min(upcomingClientPageCount, prev + 1))}
+                  disabled={upcomingClientsPage === upcomingClientPageCount}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

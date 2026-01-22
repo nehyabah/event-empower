@@ -3,6 +3,8 @@ export interface TodoItem {
   id: string;
   text: string;
   completed: boolean;
+  status: "todo" | "in_progress" | "done";
+  sortOrder: number;
 }
 
 export interface TodoListItem {
@@ -25,6 +27,7 @@ export interface WishlistItem {
 }
 
 export interface BankDetail {
+  id?: string;
   bankName: string;
   accountName: string;
   accountNumber: string;

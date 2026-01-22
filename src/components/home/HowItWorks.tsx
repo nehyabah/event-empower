@@ -1,108 +1,117 @@
-
 import { Button } from "@/components/ui/button";
-import AuthModal from '@/components/auth/AuthModal';
+import AuthModal from "@/components/auth/AuthModal";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, WandSparkles, Handshake, ClipboardCheck } from "lucide-react";
+import type { ReactNode } from "react";
+
+const Step = ({
+  number,
+  title,
+  description,
+  isLast,
+  icon,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  isLast?: boolean;
+  icon: ReactNode;
+}) => (
+  <div className="group relative flex flex-col items-start p-8 rounded-3xl transition-all duration-500 hover:bg-white hover:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:-translate-y-1">
+    {/* Decorative Line */}
+    {!isLast && (
+      <div className="hidden md:block absolute top-[5.5rem] left-[6rem] w-[calc(100%-3rem)] h-[1px] bg-gradient-to-r from-zinc-200 to-transparent z-0"></div>
+    )}
+
+    <div className="relative z-10 flex items-center gap-3 mb-8">
+      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-white via-zinc-50 to-zinc-100 border border-zinc-100 text-zinc-900 shadow-sm group-hover:scale-110 group-hover:text-white group-hover:border-zinc-900 group-hover:from-zinc-900 group-hover:via-zinc-900 group-hover:to-zinc-900 transition-all duration-500 ease-out">
+        {icon}
+      </div>
+      <span className="text-xs uppercase tracking-[0.35em] text-zinc-400">
+        {number}
+      </span>
+    </div>
+
+    <h3 className="text-2xl font-serif font-medium mb-4 text-zinc-900 group-hover:translate-x-2 transition-transform duration-300">
+      {title}
+    </h3>
+    <p className="text-zinc-500 leading-relaxed font-light text-lg group-hover:text-zinc-600 transition-colors">
+      {description}
+    </p>
+  </div>
+);
 
 const HowItWorks = () => {
   return (
-    <section className="py-28 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-wedding-gold/10 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-wedding-burgundy/10 rounded-full blur-3xl" />
-      
-      <div className="container relative z-10">
-        <div className="text-center max-w-2xl mx-auto mb-20">
-          <span className="inline-block px-3 py-1 text-sm font-medium bg-wedding-burgundy/10 text-wedding-burgundy rounded-full mb-4">
-            How It Works
+    <section className="py-32 bg-zinc-50/50 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-zinc-100 rounded-full blur-3xl opacity-50"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-zinc-100 rounded-full blur-3xl opacity-50"></div>
+      </div>
+
+      <div className="container mx-auto px-4 max-w-6xl relative z-10">
+        {/* Header - Simple & Centered */}
+        <div className="text-center max-w-3xl mx-auto mb-24 animate-fade-in-up">
+          <span className="text-xs font-bold tracking-[0.2em] text-zinc-400 uppercase mb-6 block">
+            The Process
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif mb-6 font-medium tracking-tight">
-            Simple Steps to Your Perfect Day
+          <h2 className="text-4xl md:text-6xl font-serif font-medium text-zinc-900 mb-8 tracking-tight">
+            Planning made{" "}
+            <span className="italic text-zinc-500">effortless</span>.
           </h2>
-          <p className="text-muted-foreground text-lg">
-            Our seamless process helps you plan your dream celebration from start to finish.
+          <p className="text-xl text-zinc-500 font-light leading-relaxed">
+            We've distilled the complexity of wedding planning into three
+            elegant stages, giving you clarity from day one.
           </p>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-24 relative">
-          {/* Connecting line for desktop */}
-          <div className="hidden lg:block absolute top-1/4 left-0 w-full h-0.5 bg-gradient-to-r from-wedding-gold/0 via-wedding-gold/30 to-wedding-gold/0"></div>
-          
-          <div className="flex flex-col items-center text-center animate-fade-in-up relative">
-            <div className="w-20 h-20 rounded-full bg-wedding-gold/10 text-wedding-gold flex items-center justify-center text-2xl font-medium mb-6 border border-wedding-gold/20 z-10 shadow-lg">
-              1
-            </div>
-            <h3 className="text-2xl font-medium font-serif mb-4">Create Your Event</h3>
-            <p className="text-muted-foreground">
-              Sign up and create your celebration profile. Choose your region, ceremony type, and set your date.
-            </p>
-          </div>
-          
-          <div className="flex flex-col items-center text-center animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-            <div className="w-20 h-20 rounded-full bg-wedding-sage/10 text-wedding-sage flex items-center justify-center text-2xl font-medium mb-6 border border-wedding-sage/20 z-10 shadow-lg">
-              2
-            </div>
-            <h3 className="text-2xl font-medium font-serif mb-4">Manage Tasks & Vendors</h3>
-            <p className="text-muted-foreground">
-              Use your personalized checklist to track progress and connect with local vendors in your region.
-            </p>
-          </div>
-          
-          <div className="flex flex-col items-center text-center animate-fade-in-up" style={{ animationDelay: "400ms" }}>
-            <div className="w-20 h-20 rounded-full bg-wedding-burgundy/10 text-wedding-burgundy flex items-center justify-center text-2xl font-medium mb-6 border border-wedding-burgundy/20 z-10 shadow-lg">
-              3
-            </div>
-            <h3 className="text-2xl font-medium font-serif mb-4">Share & Celebrate</h3>
-            <p className="text-muted-foreground">
-              Create a beautiful countdown page to share with guests and keep everyone informed about your big day.
-            </p>
-          </div>
+
+        {/* Steps - Clean Horizontal Flow */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+          <Step
+            number="01"
+            icon={<WandSparkles className="w-6 h-6" strokeWidth={1.5} />}
+            title="Start your profile"
+            description="Share your wedding date and location. We'll automatically generate a custom checklist tailored to your specific timeline."
+          />
+          <Step
+            number="02"
+            icon={<Handshake className="w-6 h-6" strokeWidth={1.5} />}
+            title="Connect with vendors"
+            description="Browse our curated network of local professionals. Compare portfolios, pricing, and availability in one place."
+          />
+          <Step
+            number="03"
+            title="Manage details"
+            isLast
+            icon={<ClipboardCheck className="w-6 h-6" strokeWidth={1.5} />}
+            description="From guest lists to seating charts, keep every detail organized in your unified dashboard until the big day."
+          />
         </div>
-        
-        <div className="glass rounded-2xl p-12 md:p-16 relative overflow-hidden border border-white/5 shadow-elegant">
-          {/* Decorative elements */}
-          <div className="absolute -top-12 -right-12 w-64 h-64 bg-wedding-gold/10 rounded-full blur-2xl" />
-          <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-wedding-burgundy/10 rounded-full blur-2xl" />
-          
-          <div className="relative z-10 flex flex-col lg:flex-row gap-12 md:gap-16 items-center">
-            <div className="flex-1">
-              <span className="inline-block px-3 py-1 text-sm font-medium bg-wedding-gold/10 text-wedding-gold rounded-full mb-4">
-                Ready to Begin?
-              </span>
-              <h3 className="text-3xl md:text-4xl font-serif mb-6 font-medium tracking-tight">
-                Start Planning Your Dream Celebration
-              </h3>
-              <p className="text-muted-foreground text-lg mb-8">
-                Join thousands of couples who have planned successful ceremonies with Planr. Our platform understands local traditions, vendors, and timelines.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <AuthModal 
-                  defaultTab="register" 
-                  triggerClassName="px-7 py-3 shadow-elegant text-base font-medium group"
-                  trigger={
-                    <Button className="px-7 py-3 shadow-elegant text-base font-medium group">
-                      Start Planning Now
-                      <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  }
-                />
-                <Link to="/features">
-                  <Button variant="outline" className="px-7 py-3 button-hover text-base font-medium">
-                    Learn More
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            
-            <div className="lg:flex-1 w-full max-w-md">
-              <div className="aspect-square rounded-xl overflow-hidden shadow-elegant">
-                <img 
-                  src="https://images.unsplash.com/photo-1511285560929-80b456fea0bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=869&q=80" 
-                  alt="Couple planning their celebration"
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-            </div>
+
+        {/* Minimal CTA */}
+        <div className="flex flex-col items-center justify-center space-y-8">
+          <div className="h-24 w-[1px] bg-gradient-to-b from-zinc-200 to-transparent mb-2"></div>
+          <p className="text-zinc-900 font-serif text-3xl italic">
+            Ready to begin?
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <AuthModal
+              defaultTab="register"
+              trigger={
+                <Button className="px-10 py-7 rounded-full bg-zinc-900 text-white hover:bg-zinc-800 hover:scale-105 transition-all duration-300 shadow-xl shadow-zinc-200 text-lg font-medium">
+                  Start Planning Free
+                </Button>
+              }
+            />
+            <Link to="/features">
+              <Button
+                variant="ghost"
+                className="px-10 py-7 rounded-full hover:bg-white text-zinc-600 text-lg hover:shadow-lg transition-all duration-300"
+              >
+                See Features <ArrowRight className="ml-2 w-5 h-5 opacity-50" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

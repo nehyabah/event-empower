@@ -1,146 +1,323 @@
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TodoItem, TodoListItem } from "./types";
 import { toast } from "sonner";
-
-// Initial data
-const initialTodoLists: TodoListItem[] = [
-  {
-    id: "list-1",
-    title: "Wedding Venue Checklist",
-    description: "Items to verify with the venue before booking",
-    createdAt: new Date(),
-    isCompleted: false,
-    items: [
-      { id: "item-1", text: "Check venue capacity", completed: true },
-      { id: "item-2", text: "Confirm available dates", completed: true },
-      { id: "item-3", text: "Review contract details", completed: false },
-      { id: "item-4", text: "Discuss catering options", completed: false },
-    ]
-  },
-  {
-    id: "list-2",
-    title: "Wedding Day Emergency Kit",
-    description: "Essential items to have on the wedding day",
-    createdAt: new Date(),
-    isCompleted: false,
-    items: [
-      { id: "item-5", text: "Safety pins", completed: true },
-      { id: "item-6", text: "Fashion tape", completed: false },
-      { id: "item-7", text: "Stain remover", completed: false },
-      { id: "item-8", text: "Pain relievers", completed: true },
-    ]
-  }
-];
+import { userService, TodoList as ApiTodoList, TodoItem as ApiTodoItem } from "@/services/api/userService";
+import { useAuth } from "@/context/AuthContext";
 
 export interface TodoListsHook {
   todoLists: TodoListItem[];
-  createTodoList: (title: string, description?: string) => void;
-  updateTodoList: (id: string, updates: Partial<TodoListItem>) => void;
-  deleteTodoList: (id: string) => void;
-  addTodoItem: (listId: string, text: string) => void;
-  toggleTodoItem: (listId: string, itemId: string) => void;
-  deleteTodoItem: (listId: string, itemId: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  createTodoList: (title: string, description?: string) => Promise<void>;
+  updateTodoList: (id: string, updates: Partial<TodoListItem>) => Promise<void>;
+  deleteTodoList: (id: string) => Promise<void>;
+  addTodoItem: (listId: string, text: string, status?: TodoItem["status"]) => Promise<void>;
+  toggleTodoItem: (listId: string, itemId: string) => Promise<void>;
+  updateTodoItem: (listId: string, itemId: string, updates: Partial<TodoItem>) => Promise<void>;
+  deleteTodoItem: (listId: string, itemId: string) => Promise<void>;
+  reorderTodoItems: (listId: string, orderedIds: string[]) => Promise<void>;
+  setAllCompleted: (listId: string, completed: boolean) => Promise<void>;
+  clearCompleted: (listId: string) => Promise<void>;
   getTodoList: (id: string) => TodoListItem | undefined;
 }
 
+// Convert API types to local types
+const toLocalTodoItem = (apiItem: ApiTodoItem): TodoItem => ({
+  id: apiItem.id,
+  text: apiItem.text,
+  completed: apiItem.completed,
+  status: apiItem.status ?? (apiItem.completed ? "done" : "todo"),
+  sortOrder: apiItem.sort_order,
+});
+
+const toLocalTodoList = (apiList: ApiTodoList): TodoListItem => ({
+  id: apiList.id,
+  title: apiList.title,
+  description: apiList.description || undefined,
+  createdAt: new Date(apiList.created_at),
+  isCompleted: apiList.is_completed,
+  items: (apiList.items || []).map(toLocalTodoItem).sort((a, b) => a.sortOrder - b.sortOrder),
+});
+
 export const useTodoLists = (): TodoListsHook => {
-  const [todoLists, setTodoLists] = useState<TodoListItem[]>(initialTodoLists);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [todoLists, setTodoLists] = useState<TodoListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const createTodoList = (title: string, description?: string) => {
-    const newList: TodoListItem = {
-      id: `list-${Date.now()}`,
-      title,
-      description,
-      createdAt: new Date(),
-      items: [],
-      isCompleted: false
+  // Fetch todo lists on mount
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setTodoLists([]);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await userService.getTodoLists();
+        setTodoLists(data.map(toLocalTodoList));
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch todo lists';
+        setError(message);
+        console.error('Error fetching todo lists:', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    setTodoLists([...todoLists, newList]);
-    toast.success("New list created", {
-      description: `${title} has been added to your lists`
-    });
-  };
 
-  const updateTodoList = (id: string, updates: Partial<TodoListItem>) => {
-    setTodoLists(
-      todoLists.map(list => 
-        list.id === id ? { ...list, ...updates } : list
-      )
-    );
-    
-    toast.success("List updated", {
-      description: `Your changes have been saved`
-    });
-  };
+    fetchData();
+  }, [authLoading, isAuthenticated]);
 
-  const deleteTodoList = (id: string) => {
-    const listToDelete = todoLists.find(list => list.id === id);
-    if (!listToDelete) return;
-    
-    setTodoLists(todoLists.filter(list => list.id !== id));
-    
-    toast.success("List deleted", {
-      description: `"${listToDelete.title}" has been removed`
-    });
-  };
+  const createTodoList = useCallback(async (title: string, description?: string) => {
+    try {
+      const newList = await userService.createTodoList({ title, description });
+      setTodoLists(prev => [...prev, toLocalTodoList(newList)]);
+      toast.success("New list created", {
+        description: `${title} has been added to your lists`
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create list';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
 
-  const addTodoItem = (listId: string, text: string) => {
-    const newItem: TodoItem = {
-      id: `item-${Date.now()}`,
-      text,
-      completed: false
-    };
-    
-    setTodoLists(
-      todoLists.map(list => 
-        list.id === listId 
-          ? { ...list, items: [...list.items, newItem] } 
+  const updateTodoList = useCallback(async (id: string, updates: Partial<TodoListItem>) => {
+    try {
+      const apiUpdates: { title?: string; description?: string | null; isCompleted?: boolean } = {};
+      if (updates.title !== undefined) apiUpdates.title = updates.title;
+      if (updates.description !== undefined) apiUpdates.description = updates.description || null;
+      if (updates.isCompleted !== undefined) apiUpdates.isCompleted = updates.isCompleted;
+
+      const updatedList = await userService.updateTodoList(id, apiUpdates);
+      setTodoLists(prev =>
+        prev.map(list => list.id === id ? toLocalTodoList(updatedList) : list)
+      );
+
+      toast.success("List updated", {
+        description: `Your changes have been saved`
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update list';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
+
+  const deleteTodoList = useCallback(async (id: string) => {
+    try {
+      const listToDelete = todoLists.find(list => list.id === id);
+      await userService.deleteTodoList(id);
+      setTodoLists(prev => prev.filter(list => list.id !== id));
+
+      toast.success("List deleted", {
+        description: listToDelete ? `"${listToDelete.title}" has been removed` : 'List removed'
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete list';
+      toast.error(message);
+      throw err;
+    }
+  }, [todoLists]);
+
+  const addTodoItem = useCallback(async (listId: string, text: string, status?: TodoItem["status"]) => {
+    try {
+      const newItem = await userService.addTodoItem(listId, { text, status });
+      setTodoLists(prev =>
+        prev.map(list =>
+          list.id === listId
+            ? {
+                ...list,
+                items: [...list.items, toLocalTodoItem(newItem)].sort(
+                  (a, b) => a.sortOrder - b.sortOrder
+                ),
+              }
+            : list
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to add item';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
+
+  const toggleTodoItem = useCallback(async (listId: string, itemId: string) => {
+    try {
+      const updatedItem = await userService.toggleTodoItem(listId, itemId);
+      setTodoLists(prev =>
+        prev.map(list =>
+          list.id === listId
+            ? {
+                ...list,
+                items: list.items.map(item =>
+                  item.id === itemId ? toLocalTodoItem(updatedItem) : item
+                )
+              }
+            : list
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to toggle item';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
+
+  const updateTodoItem = useCallback(async (listId: string, itemId: string, updates: Partial<TodoItem>) => {
+    try {
+      const input: { text?: string; completed?: boolean; status?: TodoItem["status"]; sortOrder?: number } = {};
+      if (updates.text !== undefined) input.text = updates.text;
+      if (updates.completed !== undefined) input.completed = updates.completed;
+      if (updates.status !== undefined) input.status = updates.status;
+      if (updates.sortOrder !== undefined) input.sortOrder = updates.sortOrder;
+
+      const updatedItem = await userService.updateTodoItem(listId, itemId, input);
+      setTodoLists(prev =>
+        prev.map(list =>
+          list.id === listId
+            ? {
+                ...list,
+                items: list.items
+                  .map(item => (item.id === itemId ? toLocalTodoItem(updatedItem) : item))
+                  .sort((a, b) => a.sortOrder - b.sortOrder),
+              }
+            : list
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update item';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
+
+  const deleteTodoItem = useCallback(async (listId: string, itemId: string) => {
+    try {
+      await userService.deleteTodoItem(listId, itemId);
+      setTodoLists(prev =>
+        prev.map(list =>
+          list.id === listId
+            ? { ...list, items: list.items.filter(item => item.id !== itemId) }
+            : list
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete item';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
+
+  const reorderTodoItems = useCallback(async (listId: string, orderedIds: string[]) => {
+    const nextOrder = new Map(orderedIds.map((id, index) => [id, index]));
+    setTodoLists(prev =>
+      prev.map(list =>
+        list.id === listId
+          ? {
+              ...list,
+              items: list.items
+                .map(item =>
+                  nextOrder.has(item.id)
+                    ? { ...item, sortOrder: nextOrder.get(item.id)! }
+                    : item
+                )
+                .sort((a, b) => a.sortOrder - b.sortOrder),
+            }
           : list
       )
     );
-  };
 
-  const toggleTodoItem = (listId: string, itemId: string) => {
-    setTodoLists(
-      todoLists.map(list => 
-        list.id === listId 
-          ? { 
-              ...list, 
-              items: list.items.map(item => 
-                item.id === itemId 
-                  ? { ...item, completed: !item.completed } 
-                  : item
-              ) 
-            } 
-          : list
-      )
+    try {
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          userService.updateTodoItem(listId, id, { sortOrder: index })
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to reorder items';
+      toast.error(message);
+      throw err;
+    }
+  }, []);
+
+  const setAllCompleted = useCallback(async (listId: string, completed: boolean) => {
+    const list = todoLists.find(item => item.id === listId);
+    if (!list) return;
+
+    const updates = list.items.map(item =>
+      userService.updateTodoItem(listId, item.id, {
+        completed,
+        status: completed ? "done" : "todo",
+      })
     );
-  };
 
-  const deleteTodoItem = (listId: string, itemId: string) => {
-    setTodoLists(
-      todoLists.map(list => 
-        list.id === listId 
-          ? { ...list, items: list.items.filter(item => item.id !== itemId) } 
-          : list
-      )
-    );
-  };
+    try {
+      const updatedItems = await Promise.all(updates);
+      setTodoLists(prev =>
+        prev.map(item =>
+          item.id === listId
+            ? {
+                ...item,
+                items: updatedItems.map(toLocalTodoItem).sort((a, b) => a.sortOrder - b.sortOrder),
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update items';
+      toast.error(message);
+      throw err;
+    }
+  }, [todoLists]);
 
-  const getTodoList = (id: string) => {
+  const clearCompleted = useCallback(async (listId: string) => {
+    const list = todoLists.find(item => item.id === listId);
+    if (!list) return;
+    const completedItems = list.items.filter(item => item.completed);
+    if (completedItems.length === 0) return;
+
+    try {
+      await Promise.all(
+        completedItems.map(item => userService.deleteTodoItem(listId, item.id))
+      );
+      setTodoLists(prev =>
+        prev.map(item =>
+          item.id === listId
+            ? { ...item, items: item.items.filter(todo => !todo.completed) }
+            : item
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to clear completed items';
+      toast.error(message);
+      throw err;
+    }
+  }, [todoLists]);
+
+  const getTodoList = useCallback((id: string) => {
     return todoLists.find(list => list.id === id);
-  };
+  }, [todoLists]);
 
   return {
     todoLists,
+    isLoading,
+    error,
     createTodoList,
     updateTodoList,
     deleteTodoList,
     addTodoItem,
     toggleTodoItem,
+    updateTodoItem,
     deleteTodoItem,
+    reorderTodoItems,
+    setAllCompleted,
+    clearCompleted,
     getTodoList
   };
 };

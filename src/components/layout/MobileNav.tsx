@@ -1,8 +1,6 @@
-
 import { Home, Calendar, Users, BookOpen, Filter, Briefcase, CheckSquare } from "lucide-react";
 import NavLink from "./NavLink";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 interface MobileNavProps {
   isAuthenticated: boolean;
@@ -10,33 +8,12 @@ interface MobileNavProps {
 }
 
 const MobileNav = ({ isAuthenticated, isOpen }: MobileNavProps) => {
+  const { user } = useAuth();
+
   if (!isOpen) return null;
-  
-  const [userType, setUserType] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const getUserType = async () => {
-      if (isAuthenticated) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (data) {
-            setUserType(data.user_type);
-          }
-        }
-      }
-    };
-    
-    getUserType();
-  }, [isAuthenticated]);
-  
-  const isVendor = userType === "vendor";
-  const isPlanner = userType === "planner";
+
+  const isVendor = user?.userType === "vendor";
+  const isPlanner = user?.userType === "planner";
 
   return (
     <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg border-b border-border/50 shadow-elegant animate-fade-in-down">
@@ -44,7 +21,7 @@ const MobileNav = ({ isAuthenticated, isOpen }: MobileNavProps) => {
         <NavLink to="/" className="px-4 py-2" showIcon icon={<Home className="w-5 h-5" />}>
           Home
         </NavLink>
-        
+
         {!isAuthenticated ? (
           <>
             <NavLink to="/features" className="px-4 py-2" showIcon icon={<Calendar className="w-5 h-5" />}>

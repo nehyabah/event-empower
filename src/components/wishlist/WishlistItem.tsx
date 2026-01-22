@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Check, X, Gift, ExternalLink, Tag, UserX } from "lucide-react";
 import { WishlistItem as WishlistItemType } from "@/context/types";
-import { useWishlist } from "@/context/useWishlist";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -16,18 +15,27 @@ interface WishlistItemProps {
   item: WishlistItemType;
   isPreviewMode: boolean;
   isPublicView: boolean;
+  onPurchase?: (itemId: string, purchaserName: string, isAnonymous: boolean) => Promise<void> | void;
+  onRemovePurchase?: (itemId: string) => Promise<void> | void;
 }
 
-const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) => {
-  const { markItemAsPurchased, removeItemPurchaser } = useWishlist();
+const WishlistItem = ({
+  item,
+  isPreviewMode,
+  isPublicView,
+  onPurchase,
+  onRemovePurchase,
+}: WishlistItemProps) => {
   const [purchaserName, setPurchaserName] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [open, setOpen] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (purchaserName.trim()) {
-      markItemAsPurchased(item.id, purchaserName, isAnonymous);
+      if (onPurchase) {
+        await onPurchase(item.id, purchaserName, isAnonymous);
+      }
       setPurchaserName("");
       setIsAnonymous(false);
       setOpen(false);
@@ -35,7 +43,9 @@ const WishlistItem = ({ item, isPreviewMode, isPublicView }: WishlistItemProps) 
   };
   
   const handleRemovePurchaser = () => {
-    removeItemPurchaser(item.id);
+    if (onRemovePurchase) {
+      onRemovePurchase(item.id);
+    }
   };
   
   const priorityColors = {

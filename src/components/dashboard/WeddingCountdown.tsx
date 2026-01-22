@@ -1,9 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CalendarIcon, Heart, Edit } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -11,155 +8,112 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-
-interface TimeLeft {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-}
 
 interface WeddingCountdownProps {
-  weddingDate?: string; // ISO date string
-  onDateChange?: (date: string) => void;
+  date: Date | undefined;
+  onDateChange: (date: Date | undefined) => void;
 }
 
-const WeddingCountdown = ({ 
-  weddingDate = "2024-12-31", 
-  onDateChange 
-}: WeddingCountdownProps) => {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [date, setDate] = useState<Date | undefined>(new Date(weddingDate));
-  const [isEditing, setIsEditing] = useState(false);
+const TimeUnit = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col items-center">
+    <span className="text-3xl md:text-4xl font-serif font-medium text-zinc-900 leading-none tabular-nums">
+      {value.toString().padStart(2, "0")}
+    </span>
+    <span className="text-[10px] uppercase tracking-widest text-zinc-400 mt-2 font-medium">
+      {label}
+    </span>
+  </div>
+);
+
+const WeddingCountdown = ({ date, onDateChange }: WeddingCountdownProps) => {
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+  });
 
   useEffect(() => {
-    // Calculate time left
-    const calculateTimeLeft = () => {
-      const difference = new Date(weddingDate).getTime() - new Date().getTime();
-      
+    if (!date) {
+      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
+
+    const calculateTime = () => {
+      const now = new Date().getTime();
+      const target = date.getTime();
+      const difference = target - now;
+
       if (difference > 0) {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
           hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
           minutes: Math.floor((difference / 1000 / 60) % 60),
-          seconds: Math.floor((difference / 1000) % 60)
+          seconds: Math.floor((difference / 1000) % 60),
         });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       }
     };
 
-    // Initial calculation
-    calculateTimeLeft();
-    
-    // Update every second
-    const timer = setInterval(calculateTimeLeft, 1000);
-    
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+
     return () => clearInterval(timer);
-  }, [weddingDate]);
-
-  useEffect(() => {
-    // Update the date state when weddingDate prop changes
-    setDate(new Date(weddingDate));
-  }, [weddingDate]);
-
-  const handleDateSelect = (newDate: Date | undefined) => {
-    if (!newDate) return;
-    
-    setDate(newDate);
-    
-    // Format the date as ISO string and call the onDateChange callback
-    const isoDate = newDate.toISOString().split('T')[0];
-    if (onDateChange) {
-      onDateChange(isoDate);
-    }
-    
-    // Show success message
-    toast.success("Wedding date updated successfully!");
-    
-    // Close the date picker
-    setIsEditing(false);
-  };
-
-  // Get the name of the month for display
-  const weddingMonth = date ? format(date, "MMMM") : "";
-  // Get the day of the month for display
-  const weddingDay = date ? format(date, "d") : "";
-  // Get the year for display
-  const weddingYear = date ? format(date, "yyyy") : "";
+  }, [date]);
 
   return (
-    <Card className="overflow-hidden relative border-0 shadow-lg bg-gradient-to-tr from-background via-background to-background/90">
-      {/* Decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTAwIDEwMHY1MHYtNTBoNTBoLTUweiIgc3Ryb2tlPSJoc2woMzIgNDAlIDUwJSAvIDAuMDUpIiBzdHJva2Utd2lkdGg9IjAuNSIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==')] opacity-10" />
-      <div className="absolute -top-20 -right-20 w-80 h-80 bg-wedding-gold/5 rounded-full blur-3xl" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-wedding-burgundy/5 rounded-full blur-3xl" />
-      
-      <CardContent className="p-0">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-          {/* Left column: Date display */}
-          <div className="bg-gradient-to-br from-wedding-gold/10 via-wedding-gold/5 to-transparent p-6 md:p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-wedding-gold/10 relative">
-            <div className="text-4xl md:text-5xl font-serif font-light text-wedding-gold mb-1 md:mb-2">{weddingMonth}</div>
-            <div className="text-7xl md:text-8xl font-serif font-bold bg-gradient-to-br from-wedding-gold to-wedding-burgundy/80 bg-clip-text text-transparent">{weddingDay}</div>
-            <div className="text-2xl md:text-3xl font-serif text-muted-foreground mt-0 md:mt-1">{weddingYear}</div>
-            
-            <Popover open={isEditing} onOpenChange={setIsEditing}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-4 text-xs border-wedding-gold/20 text-wedding-gold hover:bg-wedding-gold/5 hover:text-wedding-gold/90 gap-2 group absolute top-2 right-2"
-                >
-                  <Edit className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
-                  Edit
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={handleDateSelect}
-                  initialFocus
-                  disabled={(calendarDate) => calendarDate < new Date()}
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          {/* Right column: Countdown */}
-          <div className="col-span-1 md:col-span-2 p-6 md:p-8">
-            <div className="flex items-center gap-3 mb-4 md:mb-6">
-              <Heart className="w-5 h-5 text-wedding-burgundy/70 animate-pulse-soft" />
-              <h3 className="text-xl md:text-3xl font-serif">
-                <span className="bg-gradient-to-r from-wedding-gold to-wedding-burgundy/80 bg-clip-text text-transparent">Your Special Day</span>
-              </h3>
-            </div>
-            
-            <div className="grid grid-cols-4 gap-3 md:gap-4 max-w-xl">
-              {Object.entries(timeLeft).map(([unit, value]) => (
-                <div key={unit} className="flex flex-col items-center">
-                  <div className="w-full aspect-square relative rounded-xl overflow-hidden group">
-                    {/* Background layers with improved mobile styling */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-wedding-gold/10 to-transparent opacity-80"></div>
-                    <div className="absolute inset-0 border border-wedding-gold/20 rounded-xl"></div>
-                    
-                    {/* Number display with responsive font size */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent group-hover:scale-110 transition-transform">
-                        {value}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="mt-2 text-xs md:text-sm text-muted-foreground capitalize">
-                    {unit}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="w-full max-w-3xl mx-auto animate-fade-in-up">
+      <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-zinc-100 p-2 flex flex-col md:flex-row items-center gap-2">
+        {/* Date Selector */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className={cn(
+                "group relative flex items-center gap-4 px-8 py-6 w-full md:w-auto rounded-[1.5rem] transition-all duration-300 outline-none",
+                "bg-zinc-50 hover:bg-zinc-900 hover:text-white text-zinc-900 border border-transparent hover:border-zinc-900",
+              )}
+            >
+              <div className="flex flex-col items-start text-left min-w-[140px]">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-40 mb-1 group-hover:text-zinc-400 group-hover:opacity-100 transition-all">
+                  Big Day
+                </span>
+                <span className="font-serif text-2xl font-medium tracking-tight">
+                  {date ? format(date, "MMM d, yyyy") : "Pick Date"}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-white group-hover:bg-zinc-800 flex items-center justify-center shadow-sm ml-auto md:ml-0 transition-colors border border-zinc-100 group-hover:border-zinc-700">
+                <Edit2 className="w-4 h-4 opacity-40 group-hover:opacity-100 group-hover:text-white" />
+              </div>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto p-0 border-none shadow-2xl rounded-xl"
+            align="start"
+          >
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={onDateChange}
+              initialFocus
+              className="p-3 bg-white rounded-xl"
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Divider */}
+        <div className="hidden md:block w-px h-16 bg-zinc-100 mx-4"></div>
+        <div className="block md:hidden w-full h-px bg-zinc-100 my-2"></div>
+
+        {/* Countdown Display */}
+        <div className="flex-1 w-full grid grid-cols-4 gap-4 px-4 py-4 md:py-0">
+          <TimeUnit value={timeLeft.days} label="Days" />
+          <TimeUnit value={timeLeft.hours} label="Hours" />
+          <TimeUnit value={timeLeft.minutes} label="Mins" />
+          <TimeUnit value={timeLeft.seconds} label="Secs" />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

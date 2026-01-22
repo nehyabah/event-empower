@@ -1,57 +1,70 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { CheckSquare, Calendar, Plus, Search, Filter, Clock, ArrowUpDown } from "lucide-react";
+import { CheckSquare, Calendar, Plus, Search, Filter, Clock, ArrowUpDown, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-
-interface Task {
-  id: string;
-  title: string;
-  client: string;
-  dueDate: string;
-  status: "pending" | "in-progress" | "completed";
-  priority: "low" | "medium" | "high";
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { usePlannerTasks } from "@/hooks/usePlannerTasks";
+import { usePlannerClients } from "@/hooks/usePlannerClients";
+import { PlannerTask } from "@/services/api/plannerService";
 
 const PlannerTasks = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
-  
-  // Sample tasks data
-  const initialTasks: Task[] = [
-    { id: "1", title: "Confirm catering order", client: "Smith Wedding", dueDate: "Mar 15", status: "pending", priority: "high" },
-    { id: "2", title: "Schedule final venue walkthrough", client: "Johnson Wedding", dueDate: "Mar 20", status: "in-progress", priority: "medium" },
-    { id: "3", title: "Send welcome packages", client: "Garcia Wedding", dueDate: "Mar 22", status: "completed", priority: "low" },
-    { id: "4", title: "Confirm floral arrangements", client: "Smith Wedding", dueDate: "Mar 25", status: "pending", priority: "medium" },
-    { id: "5", title: "Review seating arrangements", client: "Johnson Wedding", dueDate: "Mar 28", status: "in-progress", priority: "high" },
-    { id: "6", title: "Book transportation", client: "Chen Wedding", dueDate: "Apr 2", status: "pending", priority: "medium" },
-    { id: "7", title: "Finalize music playlist", client: "Williams Wedding", dueDate: "Apr 5", status: "completed", priority: "low" },
-    { id: "8", title: "Send final timeline to vendors", client: "Garcia Wedding", dueDate: "Apr 8", status: "pending", priority: "high" },
-  ];
-  
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  
-  // Basic auth check
-  useEffect(() => {
-    const isAuthenticated = localStorage.getItem("authenticated");
-    if (!isAuthenticated) {
-      navigate("/");
-    }
-  }, [navigate]);
-  
+  const { tasks, isLoading, error, pendingTasks, inProgressTasks, completedTasks, createTask } = usePlannerTasks();
+  const { clients, getClientName } = usePlannerClients();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    clientId: "none",
+    dueDate: "",
+    priority: "medium",
+    status: "pending",
+    description: "",
+  });
+
+  const canSubmit = useMemo(() => newTask.title.trim().length > 0, [newTask.title]);
+
+  // Format date for display
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return 'No due date';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
   // Filter tasks based on search term and completion status
-  const filteredTasks = tasks.filter(task => 
-    (task.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-     task.client.toLowerCase().includes(searchTerm.toLowerCase())) && 
+  const filteredTasks = tasks.filter(task =>
+    (task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     (task.client_name || '').toLowerCase().includes(searchTerm.toLowerCase())) &&
     (showCompleted || task.status !== "completed")
   );
-  
+
+  // Get overdue tasks
+  const overdueTasks = tasks.filter(task => {
+    if (!task.due_date || task.status === 'completed') return false;
+    const dueDate = new Date(task.due_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  });
+
+  // Get upcoming tasks (due in next 7 days)
+  const upcomingTasks = tasks.filter(task => {
+    if (!task.due_date || task.status === 'completed') return false;
+    const dueDate = new Date(task.due_date);
+    const today = new Date();
+    const weekFromNow = new Date();
+    today.setHours(0, 0, 0, 0);
+    weekFromNow.setDate(today.getDate() + 7);
+    return dueDate >= today && dueDate <= weekFromNow;
+  });
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'text-red-500';
@@ -60,20 +73,71 @@ const PlannerTasks = () => {
       default: return 'text-slate-500';
     }
   };
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed': 
+      case 'completed':
         return <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Completed</span>;
-      case 'in-progress': 
+      case 'in-progress':
         return <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">In Progress</span>;
-      case 'pending': 
+      case 'pending':
         return <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">Pending</span>;
-      default: 
+      default:
         return null;
     }
   };
-  
+
+  // Task row component
+  const TaskRow = ({ task }: { task: PlannerTask }) => (
+    <div key={task.id} className="p-4 hover:bg-muted/50 transition-colors">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-medium mb-1">{task.title}</h3>
+          <p className="text-sm text-muted-foreground">{task.client_name || 'No client'}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          {getStatusBadge(task.status)}
+          <div className="flex items-center text-sm">
+            <Clock className="mr-1 h-3 w-3 text-muted-foreground" />
+            <span className={getPriorityColor(task.priority)}>{formatDate(task.due_date)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-24 pb-16 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading tasks...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-24 pb-16">
+          <div className="p-8 text-center bg-red-50 rounded-lg">
+            <p className="text-red-600">Error loading tasks: {error}</p>
+            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -88,13 +152,13 @@ const PlannerTasks = () => {
               <Calendar className="mr-2 h-4 w-4" />
               Calendar View
             </Button>
-            <Button>
+            <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New Task
             </Button>
           </div>
         </div>
-        
+
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -112,15 +176,15 @@ const PlannerTasks = () => {
             <Switch checked={showCompleted} onCheckedChange={setShowCompleted} />
           </div>
         </div>
-        
+
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-md">
-            <TabsTrigger value="all">All Tasks</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="overdue">Overdue</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming ({upcomingTasks.length})</TabsTrigger>
+            <TabsTrigger value="overdue">Overdue ({overdueTasks.length})</TabsTrigger>
+            <TabsTrigger value="completed">Done ({completedTasks.length})</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="all">
             <Card>
               <CardHeader className="py-4">
@@ -136,66 +200,203 @@ const PlannerTasks = () => {
                 <div className="divide-y">
                   {filteredTasks.length > 0 ? (
                     filteredTasks.map((task) => (
-                      <div key={task.id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium mb-1">{task.title}</h3>
-                            <p className="text-sm text-muted-foreground">{task.client}</p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            {getStatusBadge(task.status)}
-                            <div className="flex items-center text-sm">
-                              <Clock className="mr-1 h-3 w-3 text-muted-foreground" />
-                              <span className={getPriorityColor(task.priority)}>{task.dueDate}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <TaskRow key={task.id} task={task} />
                     ))
                   ) : (
                     <div className="p-8 text-center">
-                      <p className="text-muted-foreground">No tasks found matching your filters.</p>
+                      <p className="text-muted-foreground">
+                        {tasks.length === 0 ? "No tasks yet. Create your first task!" : "No tasks found matching your filters."}
+                      </p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="upcoming">
             <Card>
-              <CardHeader>
+              <CardHeader className="py-4">
                 <CardTitle>Upcoming Tasks</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Tasks due in the next 7 days...</p>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {upcomingTasks.length > 0 ? (
+                    upcomingTasks.map((task) => (
+                      <TaskRow key={task.id} task={task} />
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No upcoming tasks in the next 7 days.</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="overdue">
             <Card>
-              <CardHeader>
+              <CardHeader className="py-4">
                 <CardTitle>Overdue Tasks</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Tasks that are past their due date...</p>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {overdueTasks.length > 0 ? (
+                    overdueTasks.map((task) => (
+                      <TaskRow key={task.id} task={task} />
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No overdue tasks. Great job!</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="completed">
             <Card>
-              <CardHeader>
+              <CardHeader className="py-4">
                 <CardTitle>Completed Tasks</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Tasks you've already completed...</p>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {completedTasks.length > 0 ? (
+                    completedTasks.map((task) => (
+                      <TaskRow key={task.id} task={task} />
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <p className="text-muted-foreground">No completed tasks yet.</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Create new task</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Title</label>
+              <Input
+                value={newTask.title}
+                onChange={(e) => setNewTask((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Finalize catering quote"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Client</label>
+              <Select
+                value={newTask.clientId}
+                onValueChange={(value) => setNewTask((prev) => ({ ...prev, clientId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No client</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {getClientName(client)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Due date</label>
+              <Input
+                type="date"
+                value={newTask.dueDate}
+                onChange={(e) => setNewTask((prev) => ({ ...prev, dueDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Priority</label>
+              <Select
+                value={newTask.priority}
+                onValueChange={(value) => setNewTask((prev) => ({ ...prev, priority: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select
+                value={newTask.status}
+                onValueChange={(value) => setNewTask((prev) => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in-progress">In progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={newTask.description}
+                onChange={(e) => setNewTask((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Add task details..."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!canSubmit || isSubmitting}
+              onClick={async () => {
+                if (!canSubmit) return;
+                setIsSubmitting(true);
+                const created = await createTask({
+                  title: newTask.title.trim(),
+                  clientId: newTask.clientId !== "none" ? newTask.clientId : undefined,
+                  dueDate: newTask.dueDate || undefined,
+                  priority: newTask.priority as "low" | "medium" | "high",
+                  status: newTask.status as "pending" | "in-progress" | "completed",
+                  description: newTask.description.trim() || undefined,
+                });
+                setIsSubmitting(false);
+                if (created) {
+                  setIsCreateOpen(false);
+                  setNewTask({
+                    title: "",
+                    clientId: "none",
+                    dueDate: "",
+                    priority: "medium",
+                    status: "pending",
+                    description: "",
+                  });
+                }
+              }}
+            >
+              {isSubmitting ? "Saving..." : "Create task"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

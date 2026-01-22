@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -42,18 +43,29 @@ const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
     defaultValues: expense ? { ...expense } : {
       name: "",
       amount: 0,
+      amountPaid: 0,
       category: "other",
       date: new Date(),
       paid: false,
       notes: "",
     },
   });
+  const amountValue = form.watch("amount");
 
   const onSubmit = (data: Omit<Expense, "id">) => {
+    const amount = Number(data.amount) || 0;
+    const amountPaid = Math.min(Math.max(Number(data.amountPaid) || 0, 0), Math.max(amount, 0));
+    const paid = amountPaid >= amount;
+    const payload = {
+      ...data,
+      amount,
+      amountPaid,
+      paid,
+    };
     if (expense) {
-      updateExpense(expense.id, { ...data, date: date || new Date() });
+      updateExpense(expense.id, { ...payload, date: date || new Date() });
     } else {
-      addExpense({ ...data, date: date || new Date() });
+      addExpense({ ...payload, date: date || new Date() });
     }
     onCancel();
   };
@@ -86,6 +98,26 @@ const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
                   type="number" 
                   placeholder="0.00" 
                   {...field} 
+                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="amountPaid"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount Paid (₦)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  max={Number(amountValue) || 0}
+                  {...field}
                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
                 />
               </FormControl>
@@ -150,35 +182,16 @@ const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
 
         <FormField
           control={form.control}
-          name="paid"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <input
-                  type="checkbox"
-                  checked={field.value}
-                  onChange={field.onChange}
-                  className="h-4 w-4 mt-1"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>Paid</FormLabel>
-                <p className="text-sm text-muted-foreground">
-                  Mark this expense as paid
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="notes"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Notes (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="Add notes" {...field} />
+                <Textarea
+                  placeholder="Add notes (one per line)"
+                  rows={4}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

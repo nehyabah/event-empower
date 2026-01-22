@@ -16,9 +16,8 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-import { registerUser } from "@/services/authService";
-import { useNavigate } from "react-router-dom";
+import { Loader2, Heart, Briefcase, Store } from "lucide-react";
+import { useAuth, UserType } from "@/context/AuthContext";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -41,8 +40,8 @@ interface RegisterFormProps {
 
 const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  
+  const { register } = useAuth();
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,31 +55,21 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
-    
+
     try {
       console.log("Registration data:", data);
-      
-      const user = await registerUser({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: data.role
-      });
-      
+
+      // Convert role to userType
+      const userType: UserType = data.role === "couple" ? "client" : data.role;
+
+      await register(data.email, data.password, data.name, userType);
+
       toast.success("Registration successful!", {
         description: `Welcome to Planr, ${data.name}! Start planning your perfect event.`,
       });
-      
+
+      // Close the modal - ProtectedRoute will handle navigation
       if (onSuccess) onSuccess();
-      
-      // Navigate based on user type
-      if (user.userType === "planner") {
-        navigate("/planner-home");
-      } else if (user.userType === "vendor") {
-        navigate("/vendor-home");
-      } else {
-        navigate("/home");
-      }
     } catch (error) {
       console.error("Registration error:", error);
       toast.error("Registration failed", {
@@ -180,42 +169,45 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
                   defaultValue={field.value}
                   className="grid grid-cols-3 gap-2"
                 >
-                  <div className="flex items-center">
+                  <div>
                     <RadioGroupItem value="couple" id="couple" className="sr-only" />
                     <Label
                       htmlFor="couple"
-                      className={`w-full text-center px-3 py-2 rounded-md cursor-pointer transition-all ${
+                      className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
                         field.value === "couple"
-                          ? "bg-primary/10 border border-primary/30 text-primary"
-                          : "bg-secondary border border-secondary hover:bg-secondary/80"
+                          ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
+                          : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
                       }`}
                     >
+                      <Heart className="h-4 w-4" />
                       Couple
                     </Label>
                   </div>
-                  <div className="flex items-center">
+                  <div>
                     <RadioGroupItem value="planner" id="planner" className="sr-only" />
                     <Label
                       htmlFor="planner"
-                      className={`w-full text-center px-3 py-2 rounded-md cursor-pointer transition-all ${
+                      className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
                         field.value === "planner"
-                          ? "bg-primary/10 border border-primary/30 text-primary"
-                          : "bg-secondary border border-secondary hover:bg-secondary/80"
+                          ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
+                          : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
                       }`}
                     >
+                      <Briefcase className="h-4 w-4" />
                       Planner
                     </Label>
                   </div>
-                  <div className="flex items-center">
+                  <div>
                     <RadioGroupItem value="vendor" id="vendor" className="sr-only" />
                     <Label
                       htmlFor="vendor"
-                      className={`w-full text-center px-3 py-2 rounded-md cursor-pointer transition-all ${
+                      className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
                         field.value === "vendor"
-                          ? "bg-primary/10 border border-primary/30 text-primary"
-                          : "bg-secondary border border-secondary hover:bg-secondary/80"
+                          ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
+                          : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
                       }`}
                     >
+                      <Store className="h-4 w-4" />
                       Vendor
                     </Label>
                   </div>

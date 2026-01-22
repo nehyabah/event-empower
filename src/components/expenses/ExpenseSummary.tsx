@@ -7,12 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Edit } from "lucide-react";
 
 const ExpenseSummary = () => {
-  const { expenses, totalBudget, setTotalBudget } = useExpenses();
+  const { totalBudget, setTotalBudget, totalSpent, remainingBudget } = useExpenses();
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [newBudget, setNewBudget] = useState(totalBudget);
 
-  const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const remaining = totalBudget - totalSpent;
   const percentSpent = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
   const handleSaveBudget = () => {
@@ -67,16 +65,16 @@ const ExpenseSummary = () => {
         </CardContent>
       </Card>
       
-      <Card className={`${remaining >= 0 ? "bg-green-50" : "bg-red-50"}`}>
+      <Card className={`${remainingBudget >= 0 ? "bg-green-50" : "bg-red-50"}`}>
         <CardContent className="p-6">
           <h3 className="text-sm font-medium mb-2">Remaining Budget</h3>
-          <p className={`text-2xl font-bold ${remaining < 0 ? "text-red-600" : ""}`}>
-            ₦{remaining.toLocaleString()}
+          <p className={`text-2xl font-bold ${remainingBudget < 0 ? "text-red-600" : ""}`}>
+            ₦{remainingBudget.toLocaleString()}
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            {remaining >= 0 
+            {remainingBudget >= 0 
               ? `You're within budget!` 
-              : `You're over budget by ₦${Math.abs(remaining).toLocaleString()}`}
+              : `You're over budget by ₦${Math.abs(remainingBudget).toLocaleString()}`}
           </p>
         </CardContent>
       </Card>

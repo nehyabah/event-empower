@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,12 +6,12 @@ import { Heart, Menu, X } from "lucide-react";
 import DesktopNav from './DesktopNav';
 import MobileNav from './MobileNav';
 import AuthButtons from './AuthButtons';
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -23,25 +22,6 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  useEffect(() => {
-    // Check auth status when component mounts
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
-    };
-    
-    checkAuth();
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
-    });
-    
-    return () => {
-      subscription.unsubscribe();
     };
   }, []);
 
@@ -69,9 +49,9 @@ const Navbar = () => {
         <AuthButtons isAuthenticated={isAuthenticated} />
 
         {/* Mobile Menu Button */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
@@ -85,7 +65,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       <MobileNav isAuthenticated={isAuthenticated} isOpen={mobileMenuOpen} />
-      
+
       {/* Auth Buttons (Mobile) */}
       {mobileMenuOpen && (
         <div className="md:hidden container py-2 pb-4 border-t border-border/50">

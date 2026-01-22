@@ -1,11 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 interface AuthButtonsProps {
   isAuthenticated: boolean;
@@ -14,38 +12,17 @@ interface AuthButtonsProps {
 
 const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) => {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const getUserType = async () => {
-      if (isAuthenticated) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (data) {
-            setUserType(data.user_type);
-          }
-        }
-      }
-    };
-    
-    getUserType();
-  }, [isAuthenticated]);
-  
+  const { logout } = useAuth();
+
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await logout();
       toast({
         title: "You've been logged out",
         description: "Hope to see you again soon!",
         variant: "default",
       });
-      
+
       // Force navigation to the root URL and a page reload
       navigate("/");
       window.location.reload();
@@ -62,16 +39,16 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
   if (!isAuthenticated) {
     return (
       <div className={isMobile ? "flex flex-col gap-2" : "hidden md:flex items-center gap-4"}>
-        <AuthModal 
-          defaultTab="login" 
+        <AuthModal
+          defaultTab="login"
           trigger={
             <Button variant="outline" className={isMobile ? "w-full justify-start" : "button-hover"}>
               Log in
             </Button>
           }
         />
-        <AuthModal 
-          defaultTab="register" 
+        <AuthModal
+          defaultTab="register"
           trigger={
             <Button className={isMobile ? "w-full justify-start" : "button-hover"}>
               Get Started
@@ -84,9 +61,9 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
 
   return (
     <div className={isMobile ? "flex flex-col gap-2" : "hidden md:flex items-center gap-4"}>
-      <Button 
-        variant="outline" 
-        className={isMobile ? "w-full justify-start" : "flex items-center gap-2"} 
+      <Button
+        variant="outline"
+        className={isMobile ? "w-full justify-start" : "flex items-center gap-2"}
         onClick={handleLogout}
       >
         <LogOut className={isMobile ? "mr-2 h-4 w-4" : "h-4 w-4"} />

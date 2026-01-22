@@ -5,16 +5,24 @@ import { PlusCircle } from "lucide-react";
 
 interface TodoListProps {
   filter: "all" | "active" | "completed";
+  searchQuery: string;
 }
 
-const TodoList = ({ filter }: TodoListProps) => {
+const TodoList = ({ filter, searchQuery }: TodoListProps) => {
   const { todoLists } = useTodo();
+  const normalizedQuery = searchQuery.trim().toLowerCase();
   
   const filteredLists = todoLists.filter(list => {
     if (filter === "all") return true;
     if (filter === "active") return !list.isCompleted;
     if (filter === "completed") return list.isCompleted;
     return true;
+  }).filter(list => {
+    if (!normalizedQuery) return true;
+    return (
+      list.title.toLowerCase().includes(normalizedQuery) ||
+      (list.description || "").toLowerCase().includes(normalizedQuery)
+    );
   });
   
   if (filteredLists.length === 0) {

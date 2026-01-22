@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
+import { vendorService } from "@/services/api/vendorService";
+import { useAuth } from "@/context/AuthContext";
 
 interface SocialLink {
   platform: string;
@@ -42,10 +44,13 @@ interface ServiceItem {
 
 const VendorProfile = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [coverImage, setCoverImage] = useState<{ key: string; url: string } | null>(null);
+  const [profileImage, setProfileImage] = useState<{ key: string; url: string } | null>(null);
+  const [galleryImages, setGalleryImages] = useState<Array<{ key: string; url: string }>>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [vendorEmail, setVendorEmail] = useState<string>("");
   
   const [formData, setFormData] = useState({
@@ -71,19 +76,91 @@ const VendorProfile = () => {
 
   // Basic auth check
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("authenticated");
-    const userType = localStorage.getItem("userType");
-    const email = localStorage.getItem("userEmail");
-    
-    if (!isAuthenticated || userType !== "vendor") {
+    if (isLoading) return;
+    if (!isAuthenticated || user?.userType !== "vendor") {
       navigate("/");
       toast.error("You need to be logged in as a vendor to access this page");
+      return;
     }
-    
-    if (email) {
-      setVendorEmail(email);
+
+    if (user?.email) {
+      setVendorEmail(user.email);
     }
-  }, [navigate]);
+  }, [isAuthenticated, isLoading, navigate, user]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (isLoading || !isAuthenticated || user?.userType !== "vendor") return;
+      try {
+        setIsFetching(true);
+        const vendor = await vendorService.getMyVendorProfile();
+        if (!vendor) return;
+
+        setFormData({
+          companyName: vendor.profile.business_name,
+          category: vendor.profile.category,
+          description: vendor.profile.description || "",
+          location: vendor.profile.location || "",
+          phone: vendor.profile.phone || "",
+          website: vendor.profile.website || "",
+        });
+        if (vendor.profile.cover_image_url) {
+          setCoverImage({
+            key: vendor.profile.cover_image_key || vendor.profile.cover_image_url,
+            url: vendor.profile.cover_image_url,
+          });
+        }
+        if (vendor.profile.profile_image_url) {
+          setProfileImage({
+            key: vendor.profile.profile_image_key || vendor.profile.profile_image_url,
+            url: vendor.profile.profile_image_url,
+          });
+        }
+
+        const images = vendor.images.sort((a, b) => a.display_order - b.display_order);
+        setGalleryImages(
+          images
+            .filter((image) => image.url)
+            .map((image) => ({
+              key: image.key || image.url,
+              url: image.url,
+            }))
+        );
+
+        if (vendor.profile.email) {
+          setVendorEmail(vendor.profile.email);
+        }
+
+        if (Array.isArray(vendor.profile.social_links)) {
+          const updatedLinks = socialLinks.map((link) => {
+            const match = vendor.profile.social_links.find((entry) => {
+              const typedEntry = entry as { platform?: string; url?: string };
+              return typedEntry.platform === link.platform;
+            }) as { platform?: string; url?: string } | undefined;
+            return match ? { ...link, url: match.url || "" } : link;
+          });
+          setSocialLinks(updatedLinks);
+        }
+
+        if (vendor.services.length > 0) {
+          setServices(
+            vendor.services.map((service) => ({
+              id: service.id,
+              name: service.name,
+              description: service.description || "",
+              price: service.price !== null ? String(service.price) : "",
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load vendor profile:", error);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchProfile();
+  }, [isAuthenticated, isLoading, user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -114,25 +191,30 @@ const VendorProfile = () => {
     }
   };
   
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'profile' | 'gallery') => {
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: 'cover' | 'profile' | 'gallery'
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        const imageUrl = event.target.result as string;
-        
-        if (type === 'cover') {
-          setCoverImage(imageUrl);
-        } else if (type === 'profile') {
-          setProfileImage(imageUrl);
-        } else if (type === 'gallery') {
-          setGalleryImages(prev => [...prev, imageUrl]);
-        }
+
+    setIsUploading(true);
+    try {
+      const upload = await vendorService.uploadVendorImage(file);
+      if (type === 'cover') {
+        setCoverImage(upload);
+      } else if (type === 'profile') {
+        setProfileImage(upload);
+      } else if (type === 'gallery') {
+        setGalleryImages(prev => [...prev, upload]);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      toast.error("Image upload failed");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
   };
   
   const removeGalleryImage = (index: number) => {
@@ -140,15 +222,54 @@ const VendorProfile = () => {
   };
   
   const handleSaveProfile = () => {
-    setIsLoading(true);
-    
-    // Simulate saving profile
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Profile saved successfully!", {
-        description: "Your vendor profile has been updated.",
-      });
-    }, 1500);
+    const normalizePrice = (value: string) => {
+      const cleaned = value.replace(/[^\d.]/g, "");
+      return cleaned.length > 0 ? cleaned : undefined;
+    };
+
+    const payload = {
+      businessName: formData.companyName,
+      category: formData.category,
+      description: formData.description,
+      location: formData.location,
+      email: vendorEmail,
+      phone: formData.phone,
+      website: formData.website,
+      profileImageUrl: profileImage?.key,
+      coverImageUrl: coverImage?.key,
+      socialLinks: socialLinks
+        .filter((link) => (link.url || "").trim().length > 0)
+        .map((link) => ({
+          platform: link.platform,
+          url: link.url,
+        })),
+      services: services
+        .filter((service) => service.name.trim().length > 0)
+        .map((service) => ({
+          name: service.name,
+          description: service.description,
+          price: normalizePrice(service.price),
+        })),
+      images: galleryImages.map((image, index) => ({
+        url: image.key,
+        altText: `Gallery image ${index + 1}`,
+        displayOrder: index,
+      })),
+    };
+
+    setIsSaving(true);
+    vendorService
+      .updateMyVendorProfile(payload)
+      .then(() => {
+        toast.success("Profile saved successfully!", {
+          description: "Your vendor profile has been updated.",
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to save vendor profile:", error);
+        toast.error("Failed to save profile");
+      })
+      .finally(() => setIsSaving(false));
   };
 
   const vendorCategories = [
@@ -182,7 +303,7 @@ const VendorProfile = () => {
                       <h3 className="text-lg font-medium">Cover Image</h3>
                       <div 
                         className="relative w-full h-48 bg-muted rounded-md overflow-hidden flex items-center justify-center border-2 border-dashed border-border"
-                        style={coverImage ? { backgroundImage: `url(${coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                        style={coverImage ? { backgroundImage: `url(${coverImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
                       >
                         {!coverImage && (
                           <div className="text-center">
@@ -202,6 +323,7 @@ const VendorProfile = () => {
                               accept="image/*"
                               className="sr-only"
                               onChange={(e) => handleImageUpload(e, 'cover')}
+                              disabled={isUploading}
                             />
                           </Label>
                         </div>
@@ -214,7 +336,7 @@ const VendorProfile = () => {
                           <h3 className="text-lg font-medium">Profile Image</h3>
                           <div 
                             className="relative w-32 h-32 bg-muted rounded-full overflow-hidden flex items-center justify-center border-2 border-dashed border-border"
-                            style={profileImage ? { backgroundImage: `url(${profileImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                            style={profileImage ? { backgroundImage: `url(${profileImage.url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
                           >
                             {!profileImage && <Upload className="h-8 w-8 text-muted-foreground" />}
                             <div className="absolute bottom-1 right-1">
@@ -228,6 +350,7 @@ const VendorProfile = () => {
                                   accept="image/*"
                                   className="sr-only"
                                   onChange={(e) => handleImageUpload(e, 'profile')}
+                                  disabled={isUploading}
                                 />
                               </Label>
                             </div>
@@ -454,7 +577,7 @@ const VendorProfile = () => {
                         {galleryImages.map((image, index) => (
                           <div key={index} className="relative group aspect-square rounded-md overflow-hidden">
                             <img 
-                              src={image} 
+                              src={image.url} 
                               alt={`Gallery image ${index + 1}`} 
                               className="w-full h-full object-cover"
                             />
@@ -485,6 +608,7 @@ const VendorProfile = () => {
                             accept="image/*"
                             className="sr-only"
                             onChange={(e) => handleImageUpload(e, 'gallery')}
+                            disabled={isUploading}
                           />
                         </Label>
                       </div>
@@ -497,15 +621,109 @@ const VendorProfile = () => {
             <TabsContent value="preview" className="space-y-6">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <h3 className="text-xl font-medium mb-4">Profile Preview Coming Soon</h3>
-                    <p className="text-muted-foreground mb-6">
-                      This feature is currently under development. You'll soon be able to preview
-                      how your profile will appear to potential clients.
-                    </p>
-                    <Button variant="outline" onClick={() => toast.success("Profile preview feature will be available soon!")}>
-                      Notify Me When Ready
-                    </Button>
+                  <div className="space-y-8">
+                    <div className="relative overflow-hidden rounded-xl border bg-muted/20">
+                      <div
+                        className="h-56 w-full bg-cover bg-center"
+                        style={coverImage ? { backgroundImage: `url(${coverImage.url})` } : undefined}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/50" />
+                      <div className="absolute bottom-4 left-6 right-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="h-20 w-20 rounded-full border-4 border-background bg-muted bg-cover bg-center"
+                            style={profileImage ? { backgroundImage: `url(${profileImage.url})` } : undefined}
+                          />
+                          <div>
+                            <div className="text-2xl font-semibold text-white">
+                              {formData.companyName || "Your Business Name"}
+                            </div>
+                            <div className="text-sm text-white/80">
+                              {formData.location || "Location"} · {formData.category || "Category"}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm">Book Now</Button>
+                          <Button size="sm" variant="outline">
+                            Message
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-6 lg:grid-cols-3">
+                      <div className="space-y-6 lg:col-span-2">
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">About</h3>
+                          <p className="text-muted-foreground">
+                            {formData.description || "Share details about your business and what makes you unique."}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Services</h3>
+                          <div className="flex flex-wrap gap-2">
+                            {services.filter((service) => service.name.trim()).length === 0 ? (
+                              <span className="text-sm text-muted-foreground">Add services to highlight your offerings.</span>
+                            ) : (
+                              services
+                                .filter((service) => service.name.trim())
+                                .map((service) => (
+                                  <span key={service.id} className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+                                    {service.name}
+                                  </span>
+                                ))
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Gallery</h3>
+                          {galleryImages.length === 0 ? (
+                            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                              Upload photos to showcase your work.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                              {galleryImages.map((image) => (
+                                <div key={image.key} className="aspect-square overflow-hidden rounded-lg">
+                                  <img src={image.url} alt="Gallery preview" className="h-full w-full object-cover" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="rounded-lg border p-4">
+                          <h3 className="text-base font-medium mb-3">Contact</h3>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            <div>{vendorEmail || "email@example.com"}</div>
+                            <div>{formData.phone || "Phone number"}</div>
+                            <div>{formData.website || "Website"}</div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border p-4">
+                          <h3 className="text-base font-medium mb-3">Social Links</h3>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            {socialLinks.some((link) => link.url?.trim()) ? (
+                              socialLinks
+                                .filter((link) => link.url?.trim())
+                                .map((link) => (
+                                  <div key={link.platform}>
+                                    {link.platform}: {link.url}
+                                  </div>
+                                ))
+                            ) : (
+                              <div>Add your social links to show up here.</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -516,9 +734,9 @@ const VendorProfile = () => {
             <Button 
               className="px-8 font-medium"
               onClick={handleSaveProfile}
-              disabled={isLoading}
+              disabled={isSaving || isFetching || isUploading}
             >
-              {isLoading ? (
+              {isSaving ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin text-primary" />
                   Saving...

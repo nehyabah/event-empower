@@ -17,9 +17,7 @@ const ExpenseCategories = () => {
     
     acc[expense.category].total += expense.amount;
     acc[expense.category].count += 1;
-    if (expense.paid) {
-      acc[expense.category].paid += expense.amount;
-    }
+    acc[expense.category].paid += expense.amountPaid;
     
     return acc;
   }, {} as Record<string, { total: number; count: number; paid: number }>);

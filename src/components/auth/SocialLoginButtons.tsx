@@ -1,25 +1,23 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mail, Smartphone, Loader2, Mail as Gmail } from "lucide-react";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { signInWithPhone, verifyPhoneOTP } from "@/services/authService";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 
 interface SocialLoginButtonsProps {
@@ -35,6 +33,7 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
   const [isPhoneLoginLoading, setIsPhoneLoginLoading] = useState(false);
   const [phoneMethod, setPhoneMethod] = useState<"sms" | "whatsapp">("sms");
   const navigate = useNavigate();
+  const { sendPhoneOtp, verifyPhoneOtp } = useAuth();
 
   const handlePhoneLogin = async () => {
     if (!phoneNumber || phoneNumber.length < 10) {
@@ -45,34 +44,34 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
       });
       return;
     }
-    
+
     setIsPhoneLoginLoading(true);
-    
+
     try {
       // Format phone number (simple example, might need more sophisticated formatting)
       const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
-      
+
       if (!showOtpInput) {
         // Request OTP
-        await signInWithPhone(formattedPhone, phoneMethod);
-        
+        await sendPhoneOtp(formattedPhone, phoneMethod);
+
         toast({
           title: "Verification code sent",
           description: `Please check your ${phoneMethod === "whatsapp" ? "WhatsApp" : "phone"} for the verification code`,
           variant: "default",
         });
-        
+
         setShowOtpInput(true);
       } else {
         // Verify OTP
-        await verifyPhoneOTP(formattedPhone, otp);
-        
+        await verifyPhoneOtp(formattedPhone, otp);
+
         toast({
-          title: `Welcome! 👋`,
+          title: `Welcome!`,
           description: "You've successfully signed in with your phone number!",
           variant: "default",
         });
-        
+
         setPhoneDialogOpen(false);
         navigate("/home");
       }
@@ -106,10 +105,10 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
           </span>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-3 gap-2">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="button-hover"
           onClick={() => onSocialLogin && onSocialLogin("email")}
           disabled={isLoading}
@@ -117,11 +116,11 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
           <Mail className="mr-2 h-4 w-4" />
           Email
         </Button>
-        
+
         <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="button-hover"
               disabled={isLoading}
             >
@@ -139,7 +138,7 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
                   ? "Enter the verification code sent to your phone."
                   : "Enter your phone number to receive a verification code."}
               </p>
-              
+
               {!showOtpInput ? (
                 <>
                   <Input
@@ -171,16 +170,16 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
                   className="mb-4"
                 />
               )}
-              
+
               <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={handleCloseDialog}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  onClick={handlePhoneLogin} 
+                <Button
+                  onClick={handlePhoneLogin}
                   disabled={isPhoneLoginLoading}
                 >
                   {isPhoneLoginLoading ? (
@@ -196,9 +195,9 @@ const SocialLoginButtons = ({ onSocialLogin, isLoading = false }: SocialLoginBut
             </div>
           </DialogContent>
         </Dialog>
-        
-        <Button 
-          variant="outline" 
+
+        <Button
+          variant="outline"
           className="button-hover"
           onClick={() => onSocialLogin && onSocialLogin("gmail")}
           disabled={isLoading}

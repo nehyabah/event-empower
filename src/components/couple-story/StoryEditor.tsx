@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Camera, X, Heart, Wine, Gift, Sparkles, ImageIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImageGallery from "./ImageGallery";
+import storyService from "@/services/api/storyService";
 
 // Image type
 export type StoryImage = {
@@ -47,8 +48,10 @@ const storySchema = z.object({
   venue: z.string().optional(),
   loveQuote: z.string().optional(),
   selectedIcon: z.string().optional(),
-  brideStory: z.string().optional(),
-  groomStory: z.string().optional(),
+  brideName: z.string().optional(),
+  groomName: z.string().optional(),
+  brideBio: z.string().optional(),
+  groomBio: z.string().optional(),
 });
 
 interface StoryEditorProps {
@@ -62,8 +65,10 @@ interface StoryEditorProps {
     venue?: string;
     loveQuote?: string;
     selectedIcon?: string;
-    brideStory?: string;
-    groomStory?: string;
+    brideName?: string;
+    groomName?: string;
+    brideBio?: string;
+    groomBio?: string;
   };
   storyImages: StoryImage[];
   setStoryImages: React.Dispatch<React.SetStateAction<StoryImage[]>>;
@@ -156,33 +161,50 @@ const StoryEditor = ({
       venue: coupleStory.venue || "",
       loveQuote: coupleStory.loveQuote || "",
       selectedIcon: coupleStory.selectedIcon || "heart",
-      brideStory: coupleStory.brideStory || "",
-      groomStory: coupleStory.groomStory || "",
+      brideName: coupleStory.brideName || "",
+      groomName: coupleStory.groomName || "",
+      brideBio: coupleStory.brideBio || "",
+      groomBio: coupleStory.groomBio || "",
     },
   });
 
-  const onStorySubmit = (values: z.infer<typeof storySchema>) => {
-    const newStory = {
-      ...coupleStory,
-      title: values.title,
-      content: values.content,
-      hashtag: values.hashtag,
-      weddingDate: values.weddingDate,
-      weddingTime: values.weddingTime,
-      venue: values.venue,
-      loveQuote: values.loveQuote,
-      selectedIcon: values.selectedIcon,
-      brideStory: values.brideStory,
-      groomStory: values.groomStory,
-    };
-    setCoupleStory(newStory);
-    
+  const onStorySubmit = async (values: z.infer<typeof storySchema>) => {
     try {
-      localStorage.setItem("coupleStory", JSON.stringify(newStory));
+      const updatedStory = await storyService.updateMyStory({
+        title: values.title,
+        content: values.content,
+        hashtag: values.hashtag || null,
+        wedding_date: values.weddingDate || null,
+        wedding_time: values.weddingTime || null,
+        venue: values.venue || null,
+        love_quote: values.loveQuote || null,
+        selected_icon: values.selectedIcon || null,
+        bride_name: values.brideName || null,
+        groom_name: values.groomName || null,
+        bride_bio: values.brideBio || null,
+        groom_bio: values.groomBio || null,
+      });
+
+      setCoupleStory({
+        ...coupleStory,
+        title: updatedStory.title || values.title,
+        content: updatedStory.content || values.content,
+        hashtag: updatedStory.hashtag || "",
+        weddingDate: updatedStory.wedding_date || "",
+        weddingTime: updatedStory.wedding_time || "",
+        venue: updatedStory.venue || "",
+        loveQuote: updatedStory.love_quote || "",
+        selectedIcon: updatedStory.selected_icon || values.selectedIcon || "",
+        brideName: updatedStory.bride_name || values.brideName || "",
+        groomName: updatedStory.groom_name || values.groomName || "",
+        brideBio: updatedStory.bride_bio || values.brideBio || "",
+        groomBio: updatedStory.groom_bio || values.groomBio || "",
+      });
+
       onStoryUpdated();
       toast.success("Your story has been saved!");
     } catch (error) {
-      toast.error("Failed to save story. Try reducing content size.");
+      toast.error("Failed to save story. Try again.");
       console.error("Error saving story:", error);
     }
   };
@@ -197,32 +219,37 @@ const StoryEditor = ({
       // Compress the image
       const compressedDataUrl = await compressImage(file, 800, 600);
       
-      // Add the compressed image
-      const newImage: StoryImage = {
-        id: crypto.randomUUID(),
+      const createdImage = await storyService.addStoryImage({
         url: compressedDataUrl,
-        caption: imageCaption,
-        storyType: storyType
+        caption: imageCaption || undefined,
+        story_type: storyType,
+      });
+
+      const newImage: StoryImage = {
+        id: createdImage.id,
+        url: createdImage.url,
+        caption: createdImage.caption || "",
+        storyType: createdImage.story_type,
       };
 
-      // Try to update the images safely with error handling for localStorage
-      try {
-        setStoryImages(prev => {
-          const newImages = [...prev, newImage];
-          // Optional: If we have too many images, remove the oldest ones
-          if (newImages.length > 20) {
-            return newImages.slice(-20);
-          }
-          return newImages;
-        });
-        
-        setImageCaption("");
-        toast.success(`Image added to ${storyType === 'general' ? 'your story' : 
-                     storyType === 'bride' ? 'bride\'s story' : 'groom\'s story'}!`);
-      } catch (err) {
-        console.error("Failed to update images:", err);
-        toast.error("Failed to add image. Storage limit may be reached.");
-      }
+      setStoryImages((prev) => {
+        const newImages = [...prev, newImage];
+        if (newImages.length > 20) {
+          return newImages.slice(-20);
+        }
+        return newImages;
+      });
+
+      setImageCaption("");
+      toast.success(
+        `Image added to ${
+          storyType === "general"
+            ? "your story"
+            : storyType === "bride"
+              ? "bride's story"
+              : "groom's story"
+        }!`
+      );
     } catch (error) {
       console.error("Error processing image:", error);
       toast.error("Failed to process image");
@@ -243,21 +270,15 @@ const StoryEditor = ({
       // Compress the banner image (with higher quality since it's important)
       const compressedDataUrl = await compressImage(file, 1200, 400);
       
-      // Update the story with the compressed banner
-      const updatedStory = {
+      const updatedStory = await storyService.updateMyStory({
+        banner_image_url: compressedDataUrl,
+      });
+
+      setCoupleStory({
         ...coupleStory,
-        bannerImage: compressedDataUrl
-      };
-      
-      setCoupleStory(updatedStory);
-      
-      try {
-        localStorage.setItem("coupleStory", JSON.stringify(updatedStory));
-        toast.success("Banner image updated!");
-      } catch (error) {
-        toast.error("Failed to save banner. Try reducing image size.");
-        console.error("Error saving banner:", error);
-      }
+        bannerImage: updatedStory.banner_image_url || compressedDataUrl,
+      });
+      toast.success("Banner image updated!");
     } catch (error) {
       console.error("Error processing banner:", error);
       toast.error("Failed to process banner image");
@@ -271,24 +292,36 @@ const StoryEditor = ({
   };
 
   const removeImage = (id: string) => {
-    setStoryImages(prev => prev.filter(img => img.id !== id));
-    toast.success("Image removed");
+    const remove = async () => {
+      try {
+        await storyService.deleteStoryImage(id);
+        setStoryImages((prev) => prev.filter((img) => img.id !== id));
+        toast.success("Image removed");
+      } catch (error) {
+        toast.error("Failed to remove image");
+        console.error("Error removing image:", error);
+      }
+    };
+
+    void remove();
   };
 
   const removeBanner = () => {
-    const updatedStory = {
-      ...coupleStory,
-      bannerImage: undefined
+    const remove = async () => {
+      try {
+        await storyService.updateMyStory({ banner_image_url: null });
+        setCoupleStory({
+          ...coupleStory,
+          bannerImage: undefined,
+        });
+        toast.success("Banner image removed");
+      } catch (error) {
+        toast.error("Failed to update story settings");
+        console.error("Error removing banner:", error);
+      }
     };
-    setCoupleStory(updatedStory);
-    
-    try {
-      localStorage.setItem("coupleStory", JSON.stringify(updatedStory));
-      toast.success("Banner image removed");
-    } catch (error) {
-      toast.error("Failed to update story settings");
-      console.error("Error removing banner:", error);
-    }
+
+    void remove();
   };
 
   const managedStoryImageCount = storyImages.length > 20 
@@ -527,10 +560,24 @@ const StoryEditor = ({
                 <div className="space-y-4">
                   <FormField
                     control={storyForm.control}
-                    name="brideStory"
+                    name="brideName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bride's Story</FormLabel>
+                        <FormLabel>Bride Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Bride name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={storyForm.control}
+                    name="brideBio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bride Bio</FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Share the bride's story..."
@@ -599,10 +646,24 @@ const StoryEditor = ({
                 <div className="space-y-4">
                   <FormField
                     control={storyForm.control}
-                    name="groomStory"
+                    name="groomName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Groom's Story</FormLabel>
+                        <FormLabel>Groom Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Groom name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={storyForm.control}
+                    name="groomBio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Groom Bio</FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Share the groom's story..."

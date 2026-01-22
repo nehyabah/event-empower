@@ -1,44 +1,8 @@
-
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { WishlistItem, BankDetail } from "./types";
-import { v4 as uuidv4 } from "uuid";
-
-// Sample initial wishlist items
-const initialWishlistItems: WishlistItem[] = [
-  {
-    id: "1",
-    name: "Dinner Set",
-    price: "₦45,000",
-    link: "https://example.com/dinner-set",
-    priority: "high"
-  },
-  {
-    id: "2",
-    name: "Blender",
-    price: "₦25,000",
-    link: "https://example.com/blender",
-    priority: "medium"
-  },
-  {
-    id: "3",
-    name: "Bedding Set",
-    price: "₦60,000",
-    link: "https://example.com/bedding",
-    priority: "medium"
-  }
-];
-
-// Sample initial bank details
-const initialBankDetails: BankDetail[] = [
-  {
-    bankName: "GTBank",
-    accountName: "John & Jane Doe",
-    accountNumber: "0123456789",
-    sortCode: "123456",
-    description: "Wedding gift contributions"
-  }
-];
+import storyService from "@/services/api/storyService";
+import { useAuth } from "@/context/AuthContext";
 
 // Type for the useWishlist hook return value
 export interface WishlistHook {
@@ -48,62 +12,235 @@ export interface WishlistHook {
   addBankDetail: (detail: BankDetail) => void;
   markItemAsPurchased: (itemId: string, purchaserName: string, isAnonymous?: boolean) => void;
   removeItemPurchaser: (itemId: string) => void;
-  removeBankDetail: (index: number) => void;
-  updateBankDetail?: (index: number, detail: BankDetail) => void;
+  removeBankDetail: (id: string) => void;
+  updateBankDetail?: (id: string, detail: BankDetail) => void;
 }
 
 export const useWishlist = (): WishlistHook => {
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>(initialWishlistItems);
-  const [bankDetails, setBankDetails] = useState<BankDetail[]>(initialBankDetails);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+  const [bankDetails, setBankDetails] = useState<BankDetail[]>([]);
+
+  const fetchWishlistData = useCallback(async () => {
+    try {
+      const [items, banks] = await Promise.all([
+        storyService.listWishlist(),
+        storyService.listBankDetails(),
+      ]);
+
+      setWishlistItems(
+        items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price || undefined,
+          link: item.link || undefined,
+          priority: item.priority,
+          purchasedBy: item.purchased_by || undefined,
+          isAnonymous: item.is_anonymous || undefined,
+        }))
+      );
+
+      setBankDetails(
+        banks.map((detail) => ({
+          id: detail.id,
+          bankName: detail.bank_name,
+          accountName: detail.account_name,
+          accountNumber: detail.account_number,
+          sortCode: detail.sort_code || undefined,
+          iban: detail.iban || undefined,
+          swift: detail.swift || undefined,
+          description: detail.description || undefined,
+        }))
+      );
+    } catch (error) {
+      console.error("Failed to load registry data:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setWishlistItems([]);
+      setBankDetails([]);
+      return;
+    }
+
+    fetchWishlistData();
+  }, [fetchWishlistData, authLoading, isAuthenticated]);
 
   const addWishlistItem = (item: Omit<WishlistItem, "id">) => {
-    const newItem: WishlistItem = {
-      id: uuidv4(),
-      ...item
+    const saveItem = async () => {
+      try {
+        const created = await storyService.addWishlistItem({
+          name: item.name,
+          price: item.price,
+          link: item.link,
+          priority: item.priority,
+        });
+        setWishlistItems((prev) => [
+          ...prev,
+          {
+            id: created.id,
+            name: created.name,
+            price: created.price || undefined,
+            link: created.link || undefined,
+            priority: created.priority,
+            purchasedBy: created.purchased_by || undefined,
+            isAnonymous: created.is_anonymous || undefined,
+          },
+        ]);
+        toast.success("Item added to wishlist!");
+      } catch (error) {
+        toast.error("Failed to add wishlist item");
+        console.error("Failed to add wishlist item:", error);
+      }
     };
-    setWishlistItems([...wishlistItems, newItem]);
-    toast.success("Item added to wishlist!");
+
+    void saveItem();
   };
 
   const addBankDetail = (detail: BankDetail) => {
-    setBankDetails([...bankDetails, detail]);
-    toast.success("Bank details added successfully!");
+    const saveDetail = async () => {
+      try {
+        const created = await storyService.addBankDetail({
+          bank_name: detail.bankName,
+          account_name: detail.accountName,
+          account_number: detail.accountNumber,
+          sort_code: detail.sortCode,
+          iban: detail.iban,
+          swift: detail.swift,
+          description: detail.description,
+        });
+        setBankDetails((prev) => [
+          ...prev,
+          {
+            id: created.id,
+            bankName: created.bank_name,
+            accountName: created.account_name,
+            accountNumber: created.account_number,
+            sortCode: created.sort_code || undefined,
+            iban: created.iban || undefined,
+            swift: created.swift || undefined,
+            description: created.description || undefined,
+          },
+        ]);
+        toast.success("Bank details added successfully!");
+      } catch (error) {
+        toast.error("Failed to add bank details");
+        console.error("Failed to add bank details:", error);
+      }
+    };
+
+    void saveDetail();
   };
 
   const markItemAsPurchased = (itemId: string, purchaserName: string, isAnonymous: boolean = false) => {
-    setWishlistItems(
-      wishlistItems.map(item => 
-        item.id === itemId 
-          ? { ...item, purchasedBy: purchaserName, isAnonymous }
-          : item
-      )
-    );
-    toast.success("Item marked as purchased!");
+    const updateItem = async () => {
+      try {
+        const updated = await storyService.updateWishlistItem(itemId, {
+          purchased_by: purchaserName,
+          is_anonymous: isAnonymous,
+        });
+        setWishlistItems((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  purchasedBy: updated.purchased_by || undefined,
+                  isAnonymous: updated.is_anonymous || undefined,
+                }
+              : item
+          )
+        );
+        toast.success("Item marked as purchased!");
+      } catch (error) {
+        toast.error("Failed to update wishlist item");
+        console.error("Failed to update wishlist item:", error);
+      }
+    };
+
+    void updateItem();
   };
 
   const removeItemPurchaser = (itemId: string) => {
-    setWishlistItems(
-      wishlistItems.map(item => 
-        item.id === itemId 
-          ? { ...item, purchasedBy: undefined, isAnonymous: undefined }
-          : item
-      )
-    );
-    toast.success("Item marked as available again!");
+    const updateItem = async () => {
+      try {
+        const updated = await storyService.updateWishlistItem(itemId, {
+          purchased_by: null,
+          is_anonymous: false,
+        });
+        setWishlistItems((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  purchasedBy: updated.purchased_by || undefined,
+                  isAnonymous: updated.is_anonymous || undefined,
+                }
+              : item
+          )
+        );
+        toast.success("Item marked as available again!");
+      } catch (error) {
+        toast.error("Failed to update wishlist item");
+        console.error("Failed to update wishlist item:", error);
+      }
+    };
+
+    void updateItem();
   };
 
-  const removeBankDetail = (index: number) => {
-    const newDetails = [...bankDetails];
-    newDetails.splice(index, 1);
-    setBankDetails(newDetails);
-    toast.success("Bank details removed!");
+  const removeBankDetail = (id: string) => {
+    const deleteDetail = async () => {
+      try {
+        await storyService.deleteBankDetail(id);
+        setBankDetails((prev) => prev.filter((detail) => detail.id !== id));
+        toast.success("Bank details removed!");
+      } catch (error) {
+        toast.error("Failed to remove bank details");
+        console.error("Failed to remove bank details:", error);
+      }
+    };
+
+    void deleteDetail();
   };
 
-  const updateBankDetail = (index: number, detail: BankDetail) => {
-    const newDetails = [...bankDetails];
-    newDetails[index] = detail;
-    setBankDetails(newDetails);
-    toast.success("Bank details updated!");
+  const updateBankDetail = (id: string, detail: BankDetail) => {
+    const saveDetail = async () => {
+      try {
+        const updated = await storyService.updateBankDetail(id, {
+          bank_name: detail.bankName,
+          account_name: detail.accountName,
+          account_number: detail.accountNumber,
+          sort_code: detail.sortCode,
+          iban: detail.iban,
+          swift: detail.swift,
+          description: detail.description,
+        });
+        setBankDetails((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? {
+                  id: updated.id,
+                  bankName: updated.bank_name,
+                  accountName: updated.account_name,
+                  accountNumber: updated.account_number,
+                  sortCode: updated.sort_code || undefined,
+                  iban: updated.iban || undefined,
+                  swift: updated.swift || undefined,
+                  description: updated.description || undefined,
+                }
+              : item
+          )
+        );
+        toast.success("Bank details updated!");
+      } catch (error) {
+        toast.error("Failed to update bank details");
+        console.error("Failed to update bank details:", error);
+      }
+    };
+
+    void saveDetail();
   };
 
   return {
@@ -114,6 +251,6 @@ export const useWishlist = (): WishlistHook => {
     markItemAsPurchased,
     removeItemPurchaser,
     removeBankDetail,
-    updateBankDetail
+    updateBankDetail,
   };
 };

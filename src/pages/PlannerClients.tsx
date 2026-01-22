@@ -1,148 +1,186 @@
-
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Users, 
-  ArrowUpDown, 
-  Mail, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Users,
+  ArrowUpDown,
+  Mail,
   Phone,
-  Heart 
+  Heart,
+  Loader2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-interface Client {
-  id: string;
-  names: string;
-  email: string;
-  phone: string;
-  eventType: string;
-  eventDate: string;
-  status: "active" | "completed" | "upcoming";
-  budget: string;
-  venue?: string;
-  guests?: number;
-}
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { usePlannerClients } from "@/hooks/usePlannerClients";
+import { PlannerClient } from "@/services/api/plannerService";
 
 const PlannerClients = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Sample clients data
-  const initialClients: Client[] = [
-    { 
-      id: "1", 
-      names: "John & Sarah Smith", 
-      email: "smiths@example.com", 
-      phone: "(555) 123-4567", 
-      eventType: "Wedding", 
-      eventDate: "Apr 15, 2024", 
-      status: "active",
-      budget: "$25,000",
-      venue: "Grand Ballroom",
-      guests: 120
-    },
-    { 
-      id: "2", 
-      names: "Michael & Emma Johnson", 
-      email: "johnsons@example.com", 
-      phone: "(555) 234-5678", 
-      eventType: "Wedding", 
-      eventDate: "May 22, 2024", 
-      status: "active",
-      budget: "$30,000",
-      venue: "Sunset Gardens",
-      guests: 85
-    },
-    { 
-      id: "3", 
-      names: "David & Maria Garcia", 
-      email: "garcias@example.com", 
-      phone: "(555) 345-6789", 
-      eventType: "Wedding", 
-      eventDate: "Jun 10, 2024", 
-      status: "upcoming",
-      budget: "$35,000",
-      venue: "Lakeside Pavilion",
-      guests: 150
-    },
-    { 
-      id: "4", 
-      names: "Robert & Amy Chen", 
-      email: "chens@example.com", 
-      phone: "(555) 456-7890", 
-      eventType: "Wedding", 
-      eventDate: "Jul 8, 2024", 
-      status: "upcoming",
-      budget: "$22,000",
-      venue: "Mountain View",
-      guests: 100
-    },
-    { 
-      id: "5", 
-      names: "James & Lisa Williams", 
-      email: "williams@example.com", 
-      phone: "(555) 567-8901", 
-      eventType: "Wedding", 
-      eventDate: "Aug 14, 2024", 
-      status: "upcoming",
-      budget: "$40,000",
-      venue: "Harbor Point",
-      guests: 200
-    },
-    { 
-      id: "6", 
-      names: "Kevin & Ana Rodriguez", 
-      email: "rodriguez@example.com", 
-      phone: "(555) 678-9012", 
-      eventType: "Wedding", 
-      eventDate: "Sep 3, 2024", 
-      status: "upcoming",
-      budget: "$18,000",
-      venue: "Rose Garden",
-      guests: 75
-    },
-  ];
-  
-  const [clients, setClients] = useState<Client[]>(initialClients);
-  
-  // Basic auth check
-  useEffect(() => {
-    const isAuthenticated = localStorage.getItem("authenticated");
-    if (!isAuthenticated) {
-      navigate("/");
-    }
-  }, [navigate]);
-  
+  const { clients, isLoading, error, activeClients, upcomingClients, completedClients, getClientName, createClient, createInvite } = usePlannerClients();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newClient, setNewClient] = useState({
+    partner1Name: "",
+    partner2Name: "",
+    email: "",
+    phone: "",
+    eventType: "Wedding",
+    eventDate: "",
+    status: "upcoming",
+    budget: "",
+    venue: "",
+    guestCount: "",
+    notes: "",
+  });
+
+  const canSubmit = useMemo(() => {
+    return newClient.partner1Name.trim() && newClient.partner2Name.trim() && newClient.email.trim();
+  }, [newClient]);
+
   // Filter clients based on search term
-  const filteredClients = clients.filter(client => 
-    client.names.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.eventType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
+  const filteredClients = clients.filter(client => {
+    const name = getClientName(client).toLowerCase();
+    const search = searchTerm.toLowerCase();
+    return name.includes(search) ||
+      client.email.toLowerCase().includes(search) ||
+      client.event_type.toLowerCase().includes(search);
+  });
+
+  // Format budget for display
+  const formatBudget = (budget: number | null): string => {
+    if (!budget) return 'TBD';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(budget);
+  };
+
+  // Format date for display
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return 'TBD';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   // Get status badge with appropriate color
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active': 
+      case 'active':
         return <Badge variant="default" className="bg-blue-500">Active</Badge>;
-      case 'completed': 
+      case 'completed':
         return <Badge variant="outline" className="text-green-500 border-green-500">Completed</Badge>;
-      case 'upcoming': 
+      case 'upcoming':
         return <Badge variant="outline" className="text-amber-500 border-amber-500">Upcoming</Badge>;
-      default: 
+      default:
         return null;
     }
   };
-  
+
+  // Client card component to avoid repetition
+  const ClientCard = ({ client }: { client: PlannerClient }) => (
+    <Card key={client.id} className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-2 flex justify-between items-start">
+        <div>
+          <CardTitle className="text-lg flex items-center">
+            {getClientName(client)}
+            <Heart className="h-3 w-3 ml-2 text-red-400" />
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">{client.event_type} - {formatDate(client.event_date)}</p>
+        </div>
+        {getStatusBadge(client.status)}
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex items-center text-sm">
+            <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>{client.email}</span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>{client.phone || 'No phone'}</span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>{client.guest_count || 'TBD'} guests</span>
+          </div>
+          <div className="flex items-center text-sm">
+            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>{client.venue || 'Venue TBD'}</span>
+          </div>
+          <div className="pt-2 flex justify-between">
+            <span className="font-medium">Budget: {formatBudget(client.budget)}</span>
+            <Button variant="outline" size="sm">
+              View
+            </Button>
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+            <span>
+              {client.invite_code
+                ? `Invite code: ${client.invite_code}`
+                : "No invite code yet"}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                if (client.invite_code) {
+                  await navigator.clipboard.writeText(client.invite_code);
+                  toast.success("Invite code copied");
+                  return;
+                }
+                const result = await createInvite(client.id);
+                if (result?.inviteCode) {
+                  await navigator.clipboard.writeText(result.inviteCode);
+                  toast.success("Invite code copied");
+                }
+              }}
+            >
+              {client.invite_code ? "Copy" : "Generate"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-24 pb-16 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading clients...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-24 pb-16">
+          <div className="p-8 text-center bg-red-50 rounded-lg">
+            <p className="text-red-600">Error loading clients: {error}</p>
+            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -152,12 +190,12 @@ const PlannerClients = () => {
             <h1 className="text-3xl font-serif">Client Management</h1>
             <p className="text-muted-foreground">Manage all your wedding clients</p>
           </div>
-          <Button>
+          <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add New Client
           </Button>
         </div>
-        
+
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -178,125 +216,245 @@ const PlannerClients = () => {
             </Button>
           </div>
         </div>
-        
+
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-md">
-            <TabsTrigger value="all">All Clients</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="all">All ({clients.length})</TabsTrigger>
+            <TabsTrigger value="active">Active ({activeClients.length})</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming ({upcomingClients.length})</TabsTrigger>
+            <TabsTrigger value="completed">Completed ({completedClients.length})</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="all">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredClients.length > 0 ? (
                 filteredClients.map((client) => (
-                  <Card key={client.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-2 flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg flex items-center">
-                          {client.names}
-                          <Heart className="h-3 w-3 ml-2 text-red-400" />
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">{client.eventType} • {client.eventDate}</p>
-                      </div>
-                      {getStatusBadge(client.status)}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center text-sm">
-                          <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <span>{client.email}</span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <span>{client.phone}</span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <span>{client.guests || 'TBD'} guests</span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <span>{client.venue || 'Venue TBD'}</span>
-                        </div>
-                        <div className="pt-2 flex justify-between">
-                          <span className="font-medium">Budget: {client.budget}</span>
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ClientCard key={client.id} client={client} />
                 ))
               ) : (
                 <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">No clients found matching your search.</p>
+                  <p className="text-muted-foreground">
+                    {clients.length === 0 ? "No clients yet. Add your first client!" : "No clients found matching your search."}
+                  </p>
                 </div>
               )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="active">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredClients.filter(client => client.status === "active").map((client) => (
-                <Card key={client.id} className="hover:shadow-md transition-shadow">
-                  {/* Same content as in the "all" tab */}
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{client.names}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{client.eventType} • {client.eventDate}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm">{client.email}</p>
-                      <p className="text-sm">{client.phone}</p>
-                      <div className="pt-2 flex justify-between">
-                        <span className="font-medium">Budget: {client.budget}</span>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {activeClients.filter(c => {
+                const name = getClientName(c).toLowerCase();
+                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+              }).length > 0 ? (
+                activeClients.filter(c => {
+                  const name = getClientName(c).toLowerCase();
+                  return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+                }).map((client) => (
+                  <ClientCard key={client.id} client={client} />
+                ))
+              ) : (
+                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground">No active clients.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="upcoming">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredClients.filter(client => client.status === "upcoming").map((client) => (
-                <Card key={client.id} className="hover:shadow-md transition-shadow">
-                  {/* Same content as in the "all" tab */}
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{client.names}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{client.eventType} • {client.eventDate}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm">{client.email}</p>
-                      <p className="text-sm">{client.phone}</p>
-                      <div className="pt-2 flex justify-between">
-                        <span className="font-medium">Budget: {client.budget}</span>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {upcomingClients.filter(c => {
+                const name = getClientName(c).toLowerCase();
+                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+              }).length > 0 ? (
+                upcomingClients.filter(c => {
+                  const name = getClientName(c).toLowerCase();
+                  return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+                }).map((client) => (
+                  <ClientCard key={client.id} client={client} />
+                ))
+              ) : (
+                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground">No upcoming clients.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="completed">
-            <div className="p-8 text-center bg-muted/50 rounded-lg">
-              <p className="text-muted-foreground">No completed client events yet.</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {completedClients.filter(c => {
+                const name = getClientName(c).toLowerCase();
+                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+              }).length > 0 ? (
+                completedClients.filter(c => {
+                  const name = getClientName(c).toLowerCase();
+                  return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+                }).map((client) => (
+                  <ClientCard key={client.id} client={client} />
+                ))
+              ) : (
+                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground">No completed client events yet.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>Add new client</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Partner 1 name</label>
+              <Input
+                value={newClient.partner1Name}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, partner1Name: e.target.value }))}
+                placeholder="Jane"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Partner 2 name</label>
+              <Input
+                value={newClient.partner2Name}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, partner2Name: e.target.value }))}
+                placeholder="John"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={newClient.email}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="couple@email.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={newClient.phone}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder="+234..."
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Event type</label>
+              <Input
+                value={newClient.eventType}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, eventType: e.target.value }))}
+                placeholder="Wedding"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Event date</label>
+              <Input
+                type="date"
+                value={newClient.eventDate}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, eventDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select
+                value={newClient.status}
+                onValueChange={(value) => setNewClient((prev) => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Budget</label>
+              <Input
+                type="number"
+                value={newClient.budget}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, budget: e.target.value }))}
+                placeholder="25000"
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Venue</label>
+              <Input
+                value={newClient.venue}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, venue: e.target.value }))}
+                placeholder="Venue name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Guest count</label>
+              <Input
+                type="number"
+                value={newClient.guestCount}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, guestCount: e.target.value }))}
+                placeholder="150"
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                value={newClient.notes}
+                onChange={(e) => setNewClient((prev) => ({ ...prev, notes: e.target.value }))}
+                placeholder="Important details..."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!canSubmit || isSubmitting}
+              onClick={async () => {
+                if (!canSubmit) return;
+                setIsSubmitting(true);
+                const created = await createClient({
+                  partner1Name: newClient.partner1Name.trim(),
+                  partner2Name: newClient.partner2Name.trim(),
+                  email: newClient.email.trim(),
+                  phone: newClient.phone.trim() || undefined,
+                  eventType: newClient.eventType.trim() || undefined,
+                  eventDate: newClient.eventDate || undefined,
+                  status: newClient.status as "active" | "upcoming" | "completed",
+                  budget: newClient.budget ? Number(newClient.budget) : undefined,
+                  venue: newClient.venue.trim() || undefined,
+                  guestCount: newClient.guestCount ? Number(newClient.guestCount) : undefined,
+                  notes: newClient.notes.trim() || undefined,
+                });
+                setIsSubmitting(false);
+                if (created) {
+                  setIsCreateOpen(false);
+                  setNewClient({
+                    partner1Name: "",
+                    partner2Name: "",
+                    email: "",
+                    phone: "",
+                    eventType: "Wedding",
+                    eventDate: "",
+                    status: "upcoming",
+                    budget: "",
+                    venue: "",
+                    guestCount: "",
+                    notes: "",
+                  });
+                }
+              }}
+            >
+              {isSubmitting ? "Saving..." : "Create client"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

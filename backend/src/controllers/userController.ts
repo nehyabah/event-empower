@@ -1,0 +1,511 @@
+import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
+import { userService } from '../services/userService.js';
+
+// ========== VALIDATION SCHEMAS ==========
+
+// User Event schemas
+const updateUserEventSchema = z.object({
+  partner1Name: z.string().optional(),
+  partner2Name: z.string().optional(),
+  eventDate: z.string().nullable().optional(),
+  venue: z.string().nullable().optional(),
+  totalBudget: z.number().min(0).optional(),
+  guestCountEstimate: z.number().min(0).optional(),
+  notes: z.string().nullable().optional(),
+});
+
+// Guest schemas
+const createGuestSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email().optional().or(z.literal('')),
+  phone: z.string().optional(),
+  status: z.enum(['pending', 'confirmed', 'declined', 'maybe']).default('pending'),
+  group: z.string().optional(),
+  plusOne: z.boolean().default(false),
+  dietaryRestrictions: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const updateGuestSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().nullable().optional().or(z.literal('')),
+  phone: z.string().nullable().optional(),
+  status: z.enum(['pending', 'confirmed', 'declined', 'maybe']).optional(),
+  group: z.string().nullable().optional(),
+  plusOne: z.boolean().optional(),
+  dietaryRestrictions: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+// Expense schemas
+const expenseCategories = [
+  'venue', 'catering', 'attire', 'decoration', 'photography',
+  'music', 'transportation', 'accommodation', 'invitations',
+  'rings', 'gifts', 'beauty', 'other'
+] as const;
+
+const createExpenseSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  amount: z.number().min(0, 'Amount must be positive'),
+  amountPaid: z.number().min(0).optional(),
+  category: z.enum(expenseCategories),
+  date: z.string().optional(),
+  paid: z.boolean().default(false),
+  notes: z.string().optional(),
+  vendorId: z.string().uuid().optional(),
+});
+
+const updateExpenseSchema = z.object({
+  name: z.string().min(1).optional(),
+  amount: z.number().min(0).optional(),
+  amountPaid: z.number().min(0).optional(),
+  category: z.enum(expenseCategories).optional(),
+  date: z.string().nullable().optional(),
+  paid: z.boolean().optional(),
+  notes: z.string().nullable().optional(),
+  vendorId: z.string().uuid().nullable().optional(),
+});
+
+// Todo schemas
+const createTodoListSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().optional(),
+});
+
+const updateTodoListSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  isCompleted: z.boolean().optional(),
+});
+
+const createTodoItemSchema = z.object({
+  text: z.string().min(1, 'Text is required'),
+  completed: z.boolean().default(false),
+  status: z.enum(['todo', 'in_progress', 'done']).optional(),
+});
+
+const updateTodoItemSchema = z.object({
+  text: z.string().min(1).optional(),
+  completed: z.boolean().optional(),
+  status: z.enum(['todo', 'in_progress', 'done']).optional(),
+  sortOrder: z.number().optional(),
+});
+
+// ========== CONTROLLER ==========
+
+export const userController = {
+  // ========== USER EVENT ==========
+
+  async getUserEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const event = await userService.getUserEvent(req.user!.userId);
+      res.json(event);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateUserEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = updateUserEventSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const event = await userService.upsertUserEvent(req.user!.userId, {
+        partner1_name: data.partner1Name,
+        partner2_name: data.partner2Name,
+        event_date: data.eventDate || undefined,
+        venue: data.venue || undefined,
+        total_budget: data.totalBudget,
+        guest_count_estimate: data.guestCountEstimate,
+        notes: data.notes || undefined,
+      });
+
+      res.json(event);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== GUESTS ==========
+
+  async getGuests(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const guests = await userService.getGuests(req.user!.userId);
+      res.json(guests);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getGuestStats(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const stats = await userService.getGuestStats(req.user!.userId);
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const guest = await userService.getGuest(req.params.id, req.user!.userId);
+      if (!guest) {
+        res.status(404).json({ error: 'Guest not found' });
+        return;
+      }
+      res.json(guest);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = createGuestSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const guest = await userService.createGuest(req.user!.userId, {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone,
+        status: data.status,
+        guest_group: data.group,
+        plus_one: data.plusOne,
+        dietary_restrictions: data.dietaryRestrictions,
+        notes: data.notes,
+      });
+
+      res.status(201).json(guest);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = updateGuestSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const guest = await userService.updateGuest(req.params.id, req.user!.userId, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        status: data.status,
+        guest_group: data.group,
+        plus_one: data.plusOne,
+        dietary_restrictions: data.dietaryRestrictions,
+        notes: data.notes,
+      });
+
+      if (!guest) {
+        res.status(404).json({ error: 'Guest not found' });
+        return;
+      }
+
+      res.json(guest);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await userService.deleteGuest(req.params.id, req.user!.userId);
+      if (!deleted) {
+        res.status(404).json({ error: 'Guest not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== EXPENSES ==========
+
+  async getExpenses(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const expenses = await userService.getExpenses(req.user!.userId);
+      res.json(expenses);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getExpenseSummary(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const summary = await userService.getExpenseSummary(req.user!.userId);
+      res.json(summary);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const expense = await userService.getExpense(req.params.id, req.user!.userId);
+      if (!expense) {
+        res.status(404).json({ error: 'Expense not found' });
+        return;
+      }
+      res.json(expense);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = createExpenseSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const expense = await userService.createExpense(req.user!.userId, {
+        name: data.name,
+        amount: data.amount,
+        amount_paid: data.amountPaid,
+        category: data.category,
+        expense_date: data.date,
+        paid: data.paid,
+        notes: data.notes,
+        vendor_id: data.vendorId,
+      });
+
+      res.status(201).json(expense);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = updateExpenseSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const expense = await userService.updateExpense(req.params.id, req.user!.userId, {
+        name: data.name,
+        amount: data.amount,
+        amount_paid: data.amountPaid,
+        category: data.category,
+        expense_date: data.date,
+        paid: data.paid,
+        notes: data.notes,
+        vendor_id: data.vendorId,
+      });
+
+      if (!expense) {
+        res.status(404).json({ error: 'Expense not found' });
+        return;
+      }
+
+      res.json(expense);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteExpense(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await userService.deleteExpense(req.params.id, req.user!.userId);
+      if (!deleted) {
+        res.status(404).json({ error: 'Expense not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== TODO LISTS ==========
+
+  async getTodoLists(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const lists = await userService.getTodoLists(req.user!.userId);
+      res.json(lists);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getTodoList(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const list = await userService.getTodoList(req.params.id, req.user!.userId);
+      if (!list) {
+        res.status(404).json({ error: 'Todo list not found' });
+        return;
+      }
+      res.json(list);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createTodoList(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = createTodoListSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const list = await userService.createTodoList(req.user!.userId, validation.data);
+      res.status(201).json(list);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateTodoList(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = updateTodoListSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const list = await userService.updateTodoList(req.params.id, req.user!.userId, {
+        title: data.title,
+        description: data.description,
+        is_completed: data.isCompleted,
+      });
+
+      if (!list) {
+        res.status(404).json({ error: 'Todo list not found' });
+        return;
+      }
+
+      res.json(list);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteTodoList(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await userService.deleteTodoList(req.params.id, req.user!.userId);
+      if (!deleted) {
+        res.status(404).json({ error: 'Todo list not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== TODO ITEMS ==========
+
+  async addTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = createTodoItemSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const item = await userService.addTodoItem(req.params.id, req.user!.userId, validation.data);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Todo list not found') {
+        res.status(404).json({ error: 'Todo list not found' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async updateTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = updateTodoItemSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const item = await userService.updateTodoItem(req.params.itemId, req.user!.userId, {
+        text: data.text,
+        completed: data.completed,
+        status: data.status,
+        sort_order: data.sortOrder,
+      });
+
+      if (!item) {
+        res.status(404).json({ error: 'Todo item not found' });
+        return;
+      }
+
+      res.json(item);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async toggleTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const item = await userService.toggleTodoItem(req.params.itemId, req.user!.userId);
+      if (!item) {
+        res.status(404).json({ error: 'Todo item not found' });
+        return;
+      }
+      res.json(item);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await userService.deleteTodoItem(req.params.itemId, req.user!.userId);
+      if (!deleted) {
+        res.status(404).json({ error: 'Todo item not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== DASHBOARD ==========
+
+  async getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = await userService.getDashboardData(req.user!.userId);
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getPlannerLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const link = await userService.getPlannerLink(req.user!.userId);
+      res.json(link);
+    } catch (error) {
+      next(error);
+    }
+  },
+};

@@ -1,228 +1,129 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Heart, CalendarIcon, MapPin, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import SaveTheDateCard from "@/components/dashboard/SaveTheDateCard";
 
 const InvitationPage = () => {
   const location = useLocation();
   const { code } = useParams();
   const queryParams = new URLSearchParams(location.search);
-  
+
   // Extract guest details from URL if available
   const guestNameFromURL = queryParams.get("name") || "";
   const guestEmailFromURL = queryParams.get("email") || "";
-  
-  const [name, setName] = useState(guestNameFromURL);
-  const [email, setEmail] = useState(guestEmailFromURL);
-  const [phone, setPhone] = useState("");
-  const [attending, setAttending] = useState<boolean | null>(null);
+
   const [submitted, setSubmitted] = useState(false);
-  
+  const [isFlipped, setIsFlipped] = useState(false);
+
   // Get the wedding date from localStorage (fallback to a future date if not set)
   const weddingDate = localStorage.getItem("weddingDate") || "2024-12-31";
   const parsedDate = new Date(weddingDate);
-  const formattedDate = format(parsedDate, "EEEE, MMMM d, yyyy");
-  const formattedTime = format(parsedDate, "h:mm a");
-  
-  // Extract couple name from localStorage or use fallback
-  const userEmail = localStorage.getItem("userEmail") || "user@example.com";
-  const firstName = userEmail.split('@')[0].split('.')[0];
-  const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-  const coupleName = `${capitalizedName} & Partner`;
-  
+  const formattedDate = parsedDate.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  // Get couple names from localStorage or use fallback
+  const partner1Name = localStorage.getItem("partner1Name") || "Partner 1";
+  const partner2Name = localStorage.getItem("partner2Name") || "Partner 2";
+  const venue = localStorage.getItem("venue") || "The Grand Estate";
+  const templateId = localStorage.getItem("saveTheDateTemplate") || "garden-ivory";
+
   // Check if an invitation code was provided
   useEffect(() => {
     if (code) {
-      // In a real app, you would fetch guest details from a database using this code
       console.log("Invitation code:", code);
       toast.info("Loading invitation details...");
     }
   }, [code]);
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name || !email) {
-      toast.error("Please fill in required fields");
-      return;
-    }
-    
-    if (attending === null) {
-      toast.error("Please indicate whether you'll be attending");
-      return;
-    }
-    
-    // Create a new guest entry
-    const guest = {
-      id: Date.now().toString(),
-      name,
-      email,
-      phone,
-      status: attending ? 'confirmed' : 'declined',
-      group: 'RSVP'
-    };
-    
-    // Add to guest list in localStorage
-    const existingGuests = localStorage.getItem("weddingGuests");
-    const guestList = existingGuests ? JSON.parse(existingGuests) : [];
-    
-    // Check if guest already exists (by email) and update rather than adding duplicate
-    const existingGuestIndex = guestList.findIndex((g: any) => g.email === email);
-    if (existingGuestIndex >= 0) {
-      guestList[existingGuestIndex] = guest;
-    } else {
-      guestList.push(guest);
-    }
-    
-    localStorage.setItem("weddingGuests", JSON.stringify(guestList));
-    
-    // Show success message
-    toast.success(`Thank you for your response!`);
-    setSubmitted(true);
-  };
-  
+
+  // Show swipe hint after a few seconds for better UX
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Only show hint if user hasn't already flipped
+      if (!isFlipped) {
+        toast("Swipe the card to RSVP", {
+          icon: <Sparkles className="w-4 h-4" />,
+          duration: 3000,
+        });
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [isFlipped]);
+
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-zinc-50 to-zinc-100">
         <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-wedding-gold/10 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-wedding-burgundy/10 to-transparent rounded-full blur-3xl" />
-        
-        <Card className="w-full max-w-md border border-wedding-gold/20 shadow-lg relative overflow-hidden">
-          <CardContent className="p-6 text-center">
-            <div className="my-8">
-              <Heart className="w-14 h-14 text-wedding-burgundy mx-auto mb-4" />
-              <h1 className="text-2xl font-serif mb-4">Thank You!</h1>
-              <p className="mb-6">
-                Your response has been recorded. We look forward to celebrating with you!
+
+        <Card className="w-full max-w-md border border-wedding-gold/20 shadow-xl relative overflow-hidden">
+          <CardContent className="p-8 text-center">
+            <div className="my-6">
+              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                <Heart className="w-10 h-10 text-green-600 fill-current" />
+              </div>
+              <h1 className="text-3xl font-serif mb-4 text-zinc-800">Thank You!</h1>
+              <p className="text-zinc-600 mb-8 leading-relaxed">
+                Your response has been recorded. We're so excited to celebrate this special day with you!
               </p>
-              <Button asChild>
-                <Link to="/">Return Home</Link>
-              </Button>
+              <div className="space-y-3">
+                <p className="text-sm text-zinc-500">
+                  {formattedDate} at {venue}
+                </p>
+                <Button asChild className="w-full">
+                  <Link to="/">Return Home</Link>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
     );
   }
-  
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-background to-muted/30">
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-wedding-gold/10 to-transparent rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-wedding-burgundy/10 to-transparent rounded-full blur-3xl" />
-      
-      <Card className="w-full max-w-md border border-wedding-gold/20 shadow-lg relative overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-wedding-gold/5 rounded-full blur-3xl" />
-        
-        <CardHeader className="text-center border-b border-border/10 pb-6">
-          <div className="flex items-center justify-center mb-2">
-            <Heart className="w-6 h-6 text-wedding-burgundy animate-pulse-soft" />
-          </div>
-          <CardTitle className="font-serif text-2xl">{coupleName}</CardTitle>
-          <p className="text-muted-foreground text-sm mt-1">Request the pleasure of your company at their wedding</p>
-        </CardHeader>
-        
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-wedding-gold/10 flex items-center justify-center">
-                <CalendarIcon className="w-5 h-5 text-wedding-gold" />
-              </div>
-              <div>
-                <p className="font-medium">Date</p>
-                <p className="text-sm text-muted-foreground">{formattedDate}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-wedding-gold/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-wedding-gold" />
-              </div>
-              <div>
-                <p className="font-medium">Time</p>
-                <p className="text-sm text-muted-foreground">{formattedTime}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-wedding-gold/10 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-wedding-gold" />
-              </div>
-              <div>
-                <p className="font-medium">Venue</p>
-                <p className="text-sm text-muted-foreground">Sunset Gardens Resort</p>
-              </div>
-            </div>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your full name"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address <span className="text-red-500">*</span></Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email address"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Your phone number"
-              />
-            </div>
-            
-            <div className="space-y-2 pt-2">
-              <Label>Will you be attending?</Label>
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant={attending === true ? "default" : "outline"}
-                  className={attending === true ? "bg-wedding-gold hover:bg-wedding-gold/90 text-black" : ""}
-                  onClick={() => setAttending(true)}
-                >
-                  Happily Accept
-                </Button>
-                <Button
-                  type="button"
-                  variant={attending === false ? "default" : "outline"}
-                  className={attending === false ? "bg-wedding-burgundy hover:bg-wedding-burgundy/90" : ""}
-                  onClick={() => setAttending(false)}
-                >
-                  Regretfully Decline
-                </Button>
-              </div>
-            </div>
-            
-            <Button type="submit" className="w-full mt-6">
-              Submit RSVP
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100">
+      {/* Decorative Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-wedding-gold/15 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-wedding-burgundy/10 to-transparent rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-wedding-blush/20 to-wedding-sage/20 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
+      </div>
+
+      {/* Header */}
+      <div className="text-center mb-6 md:mb-8 relative z-10">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Heart className="w-5 h-5 text-wedding-burgundy animate-pulse" />
+          <span className="text-sm uppercase tracking-[0.3em] text-zinc-500">You're Invited</span>
+          <Heart className="w-5 h-5 text-wedding-burgundy animate-pulse" />
+        </div>
+        <h1 className="font-serif text-2xl md:text-3xl text-zinc-800">
+          {partner1Name} & {partner2Name}
+        </h1>
+      </div>
+
+      {/* 3D Flip Card */}
+      <div className="relative z-10 w-full max-w-sm h-[560px] md:h-[600px]">
+        <SaveTheDateCard
+          templateId={templateId}
+          names={{ partner1: partner1Name, partner2: partner2Name }}
+          date={formattedDate}
+          venue={venue}
+          isEditable={false}
+          isFlipped={isFlipped}
+          onFlip={() => setIsFlipped(!isFlipped)}
+        />
+      </div>
+
+      {/* Footer hint */}
+      <p className="text-center text-xs text-zinc-400 mt-6 relative z-10">
+        Swipe the card to see the RSVP form
+      </p>
     </div>
   );
 };

@@ -20,6 +20,7 @@ interface VendorImage {
 }
 
 interface VendorDetailProps {
+  id: string;
   name: string;
   category: string;
   location: string;
@@ -34,9 +35,11 @@ interface VendorDetailProps {
     website?: string;
   };
   onClose: () => void;
+  onContact: () => void;
 }
 
 const VendorDetail = ({
+  id,
   name,
   category,
   location,
@@ -46,7 +49,8 @@ const VendorDetail = ({
   images,
   services,
   contact,
-  onClose
+  onClose,
+  onContact
 }: VendorDetailProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -192,8 +196,8 @@ const VendorDetail = ({
               <Calendar className="mr-2 h-4 w-4" />
               Book Now
             </Button>
-            <Button variant="outline" className="flex-1" onClick={onClose}>
-              Back to Search
+            <Button variant="outline" className="flex-1" onClick={onContact}>
+              Send Inquiry
             </Button>
           </div>
         </div>

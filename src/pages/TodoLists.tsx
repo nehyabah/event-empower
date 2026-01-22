@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import TodoList from "@/components/todos/TodoList";
@@ -10,6 +11,7 @@ import { TodoProvider } from "@/context/TodoContext";
 
 const TodoLists = () => {
   const [isCreatingList, setIsCreatingList] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <TodoProvider>
@@ -21,12 +23,20 @@ const TodoLists = () => {
             <p className="text-muted-foreground">Create and manage your wedding planning checklists</p>
           </div>
 
-          <div className="flex justify-between items-center mt-8 mb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mt-8 mb-6">
             <h2 className="text-2xl font-serif">My Lists</h2>
-            <Button onClick={() => setIsCreatingList(true)} className="gap-1">
-              <Plus size={18} />
-              Create New List
-            </Button>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search lists..."
+                className="md:w-64"
+              />
+              <Button onClick={() => setIsCreatingList(true)} className="gap-1">
+                <Plus size={18} />
+                Create New List
+              </Button>
+            </div>
           </div>
 
           {isCreatingList ? (
@@ -42,13 +52,13 @@ const TodoLists = () => {
               <TabsTrigger value="completed">Completed</TabsTrigger>
             </TabsList>
             <TabsContent value="all">
-              <TodoList filter="all" />
+              <TodoList filter="all" searchQuery={searchQuery} />
             </TabsContent>
             <TabsContent value="active">
-              <TodoList filter="active" />
+              <TodoList filter="active" searchQuery={searchQuery} />
             </TabsContent>
             <TabsContent value="completed">
-              <TodoList filter="completed" />
+              <TodoList filter="completed" searchQuery={searchQuery} />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,35 +1,15 @@
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Star, Filter, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Search, MapPin, Star, Filter } from "lucide-react";
 import VendorDetail from "@/components/vendors/VendorDetail";
-
-const vendorCategories = [
-  "All Categories",
-  "Venues",
-  "Photographers",
-  "Caterers",
-  "Decorators",
-  "Music & DJs",
-  "Makeup Artists",
-  "Wedding Attire",
-  "Cakes"
-];
-
-const regions = [
-  "All Regions",
-  "Lagos",
-  "Abuja",
-  "Port Harcourt",
-  "Enugu",
-  "Ibadan",
-  "Kano",
-  "Calabar",
-  "Kaduna"
-];
+import { vendorService, VendorDetails } from "@/services/api/vendorService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface VendorImage {
   url: string;
@@ -37,6 +17,7 @@ interface VendorImage {
 }
 
 interface VendorCardProps {
+  id: string;
   name: string;
   category: string;
   location: string;
@@ -75,8 +56,8 @@ const VendorCard = ({
     >
       <div className="relative">
         <div 
-          className="h-48 bg-cover bg-center" 
-          style={{ backgroundImage: `url(${imageUrl})` }}
+          className="h-48 bg-cover bg-center bg-gradient-to-br from-muted/80 to-muted/40" 
+          style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
         />
         {showControls && (
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -113,190 +94,88 @@ const VendorCard = ({
   );
 };
 
-// Enhanced dummy data with more details
-const dummyVendors: Omit<VendorCardProps, 'onViewDetails'>[] = [
-  {
-    name: "Royal Events Center",
-    category: "Venues",
-    location: "Lagos",
-    rating: 4.8,
-    reviewCount: 124,
-    imageUrl: "https://images.unsplash.com/photo-1510076857177-7470076d4098?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1172&q=80",
-    images: [
-      { 
-        url: "https://images.unsplash.com/photo-1510076857177-7470076d4098?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1172&q=80", 
-        alt: "Main hall with elegant lighting" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Outdoor garden setup for wedding" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Table setting for banquet" 
-      },
-    ],
-    description: "Royal Events Center is a premium venue located in the heart of Lagos. Our elegant spaces can accommodate weddings of all sizes, from intimate gatherings to grand celebrations. We offer comprehensive packages including catering, decoration, and event planning services to make your special day perfect.",
-    services: ["Hall Rental", "Outdoor Garden", "Catering", "Decoration", "Sound System", "Lighting", "Parking"],
-    contact: {
-      email: "bookings@royalevents.com",
-      phone: "+234 801 234 5678",
-      website: "https://royalevents.example.com"
-    }
-  },
-  {
-    name: "Divine Catering",
-    category: "Caterers",
-    location: "Abuja",
-    rating: 4.6,
-    reviewCount: 89,
-    imageUrl: "https://images.unsplash.com/photo-1555244162-803834f70033?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    images: [
-      { 
-        url: "https://images.unsplash.com/photo-1555244162-803834f70033?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Elegantly plated main course" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1467546706352-fa0391181b6c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Wedding cake with floral decoration" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1622428051717-dcd9651f5cef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Buffet setup at wedding reception" 
-      },
-    ],
-    description: "Divine Catering specializes in creating memorable culinary experiences for weddings. We offer a wide range of menu options from traditional Nigerian cuisine to international dishes. Our team of experienced chefs and servers ensure that your wedding feast is nothing short of extraordinary.",
-    services: ["Menu Planning", "Buffet Service", "Plated Service", "Cake Design", "Dessert Table", "Bar Service", "Staff Provision"],
-    contact: {
-      email: "info@divinecatering.com",
-      phone: "+234 802 345 6789"
-    }
-  },
-  {
-    name: "Capture Memories Photography",
-    category: "Photographers",
-    location: "Port Harcourt",
-    rating: 4.9,
-    reviewCount: 156,
-    imageUrl: "https://images.unsplash.com/photo-1604017011523-b7b41a53f993?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    images: [
-      { 
-        url: "https://images.unsplash.com/photo-1604017011523-b7b41a53f993?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Couple portrait at sunset" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1537633552985-df8429e8048b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Wedding ceremony candid moment" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Detail shots of wedding rings and flowers" 
-      },
-    ],
-    description: "Capture Memories Photography is dedicated to preserving the most beautiful moments of your wedding day. With over 10 years of experience in wedding photography, we combine photojournalistic techniques with artistic portrait photography to tell your unique love story through images that will last a lifetime.",
-    services: ["Pre-wedding Shoot", "Wedding Day Coverage", "Drone Photography", "Videography", "Photo Album", "Digital Delivery", "Same-Day Edits"],
-    contact: {
-      email: "book@capturememories.com",
-      phone: "+234 803 456 7890",
-      website: "https://capturememories.example.com"
-    }
-  },
-  {
-    name: "Elegant Decor Solutions",
-    category: "Decorators",
-    location: "Lagos",
-    rating: 4.7,
-    reviewCount: 112,
-    imageUrl: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    images: [
-      { 
-        url: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Elegantly decorated wedding altar" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Reception table decorations with floral arrangements" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Lighting and draping design for wedding venue" 
-      },
-    ],
-    description: "Elegant Decor Solutions transforms ordinary spaces into extraordinary wedding venues. Our team of creative designers works closely with each couple to bring their vision to life through stunning floral arrangements, sophisticated lighting, custom backdrops, and elegant table settings.",
-    services: ["Floral Design", "Lighting", "Draping", "Backdrop Creation", "Table Setting", "Chair Covers", "Stage Design"],
-    contact: {
-      email: "design@elegantdecor.com",
-      phone: "+234 804 567 8901"
-    }
-  },
-  {
-    name: "Rhythm Masters",
-    category: "Music & DJs",
-    location: "Abuja",
-    rating: 4.5,
-    reviewCount: 78,
-    imageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-    images: [
-      { 
-        url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "DJ performing at wedding reception" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Live band performance at wedding" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Dance floor with light show" 
-      },
-    ],
-    description: "Rhythm Masters provides premium entertainment services for weddings. Our experienced DJs and live musicians create the perfect soundtrack for every moment of your celebration, from the ceremony to the last dance. We offer state-of-the-art sound and lighting equipment to keep your guests entertained all night long.",
-    services: ["DJ Services", "Live Band", "MC Services", "Sound System Rental", "Lighting Effects", "Custom Playlists", "Dance Floor"],
-    contact: {
-      email: "book@rhythmmasters.com",
-      phone: "+234 805 678 9012",
-      website: "https://rhythmmasters.example.com"
-    }
-  },
-  {
-    name: "Beauty by Amara",
-    category: "Makeup Artists",
-    location: "Lagos",
-    rating: 4.9,
-    reviewCount: 203,
-    imageUrl: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1171&q=80",
-    images: [
-      { 
-        url: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1171&q=80", 
-        alt: "Bride getting makeup applied" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1457972729786-0411a3b2b626?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80", 
-        alt: "Bridal makeup close-up" 
-      },
-      { 
-        url: "https://images.unsplash.com/photo-1560830839-5254915d8e69?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80", 
-        alt: "Bridal party hair and makeup session" 
-      },
-    ],
-    description: "Beauty by Amara is a luxury bridal makeup and hair styling service. Led by renowned makeup artist Amara Johnson, our team specializes in creating flawless, long-lasting bridal looks that enhance your natural beauty. We use only premium, camera-ready products to ensure you look stunning both in person and in photographs.",
-    services: ["Bridal Makeup", "Bridal Party Makeup", "Hair Styling", "Airbrush Makeup", "Lash Extensions", "Pre-wedding Trial", "Touch-up Service"],
-    contact: {
-      email: "appointments@beautybyamara.com",
-      phone: "+234 806 789 0123",
-      website: "https://beautybyamara.example.com"
-    }
-  }
-];
-
 const VendorsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
   const [selectedVendor, setSelectedVendor] = useState<Omit<VendorCardProps, 'onViewDetails'> | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [vendors, setVendors] = useState<Omit<VendorCardProps, 'onViewDetails'>[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+  const [inquiryForm, setInquiryForm] = useState({
+    name: "",
+    email: "",
+    eventDate: "",
+    message: "",
+  });
   
   const handleViewVendorDetails = (vendor: Omit<VendorCardProps, 'onViewDetails'>) => {
     setSelectedVendor(vendor);
   };
+
+  const handleOpenInquiry = () => {
+    if (!selectedVendor) return;
+    setIsInquiryOpen(true);
+  };
+
+  const handleSubmitInquiry = async () => {
+    if (!selectedVendor) return;
+    if (!inquiryForm.name.trim() || !inquiryForm.message.trim()) return;
+
+    try {
+      await vendorService.createInquiry({
+        vendorId: selectedVendor.id,
+        senderName: inquiryForm.name.trim(),
+        senderEmail: inquiryForm.email.trim() || undefined,
+        eventDate: inquiryForm.eventDate || undefined,
+        message: inquiryForm.message.trim(),
+      });
+      setInquiryForm({ name: "", email: "", eventDate: "", message: "" });
+      setIsInquiryOpen(false);
+    } catch (error) {
+      console.error("Failed to send inquiry:", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        setIsLoading(true);
+        const data = await vendorService.getVendors();
+        setVendors(mapVendorDetailsToCards(data));
+      } catch (error) {
+        console.error("Failed to fetch vendors:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVendors();
+  }, []);
+
+  const categoryOptions = useMemo(() => {
+    const categories = new Set(vendors.map(vendor => vendor.category).filter(Boolean));
+    return ["All Categories", ...Array.from(categories)];
+  }, [vendors]);
+
+  const regionOptions = useMemo(() => {
+    const regions = new Set(vendors.map(vendor => vendor.location).filter(Boolean));
+    return ["All Regions", ...Array.from(regions)];
+  }, [vendors]);
+
+  const filteredVendors = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return vendors.filter(vendor => {
+      const matchesCategory = selectedCategory === "All Categories" || vendor.category === selectedCategory;
+      const matchesRegion = selectedRegion === "All Regions" || vendor.location === selectedRegion;
+      const matchesQuery =
+        !query ||
+        vendor.name.toLowerCase().includes(query) ||
+        vendor.category.toLowerCase().includes(query) ||
+        vendor.location.toLowerCase().includes(query);
+      return matchesCategory && matchesRegion && matchesQuery;
+    });
+  }, [vendors, searchQuery, selectedCategory, selectedRegion]);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -318,6 +197,8 @@ const VendorsPage = () => {
                 <Input 
                   placeholder="Search vendors..." 
                   className="pl-10"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                 />
               </div>
               
@@ -327,7 +208,7 @@ const VendorsPage = () => {
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
-                  {vendorCategories.map(category => (
+                  {categoryOptions.map(category => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
@@ -337,7 +218,7 @@ const VendorsPage = () => {
                   value={selectedRegion}
                   onChange={(e) => setSelectedRegion(e.target.value)}
                 >
-                  {regions.map(region => (
+                  {regionOptions.map(region => (
                     <option key={region} value={region}>{region}</option>
                   ))}
                 </select>
@@ -352,18 +233,23 @@ const VendorsPage = () => {
           
           {/* Vendor Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {dummyVendors
-              .filter(vendor => 
-                (selectedCategory === "All Categories" || vendor.category === selectedCategory) && 
-                (selectedRegion === "All Regions" || vendor.location === selectedRegion)
-              )
-              .map((vendor, index) => (
+            {isLoading ? (
+              <div className="col-span-full text-center text-muted-foreground py-12">
+                Loading vendors...
+              </div>
+            ) : filteredVendors.length === 0 ? (
+              <div className="col-span-full text-center text-muted-foreground py-12">
+                No vendors found yet.
+              </div>
+            ) : (
+              filteredVendors.map((vendor, index) => (
                 <VendorCard 
-                  key={index}
+                  key={`${vendor.name}-${index}`}
                   {...vendor}
                   onViewDetails={() => handleViewVendorDetails(vendor)}
                 />
-              ))}
+              ))
+            )}
           </div>
           
           {/* Load More */}
@@ -378,8 +264,64 @@ const VendorsPage = () => {
         <VendorDetail
           {...selectedVendor}
           onClose={() => setSelectedVendor(null)}
+          onContact={handleOpenInquiry}
         />
       )}
+
+      <Dialog open={isInquiryOpen} onOpenChange={setIsInquiryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Contact Vendor</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-name">Your Name</Label>
+              <Input
+                id="inquiry-name"
+                value={inquiryForm.name}
+                onChange={(event) => setInquiryForm((prev) => ({ ...prev, name: event.target.value }))}
+                placeholder="Your full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-email">Email (optional)</Label>
+              <Input
+                id="inquiry-email"
+                value={inquiryForm.email}
+                onChange={(event) => setInquiryForm((prev) => ({ ...prev, email: event.target.value }))}
+                placeholder="you@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-date">Event Date (optional)</Label>
+              <Input
+                id="inquiry-date"
+                type="date"
+                value={inquiryForm.eventDate}
+                onChange={(event) => setInquiryForm((prev) => ({ ...prev, eventDate: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-message">Message</Label>
+              <Textarea
+                id="inquiry-message"
+                value={inquiryForm.message}
+                onChange={(event) => setInquiryForm((prev) => ({ ...prev, message: event.target.value }))}
+                placeholder="Tell the vendor what you need..."
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsInquiryOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitInquiry} disabled={!inquiryForm.name.trim() || !inquiryForm.message.trim()}>
+                Send Inquiry
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
@@ -387,3 +329,44 @@ const VendorsPage = () => {
 };
 
 export default VendorsPage;
+
+const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps, 'onViewDetails'>[] => {
+  const placeholderImage =
+    "data:image/svg+xml;utf8," +
+    encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+        <rect width="800" height="500" fill="#e5e7eb"/>
+        <rect x="40" y="40" width="720" height="420" rx="32" fill="#f3f4f6"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-family="Arial" font-size="28">Vendor image</text>
+      </svg>`
+    );
+
+    return vendors.map(({ profile, services, images }) => {
+    const primaryImage = images.find(image => image.is_primary)?.url;
+    const imageUrl = profile.profile_image_url || primaryImage || profile.cover_image_url || placeholderImage;
+    const gallery = images.length > 0
+      ? images.map(image => ({
+          url: image.url,
+          alt: image.alt_text || `${profile.business_name} image`,
+        }))
+      : [{ url: imageUrl, alt: `${profile.business_name} image` }];
+
+    return {
+      id: profile.id,
+      name: profile.business_name,
+      category: profile.category,
+      location: profile.location || "Unknown",
+      rating: Number(profile.rating || 0),
+      reviewCount: Number(profile.review_count || 0),
+      imageUrl,
+      images: gallery,
+      description: profile.description || "No description provided yet.",
+      services: services.map(service => service.name),
+      contact: {
+        email: profile.email || "Not provided",
+        phone: profile.phone || "Not provided",
+        website: profile.website || undefined,
+      },
+    };
+  });
+};
