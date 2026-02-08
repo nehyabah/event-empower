@@ -74,6 +74,8 @@ interface StoryEditorProps {
     groomName?: string;
     brideBio?: string;
     groomBio?: string;
+    brideImage?: string;
+    groomImage?: string;
   };
   storyImages: StoryImage[];
   setStoryImages: React.Dispatch<React.SetStateAction<StoryImage[]>>;
@@ -82,7 +84,7 @@ interface StoryEditorProps {
 }
 
 // Helper function to compress image
-const compressImage = (file: File, maxWidth = 800, maxHeight = 600): Promise<string> => {
+const compressImage = (file: File, maxWidth = 800, maxHeight = 600, quality = 0.7): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (readerEvent) => {
@@ -116,7 +118,7 @@ const compressImage = (file: File, maxWidth = 800, maxHeight = 600): Promise<str
         ctx.drawImage(img, 0, 0, width, height);
         
         // Convert to data URL with reduced quality
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(compressedDataUrl);
       };
       
@@ -151,6 +153,8 @@ const StoryEditor = ({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const brideProfileInputRef = useRef<HTMLInputElement>(null);
+  const groomProfileInputRef = useRef<HTMLInputElement>(null);
   const brideFileInputRef = useRef<HTMLInputElement>(null);
   const groomFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -298,8 +302,8 @@ const StoryEditor = ({
     setIsUploading(true);
 
     try {
-      // Compress the banner image (with higher quality since it's important)
-      const compressedDataUrl = await compressImage(file, 1200, 400);
+      // Compress the banner image — keep it large enough to avoid pixelation
+      const compressedDataUrl = await compressImage(file, 1920, 1080, 0.85);
       
       const updatedStory = await storyService.updateMyStory({
         banner_image_url: compressedDataUrl,
@@ -320,6 +324,59 @@ const StoryEditor = ({
         bannerInputRef.current.value = "";
       }
     }
+  };
+
+  const handlePartnerImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    partner: "bride" | "groom"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const compressedDataUrl = await compressImage(file, 900, 1200);
+      const updatedStory = await storyService.updateMyStory(
+        partner === "bride"
+          ? { bride_image_url: compressedDataUrl }
+          : { groom_image_url: compressedDataUrl }
+      );
+
+      setCoupleStory({
+        ...coupleStory,
+        brideImage: updatedStory.bride_image_url || coupleStory.brideImage,
+        groomImage: updatedStory.groom_image_url || coupleStory.groomImage,
+      });
+
+      toast.success(`${partner === "bride" ? "Bride" : "Groom"} image updated!`);
+    } catch (error) {
+      console.error(`Error processing ${partner} image:`, error);
+      toast.error(`Failed to process ${partner} image`);
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removePartnerImage = (partner: "bride" | "groom") => {
+    const remove = async () => {
+      try {
+        const updatedStory = await storyService.updateMyStory(
+          partner === "bride" ? { bride_image_url: null } : { groom_image_url: null }
+        );
+        setCoupleStory({
+          ...coupleStory,
+          brideImage: updatedStory.bride_image_url || undefined,
+          groomImage: updatedStory.groom_image_url || undefined,
+        });
+        toast.success(`${partner === "bride" ? "Bride" : "Groom"} image removed`);
+      } catch (error) {
+        toast.error("Failed to update story settings");
+        console.error(`Error removing ${partner} image:`, error);
+      }
+    };
+
+    void remove();
   };
 
   const removeImage = (id: string) => {
@@ -604,6 +661,48 @@ const StoryEditor = ({
             <form onSubmit={storyForm.handleSubmit(onStorySubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
+                  <div className="border rounded-md p-3">
+                    <h4 className="text-sm font-medium mb-3">Bride Profile Image</h4>
+                    <div className="flex gap-3 items-start">
+                      <div className="w-24 h-24 rounded-md overflow-hidden bg-muted/40 shrink-0">
+                        <img
+                          src={coupleStory.brideImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop"}
+                          alt="Bride profile"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => brideProfileInputRef.current?.click()}
+                          disabled={isUploading}
+                        >
+                          {isUploading ? "Processing..." : <><Camera className="h-4 w-4 mr-1" />Change</>}
+                        </Button>
+                        {coupleStory.brideImage && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removePartnerImage("bride")}
+                            disabled={isUploading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <input
+                          type="file"
+                          ref={brideProfileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => void handlePartnerImageUpload(e, "bride")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <FormField
                     control={storyForm.control}
                     name="brideName"
@@ -690,6 +789,48 @@ const StoryEditor = ({
                 </div>
 
                 <div className="space-y-4">
+                  <div className="border rounded-md p-3">
+                    <h4 className="text-sm font-medium mb-3">Groom Profile Image</h4>
+                    <div className="flex gap-3 items-start">
+                      <div className="w-24 h-24 rounded-md overflow-hidden bg-muted/40 shrink-0">
+                        <img
+                          src={coupleStory.groomImage || "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=800&auto=format&fit=crop"}
+                          alt="Groom profile"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => groomProfileInputRef.current?.click()}
+                          disabled={isUploading}
+                        >
+                          {isUploading ? "Processing..." : <><Camera className="h-4 w-4 mr-1" />Change</>}
+                        </Button>
+                        {coupleStory.groomImage && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removePartnerImage("groom")}
+                            disabled={isUploading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <input
+                          type="file"
+                          ref={groomProfileInputRef}
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => void handlePartnerImageUpload(e, "groom")}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <FormField
                     control={storyForm.control}
                     name="groomName"

@@ -118,6 +118,28 @@ export const authController = {
     }
   },
 
+  /** Body-based refresh for mobile clients (no httpOnly cookies) */
+  async refreshFromBody(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        res.status(401).json({ error: 'Refresh token required' });
+        return;
+      }
+
+      const result = await authService.refreshTokens(refreshToken);
+
+      res.json({
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const input = googleAuthSchema.parse(req.body);

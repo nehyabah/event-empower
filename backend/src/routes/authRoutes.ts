@@ -10,6 +10,7 @@ router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', optionalAuth, authController.logout);
 router.post('/refresh', authController.refresh);
+router.post('/refresh-token', authController.refreshFromBody);
 
 // Google OAuth
 router.post('/google', authLimiter, authController.googleAuth);
