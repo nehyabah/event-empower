@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import Index from "./pages/Index";
 import UserHomepage from "./pages/UserHomepage";
 import VendorHomepage from "./pages/VendorHomepage";
+import VendorAnalytics from "./pages/VendorAnalytics";
 import PlannerHomepage from "./pages/PlannerHomepage";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
@@ -22,6 +23,25 @@ import NotFound from "./pages/NotFound";
 import PlannerTasks from "./pages/PlannerTasks";
 import PlannerCalendar from "./pages/PlannerCalendar";
 import PlannerClients from "./pages/PlannerClients";
+import MyInquiries from "./pages/MyInquiries";
+import Contact from "./pages/Contact";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminUserDetail from "./pages/AdminUserDetail";
+import AdminVendors from "./pages/AdminVendors";
+import AdminVendorDetail from "./pages/AdminVendorDetail";
+import AdminInquiries from "./pages/AdminInquiries";
+import AdminInquiryDetail from "./pages/AdminInquiryDetail";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminAnalyticsUsers from "./pages/AdminAnalyticsUsers";
+import AdminAnalyticsVendors from "./pages/AdminAnalyticsVendors";
+import AdminAnalyticsInquiries from "./pages/AdminAnalyticsInquiries";
+import AdminSupport from "./pages/AdminSupport";
+import AdminSupportDetail from "./pages/AdminSupportDetail";
+import AdminModeration from "./pages/AdminModeration";
+import AdminBroadcasts from "./pages/AdminBroadcasts";
+import AdminSubscribers from "./pages/AdminSubscribers";
+import AdminAudit from "./pages/AdminAudit";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +71,8 @@ const RequireAuth = ({ children, allowedTypes }: { children: React.ReactNode; al
       return <Navigate to="/vendor-home" replace />;
     } else if (user.userType === "planner") {
       return <Navigate to="/planner-home" replace />;
+    } else if (user.userType === "admin") {
+      return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/home" replace />;
   }
@@ -62,16 +84,24 @@ const RequireAuth = ({ children, allowedTypes }: { children: React.ReactNode; al
 const LandingRoute = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
 
+  // Debug: Log routing decision
+  console.log("LandingRoute - user:", user, "userType:", user?.userType, "isAuthenticated:", isAuthenticated);
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
   if (isAuthenticated && user) {
+    // Debug: Log which route we're taking
+    console.log("Routing to:", user.userType === "vendor" ? "/vendor-home" : user.userType === "planner" ? "/planner-home" : user.userType === "admin" ? "/admin" : "/home");
+
     // Redirect to appropriate home based on user type
     if (user.userType === "vendor") {
       return <Navigate to="/vendor-home" replace />;
     } else if (user.userType === "planner") {
       return <Navigate to="/planner-home" replace />;
+    } else if (user.userType === "admin") {
+      return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/home" replace />;
   }
@@ -91,8 +121,10 @@ const AppRoutes = () => {
       <Route path="/invitation" element={<InvitationPage />} />
       <Route path="/invitation/:code" element={<InvitationPage />} />
       <Route path="/shared-story" element={<SharedStoryPage />} />
+      <Route path="/s/:slug" element={<SharedStoryPage />} />
       <Route path="/vendors" element={<Vendors />} />
       <Route path="/vendor-profile" element={<VendorProfile />} />
+      <Route path="/contact" element={<Contact />} />
 
       {/* Client routes */}
       <Route path="/home" element={
@@ -120,11 +152,21 @@ const AppRoutes = () => {
           <TodoLists />
         </RequireAuth>
       } />
+      <Route path="/my-inquiries" element={
+        <RequireAuth allowedTypes={["client"]}>
+          <MyInquiries />
+        </RequireAuth>
+      } />
 
       {/* Vendor routes */}
       <Route path="/vendor-home" element={
         <RequireAuth allowedTypes={["vendor"]}>
           <VendorHomepage />
+        </RequireAuth>
+      } />
+      <Route path="/vendor-analytics" element={
+        <RequireAuth allowedTypes={["vendor"]}>
+          <VendorAnalytics />
         </RequireAuth>
       } />
 
@@ -147,6 +189,93 @@ const AppRoutes = () => {
       <Route path="/clients" element={
         <RequireAuth allowedTypes={["planner"]}>
           <PlannerClients />
+        </RequireAuth>
+      } />
+
+      {/* Admin routes */}
+      <Route path="/admin" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminDashboard />
+        </RequireAuth>
+      } />
+      <Route path="/admin/analytics" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminAnalytics />
+        </RequireAuth>
+      } />
+      <Route path="/admin/analytics/users" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminAnalyticsUsers />
+        </RequireAuth>
+      } />
+      <Route path="/admin/analytics/vendors" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminAnalyticsVendors />
+        </RequireAuth>
+      } />
+      <Route path="/admin/analytics/inquiries" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminAnalyticsInquiries />
+        </RequireAuth>
+      } />
+      <Route path="/admin/support" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminSupport />
+        </RequireAuth>
+      } />
+      <Route path="/admin/support/:id" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminSupportDetail />
+        </RequireAuth>
+      } />
+      <Route path="/admin/moderation" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminModeration />
+        </RequireAuth>
+      } />
+      <Route path="/admin/broadcasts" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminBroadcasts />
+        </RequireAuth>
+      } />
+      <Route path="/admin/subscribers" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminSubscribers />
+        </RequireAuth>
+      } />
+      <Route path="/admin/audit" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminAudit />
+        </RequireAuth>
+      } />
+      <Route path="/admin/users" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminUsers />
+        </RequireAuth>
+      } />
+      <Route path="/admin/users/:id" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminUserDetail />
+        </RequireAuth>
+      } />
+      <Route path="/admin/vendors" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminVendors />
+        </RequireAuth>
+      } />
+      <Route path="/admin/vendors/:id" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminVendorDetail />
+        </RequireAuth>
+      } />
+      <Route path="/admin/inquiries" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminInquiries />
+        </RequireAuth>
+      } />
+      <Route path="/admin/inquiries/:id" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminInquiryDetail />
         </RequireAuth>
       } />
 

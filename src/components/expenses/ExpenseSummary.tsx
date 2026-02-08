@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { useExpenses } from "@/context/ExpenseContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Edit } from "lucide-react";
+import { Check, Edit2 } from "lucide-react";
 
 const ExpenseSummary = () => {
   const { totalBudget, setTotalBudget, totalSpent, remainingBudget } = useExpenses();
@@ -19,62 +18,64 @@ const ExpenseSummary = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Total Budget */}
       <Card className="bg-primary/10">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium">Total Budget</h3>
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-xs sm:text-sm font-medium text-muted-foreground">Total Budget</h3>
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
+              className="h-7 w-7"
               onClick={() => setIsEditingBudget(!isEditingBudget)}
             >
-              <Edit className="h-4 w-4" />
+              <Edit2 className="h-3.5 w-3.5" />
             </Button>
           </div>
-          
+
           {isEditingBudget ? (
             <div className="flex items-center gap-2">
               <Input
                 type="number"
                 value={newBudget}
                 onChange={(e) => setNewBudget(Number(e.target.value))}
-                className="text-lg font-bold"
+                className="text-base font-bold h-9"
               />
-              <Button size="sm" onClick={handleSaveBudget}>
-                <ArrowRight className="h-4 w-4" />
+              <Button size="icon" className="h-9 w-9 shrink-0" onClick={handleSaveBudget}>
+                <Check className="h-4 w-4" />
               </Button>
             </div>
           ) : (
-            <p className="text-2xl font-bold">₦{totalBudget.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-bold">₦{totalBudget.toLocaleString()}</p>
           )}
         </CardContent>
       </Card>
-      
+
+      {/* Total Spent */}
       <Card className="bg-red-50">
-        <CardContent className="p-6">
-          <h3 className="text-sm font-medium mb-2">Total Spent</h3>
-          <p className="text-2xl font-bold">₦{totalSpent.toLocaleString()}</p>
-          <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+        <CardContent className="p-4 sm:p-6">
+          <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">Total Spent</h3>
+          <p className="text-xl sm:text-2xl font-bold">₦{totalSpent.toLocaleString()}</p>
+          <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
             <div
-              className="bg-primary h-2.5 rounded-full"
+              className="bg-primary h-full rounded-full transition-all"
               style={{ width: `${Math.min(percentSpent, 100)}%` }}
-            ></div>
+            />
           </div>
-          <p className="text-xs text-gray-500 mt-1">{percentSpent.toFixed(1)}% of budget</p>
+          <p className="text-xs text-muted-foreground mt-1">{percentSpent.toFixed(0)}% of budget</p>
         </CardContent>
       </Card>
-      
-      <Card className={`${remainingBudget >= 0 ? "bg-green-50" : "bg-red-50"}`}>
-        <CardContent className="p-6">
-          <h3 className="text-sm font-medium mb-2">Remaining Budget</h3>
-          <p className={`text-2xl font-bold ${remainingBudget < 0 ? "text-red-600" : ""}`}>
+
+      {/* Remaining Budget */}
+      <Card className={remainingBudget >= 0 ? "bg-green-50" : "bg-red-50"}>
+        <CardContent className="p-4 sm:p-6">
+          <h3 className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">Remaining</h3>
+          <p className={`text-xl sm:text-2xl font-bold ${remainingBudget < 0 ? "text-red-600" : ""}`}>
             ₦{remainingBudget.toLocaleString()}
           </p>
-          <p className="text-xs text-gray-500 mt-2">
-            {remainingBudget >= 0 
-              ? `You're within budget!` 
-              : `You're over budget by ₦${Math.abs(remainingBudget).toLocaleString()}`}
+          <p className="text-xs text-muted-foreground mt-1">
+            {remainingBudget >= 0 ? "Within budget" : "Over budget"}
           </p>
         </CardContent>
       </Card>

@@ -1,11 +1,10 @@
 import { apiClient } from "@/services/api/client";
 
-export type UserType = "client" | "vendor" | "planner";
+export type UserType = "client" | "vendor" | "planner" | "admin";
 
 export interface LoginCredentials {
   email: string;
   password: string;
-  userType: UserType;
 }
 
 export interface RegisterCredentials {
@@ -86,8 +85,7 @@ export const registerUser = async (credentials: RegisterCredentials): Promise<Au
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthUser> => {
   const response = await apiClient.post<AuthResponse>('/auth/login', {
     email: credentials.email,
-    password: credentials.password,
-    userType: credentials.userType
+    password: credentials.password
   });
 
   if (response.error) {

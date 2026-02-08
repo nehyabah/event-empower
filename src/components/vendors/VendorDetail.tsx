@@ -1,17 +1,16 @@
-
 import { useState } from "react";
-import { 
-  X, 
-  ChevronLeft, 
-  ChevronRight, 
-  Calendar, 
-  Mail, 
-  Phone, 
-  Heart 
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Mail,
+  Phone,
+  Heart,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 
 interface VendorImage {
@@ -65,133 +64,144 @@ const VendorDetail = ({
 
   const handleBooking = () => {
     toast.success("Booking request sent!", {
-      description: `Your booking request for ${name} has been sent. They will contact you shortly.`
+      description: `Your booking request for ${name} has been sent.`
     });
   };
 
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
     if (!isFavorite) {
-      toast.success("Added to favorites", {
-        description: `${name} has been added to your favorites.`
-      });
+      toast.success("Added to favorites");
     } else {
       toast("Removed from favorites");
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-background rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-background p-4 border-b flex justify-between items-center z-10">
-          <h2 className="text-2xl font-serif">{name}</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Image Gallery */}
-        <div className="relative h-80 md:h-96 bg-gray-100">
-          <img
-            src={images[currentImageIndex].url}
-            alt={images[currentImageIndex].alt}
-            className="w-full h-full object-cover"
-          />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50"
-            onClick={prevImage}
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50"
-            onClick={nextImage}
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-            {images.map((_, index) => (
-              <span 
-                key={index} 
-                className={`w-2 h-2 rounded-full ${
-                  index === currentImageIndex ? "bg-white" : "bg-white/50"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{category}</Badge>
-                <Badge variant="outline">{location}</Badge>
-                <div className="flex items-center text-wedding-gold">
-                  <span className="text-lg font-medium">{rating.toFixed(1)}</span>
-                  <span className="text-sm text-muted-foreground ml-1">({reviewCount} reviews)</span>
-                </div>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className={isFavorite ? "text-red-500" : ""}
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+      <div className="bg-background w-full sm:rounded-xl sm:max-w-2xl sm:mx-4 max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="sticky top-0 bg-background px-4 py-3 border-b flex justify-between items-center z-10 shrink-0">
+          <h2 className="text-lg sm:text-xl font-serif truncate pr-2">{name}</h2>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 ${isFavorite ? "text-red-500" : ""}`}
               onClick={toggleFavorite}
             >
-              <Heart className={isFavorite ? "fill-red-500" : ""} />
+              <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+              <X className="h-4 w-4" />
             </Button>
           </div>
+        </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">About</h3>
-            <p className="text-muted-foreground">{description}</p>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Image Gallery */}
+          <div className="relative h-56 sm:h-72 bg-muted">
+            <img
+              src={images[currentImageIndex].url}
+              alt={images[currentImageIndex].alt}
+              className="w-full h-full object-cover"
+            />
+            {images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 h-8 w-8"
+                  onClick={prevImage}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 h-8 w-8"
+                  onClick={nextImage}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === currentImageIndex ? "bg-white" : "bg-white/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Services</h3>
-            <div className="flex flex-wrap gap-2">
-              {services.map((service, index) => (
-                <Badge key={index} variant="secondary">{service}</Badge>
-              ))}
+          <div className="p-4 space-y-5">
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">{category}</Badge>
+              <Badge variant="outline">{location}</Badge>
+              <div className="flex items-center text-yellow-500 text-sm">
+                <span className="font-medium">{rating.toFixed(1)}</span>
+                <span className="text-muted-foreground ml-1">({reviewCount})</span>
+              </div>
+            </div>
+
+            {/* About */}
+            <div>
+              <h3 className="text-sm font-medium mb-2">About</h3>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+
+            {/* Services */}
+            {services.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium mb-2">Services</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {services.map((service, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {service}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contact */}
+            <div>
+              <h3 className="text-sm font-medium mb-2">Contact</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{contact.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="h-4 w-4 shrink-0" />
+                  <span>{contact.phone}</span>
+                </div>
+                {contact.website && (
+                  <a
+                    href={contact.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-primary hover:underline"
+                  >
+                    <Globe className="h-4 w-4 shrink-0" />
+                    <span>Visit Website</span>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">Contact Information</h3>
-            <Card>
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{contact.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{contact.phone}</span>
-                  </div>
-                  {contact.website && (
-                    <div className="flex items-center gap-2 md:col-span-2">
-                      <a 
-                        href={contact.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Visit Website
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex gap-4 mt-6">
+        {/* Footer Actions */}
+        <div className="sticky bottom-0 bg-background border-t p-4 shrink-0">
+          <div className="flex gap-3">
             <Button className="flex-1" onClick={handleBooking}>
               <Calendar className="mr-2 h-4 w-4" />
               Book Now

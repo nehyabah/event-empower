@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { UserModel, User, UserType } from '../models/User.js';
 import { tokenService, TokenPair } from './tokenService.js';
+import { query } from '../config/database.js';
 
 const SALT_ROUNDS = 12;
 
@@ -14,7 +15,6 @@ export interface RegisterInput {
 export interface LoginInput {
   email: string;
   password: string;
-  userType?: UserType;
 }
 
 export interface AuthResult {
@@ -27,6 +27,12 @@ export interface AuthResult {
   };
   tokens: TokenPair;
 }
+
+const createAuthError = (message: string, statusCode = 401): Error & { statusCode?: number } => {
+  const error = new Error(message) as Error & { statusCode?: number };
+  error.statusCode = statusCode;
+  return error;
+};
 
 export const authService = {
   async register(input: RegisterInput): Promise<AuthResult> {
@@ -67,39 +73,37 @@ export const authService = {
     // Find the user
     const user = await UserModel.findByEmail(input.email);
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw createAuthError('Email or password is incorrect.');
+    }
+
+    if (user.deleted_at || !user.is_active) {
+      throw createAuthError('Account is inactive. Please contact support.', 403);
     }
 
     // Check if user has a password (might be OAuth only)
     if (!user.password_hash) {
-      throw new Error('This account uses social login. Please sign in with Google or phone.');
+      throw createAuthError('This account uses social login. Please sign in with Google or phone.', 400);
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(input.password, user.password_hash);
     if (!isValidPassword) {
-      throw new Error('Invalid email or password');
+      throw createAuthError('Email or password is incorrect.');
     }
 
-    // Update user type if provided and different
-    let updatedUser = user;
-    if (input.userType && input.userType !== user.user_type) {
-      const result = await UserModel.update(user.id, { user_type: input.userType });
-      if (result) {
-        updatedUser = result;
-      }
-    }
+    // Update last_login_at (non-blocking — column may not exist yet)
+    query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]).catch(() => {});
 
     // Generate tokens
-    const tokens = await tokenService.generateTokenPair(updatedUser);
+    const tokens = await tokenService.generateTokenPair(user);
 
     return {
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        userType: updatedUser.user_type,
-        avatarUrl: updatedUser.avatar_url,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        userType: user.user_type,
+        avatarUrl: user.avatar_url,
       },
       tokens,
     };
@@ -120,6 +124,10 @@ export const authService = {
     const user = await UserModel.findById(tokenData.userId);
     if (!user) {
       throw new Error('User not found');
+    }
+
+    if (user.deleted_at || !user.is_active) {
+      throw createAuthError('Account is inactive. Please contact support.', 403);
     }
 
     // Rotate the refresh token

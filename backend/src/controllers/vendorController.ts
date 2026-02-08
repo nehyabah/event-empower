@@ -68,6 +68,10 @@ const updateInquirySchema = z.object({
   notes: z.string().optional(),
 });
 
+const sendMessageSchema = z.object({
+  message: z.string().min(1, 'Message is required'),
+});
+
 const toNumber = (value: number | string | undefined) => {
   if (value === undefined) return undefined;
   if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
@@ -358,6 +362,57 @@ export const vendorController = {
       const upload = await storageService.uploadVendorImage(req.user!.userId, req.file);
       res.json(upload);
     } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== INQUIRY MESSAGES (VENDOR) ==========
+
+  async getInquiryWithMessages(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await vendorService.getInquiryWithMessages(req.user!.userId, req.params.id);
+      if (!result) {
+        res.status(404).json({ error: 'Inquiry not found' });
+        return;
+      }
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async sendInquiryMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = sendMessageSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const message = await vendorService.sendInquiryMessageAsVendor(
+        req.user!.userId,
+        req.params.id,
+        validation.data.message
+      );
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Inquiry not found') {
+        res.status(404).json({ error: 'Inquiry not found' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async getInquiryMessages(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const messages = await vendorService.getInquiryMessages(req.user!.userId, req.params.id);
+      res.json(messages);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Inquiry not found') {
+        res.status(404).json({ error: 'Inquiry not found' });
+        return;
+      }
       next(error);
     }
   },

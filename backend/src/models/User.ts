@@ -1,6 +1,6 @@
 import { query, queryOne } from '../config/database.js';
 
-export type UserType = 'client' | 'vendor' | 'planner';
+export type UserType = 'client' | 'vendor' | 'planner' | 'admin';
 export type AuthProvider = 'email' | 'google' | 'phone';
 
 export interface User {
@@ -13,6 +13,9 @@ export interface User {
   avatar_url: string | null;
   auth_provider: AuthProvider;
   google_id: string | null;
+  is_active: boolean;
+  suspended_at: Date | null;
+  deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -34,6 +37,9 @@ export interface UpdateUserInput {
   name?: string;
   user_type?: UserType;
   avatar_url?: string;
+  is_active?: boolean;
+  suspended_at?: Date | null;
+  deleted_at?: Date | null;
 }
 
 export const UserModel = {
@@ -113,6 +119,18 @@ export const UserModel = {
     if (input.avatar_url !== undefined) {
       fields.push(`avatar_url = $${paramIndex++}`);
       values.push(input.avatar_url || null);
+    }
+    if (input.is_active !== undefined) {
+      fields.push(`is_active = $${paramIndex++}`);
+      values.push(input.is_active);
+    }
+    if (input.suspended_at !== undefined) {
+      fields.push(`suspended_at = $${paramIndex++}`);
+      values.push(input.suspended_at);
+    }
+    if (input.deleted_at !== undefined) {
+      fields.push(`deleted_at = $${paramIndex++}`);
+      values.push(input.deleted_at);
     }
 
     if (fields.length === 0) {

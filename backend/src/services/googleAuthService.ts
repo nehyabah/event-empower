@@ -60,6 +60,8 @@ export const googleAuthService = {
         user_type: userType || 'client',
       });
       isNewUser = true;
+    } else if (user.deleted_at || !user.is_active) {
+      throw new Error('Account is inactive. Please contact support.');
     } else if (userType && userType !== user.user_type) {
       // Update user type if provided and different
       const updatedUser = await UserModel.update(user.id, { user_type: userType });

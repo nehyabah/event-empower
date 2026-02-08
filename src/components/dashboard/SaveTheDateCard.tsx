@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { rsvpService } from "@/services/api/rsvpService";
 
 // ============================================
 // FLORAL DESIGNS - Each template has unique flowers
@@ -332,6 +333,7 @@ interface SaveTheDateCardProps {
   isEditable?: boolean;
   isFlipped?: boolean;
   onFlip?: () => void;
+  rsvpCode?: string;
 }
 
 const SaveTheDateCard = ({
@@ -341,6 +343,7 @@ const SaveTheDateCard = ({
   venue,
   isFlipped: controlledIsFlipped,
   onFlip,
+  rsvpCode,
 }: SaveTheDateCardProps) => {
   const [internalIsFlipped, setInternalIsFlipped] = useState(false);
   const [rsvpStatus, setRsvpStatus] = useState<"attending" | "declined" | null>(null);
@@ -424,18 +427,36 @@ const SaveTheDateCard = ({
   const template = saveTheDateTemplates.find((t) => t.id === templateId) || saveTheDateTemplates[0];
   const FloralComponent = template.FloralComponent;
 
-  const handleRsvpSubmit = (e: React.FormEvent) => {
+  const handleRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim()) { toast.error("Please enter your name"); return; }
     if (!rsvpStatus) { toast.error("Please select if you're attending"); return; }
+
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.success(rsvpStatus === "attending"
-        ? "Thank you! We can't wait to celebrate with you!"
-        : "Thank you for letting us know. We'll miss you!");
+
+    try {
+      if (rsvpCode) {
+        // Submit to backend
+        const response = await rsvpService.submitRsvp({
+          rsvpCode,
+          name: guestName.trim(),
+          status: rsvpStatus === "attending" ? "confirmed" : "declined",
+          guestCount: parseInt(guestCount, 10),
+          dietaryNotes: dietaryNotes.trim() || undefined,
+        });
+        toast.success(response.message);
+      } else {
+        // Fallback for preview mode (no rsvpCode)
+        toast.success(rsvpStatus === "attending"
+          ? "Thank you! We can't wait to celebrate with you!"
+          : "Thank you for letting us know. We'll miss you!");
+      }
       setGuestName(""); setGuestCount("1"); setDietaryNotes(""); setRsvpStatus(null);
-    }, 1500);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit RSVP");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFormInteraction = (e: React.MouseEvent | React.TouchEvent) => e.stopPropagation();
@@ -465,7 +486,7 @@ const SaveTheDateCard = ({
   return (
     <div
       ref={cardRef}
-      className="w-full h-full min-h-[500px]"
+      className="w-full h-full min-h-[360px] sm:min-h-[450px] md:min-h-[500px]"
       style={{ perspective: "1200px" }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -494,10 +515,10 @@ const SaveTheDateCard = ({
           }}
         >
           {/* Floral Corners */}
-          <FloralComponent className="absolute top-0 left-0 w-28 h-28 md:w-36 md:h-36" />
-          <FloralComponent className="absolute top-0 right-0 w-28 h-28 md:w-36 md:h-36" flip />
-          <FloralComponent className="absolute bottom-0 left-0 w-28 h-28 md:w-36 md:h-36 rotate-180" flip />
-          <FloralComponent className="absolute bottom-0 right-0 w-28 h-28 md:w-36 md:h-36 rotate-180" />
+          <FloralComponent className="absolute top-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36" />
+          <FloralComponent className="absolute top-0 right-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36" flip />
+          <FloralComponent className="absolute bottom-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rotate-180" flip />
+          <FloralComponent className="absolute bottom-0 right-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rotate-180" />
 
           {/* Butterfly */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2">
@@ -505,7 +526,7 @@ const SaveTheDateCard = ({
           </div>
 
           {/* Content */}
-          <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-6 py-10">
+          <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 py-6 sm:px-6 sm:py-10">
             {/* Header */}
             <div className="mb-1">
               <p
@@ -527,29 +548,29 @@ const SaveTheDateCard = ({
             </div>
 
             {/* Names */}
-            <div className="my-4 md:my-6">
+            <div className="my-2 sm:my-4 md:my-6">
               <h2
                 style={{ fontFamily: template.nameFont, color: template.accent }}
-                className="text-xl md:text-2xl lg:text-3xl tracking-wide leading-relaxed"
+                className="text-lg sm:text-xl md:text-2xl lg:text-3xl tracking-wide leading-relaxed"
               >
                 {formatName(names.partner1 || "Partner One")}
               </h2>
               <p
                 style={{ fontFamily: template.scriptFont, color: template.accentLight }}
-                className="text-2xl md:text-3xl my-0.5"
+                className="text-xl sm:text-2xl md:text-3xl my-0.5"
               >
                 &amp;
               </p>
               <h2
                 style={{ fontFamily: template.nameFont, color: template.accent }}
-                className="text-xl md:text-2xl lg:text-3xl tracking-wide leading-relaxed"
+                className="text-lg sm:text-xl md:text-2xl lg:text-3xl tracking-wide leading-relaxed"
               >
                 {formatName(names.partner2 || "Partner Two")}
               </h2>
             </div>
 
             {/* Date */}
-            <div className="my-3">
+            <div className="my-2 sm:my-3">
               {dateFormatted.day ? (
                 <p
                   style={{ fontFamily: template.bodyFont, color: template.accent }}
@@ -571,7 +592,7 @@ const SaveTheDateCard = ({
             </div>
 
             {/* Invitation to Follow */}
-            <div className="mt-4 md:mt-6">
+            <div className="mt-2 sm:mt-4 md:mt-6">
               <p
                 style={{ fontFamily: template.headerFont, letterSpacing: "0.25em", color: template.accentLight }}
                 className="text-[9px] md:text-[10px] uppercase"
@@ -583,7 +604,7 @@ const SaveTheDateCard = ({
             {/* Swipe hint */}
             <p
               style={{ color: template.accentLight }}
-              className="absolute bottom-3 text-[9px] opacity-50"
+              className="absolute bottom-2 sm:bottom-3 text-[8px] sm:text-[9px] opacity-50"
             >
               ← Swipe to RSVP →
             </p>
@@ -605,32 +626,32 @@ const SaveTheDateCard = ({
           }}
         >
           {/* Subtle florals */}
-          <FloralComponent className="absolute top-0 left-0 w-16 h-16 opacity-30" />
-          <FloralComponent className="absolute top-0 right-0 w-16 h-16 opacity-30" flip />
+          <FloralComponent className="absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 opacity-30" />
+          <FloralComponent className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 opacity-30" flip />
 
           {/* Header */}
-          <div className="px-5 py-4 shrink-0" style={{ borderBottomColor: template.border, borderBottomWidth: "1px" }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: template.accentBg }}>
-                <MessageSquare className="w-4 h-4" style={{ color: template.accent }} />
+          <div className="px-3 py-2 sm:px-5 sm:py-4 shrink-0" style={{ borderBottomColor: template.border, borderBottomWidth: "1px" }}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: template.accentBg }}>
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: template.accent }} />
               </div>
               <div>
-                <h3 style={{ fontFamily: template.nameFont, color: template.accent }} className="text-base">RSVP</h3>
-                <p style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[10px]">Kindly respond</p>
+                <h3 style={{ fontFamily: template.nameFont, color: template.accent }} className="text-sm sm:text-base">RSVP</h3>
+                <p style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px]">Kindly respond</p>
               </div>
             </div>
           </div>
 
           {/* Form */}
-          <div className="p-4 overflow-y-auto flex-1" onMouseDown={handleFormInteraction} onTouchStart={handleFormInteraction}>
-            <form onSubmit={handleRsvpSubmit} className="space-y-3">
+          <div className="p-3 sm:p-4 overflow-y-auto flex-1" onMouseDown={handleFormInteraction} onTouchStart={handleFormInteraction}>
+            <form onSubmit={handleRsvpSubmit} className="space-y-2 sm:space-y-3">
               <div className="space-y-1">
-                <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[10px] uppercase tracking-wider flex items-center gap-1.5">
-                  <Users className="w-3 h-3" /> Your Name
+                <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider flex items-center gap-1">
+                  <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Your Name
                 </label>
                 <Input
                   placeholder="Enter your full name"
-                  className="h-9 text-sm"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
                   style={{ borderColor: template.border, backgroundColor: "rgba(255,255,255,0.8)" }}
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
@@ -639,16 +660,16 @@ const SaveTheDateCard = ({
               </div>
 
               <div className="space-y-1">
-                <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[10px] uppercase tracking-wider">
+                <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
                   Will you be attending?
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                   {(["attending", "declined"] as const).map((status) => (
                     <button
                       key={status}
                       type="button"
                       onClick={() => setRsvpStatus(status)}
-                      className="flex flex-col items-center p-2.5 rounded-lg border-2 transition-all"
+                      className="flex flex-col items-center p-2 sm:p-2.5 rounded-lg border-2 transition-all"
                       style={{
                         borderColor: rsvpStatus === status ? template.accent : template.border,
                         backgroundColor: rsvpStatus === status ? template.accentBg : "rgba(255,255,255,0.8)",
@@ -656,12 +677,12 @@ const SaveTheDateCard = ({
                       }}
                     >
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center mb-1"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mb-0.5 sm:mb-1"
                         style={{ backgroundColor: rsvpStatus === status ? template.border : template.accentBg }}
                       >
-                        {status === "attending" ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                        {status === "attending" ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                       </div>
-                      <span style={{ fontFamily: template.bodyFont }} className="text-[10px]">
+                      <span style={{ fontFamily: template.bodyFont }} className="text-[9px] sm:text-[10px]">
                         {status === "attending" ? "Joyfully Accept" : "Regretfully Decline"}
                       </span>
                     </button>
@@ -672,11 +693,11 @@ const SaveTheDateCard = ({
               {rsvpStatus === "attending" && (
                 <>
                   <div className="space-y-1">
-                    <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[10px] uppercase tracking-wider">
+                    <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
                       Number of Guests
                     </label>
                     <select
-                      className="w-full h-9 rounded-md px-2 text-sm"
+                      className="w-full h-8 sm:h-9 rounded-md px-2 text-xs sm:text-sm"
                       style={{ borderColor: template.border, backgroundColor: "rgba(255,255,255,0.8)" }}
                       value={guestCount}
                       onChange={(e) => setGuestCount(e.target.value)}
@@ -685,12 +706,12 @@ const SaveTheDateCard = ({
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[10px] uppercase tracking-wider">
+                    <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
                       Dietary Notes / Message
                     </label>
                     <Textarea
                       placeholder="Any dietary requirements?"
-                      className="h-14 text-sm resize-none"
+                      className="h-12 sm:h-14 text-xs sm:text-sm resize-none"
                       style={{ borderColor: template.border, backgroundColor: "rgba(255,255,255,0.8)" }}
                       value={dietaryNotes}
                       onChange={(e) => setDietaryNotes(e.target.value)}
@@ -701,20 +722,20 @@ const SaveTheDateCard = ({
 
               <Button
                 type="submit"
-                className="w-full h-10 text-sm font-medium"
+                className="w-full h-8 sm:h-10 text-xs sm:text-sm font-medium"
                 style={{
                   backgroundColor: rsvpStatus ? template.accent : template.border,
                   color: rsvpStatus ? "white" : template.accentLight,
                 }}
                 disabled={!rsvpStatus || !guestName.trim() || isSubmitting}
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Response"}
+                {isSubmitting ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> : "Send Response"}
               </Button>
             </form>
           </div>
 
-          <div className="px-4 py-2 shrink-0" style={{ borderTopColor: template.border, borderTopWidth: "1px" }}>
-            <p style={{ color: template.accentLight }} className="text-center text-[9px]">← Swipe to flip back →</p>
+          <div className="px-3 py-1.5 sm:px-4 sm:py-2 shrink-0" style={{ borderTopColor: template.border, borderTopWidth: "1px" }}>
+            <p style={{ color: template.accentLight }} className="text-center text-[8px] sm:text-[9px]">← Swipe to flip back →</p>
           </div>
         </div>
       </div>

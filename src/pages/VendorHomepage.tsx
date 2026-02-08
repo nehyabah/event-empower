@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { vendorService, VendorDashboard, VendorInquiry } from "@/services/api/vendorService";
+import InquiryDetailModal from "@/components/vendors/InquiryDetailModal";
 
 const VendorHomepage = () => {
   const [dashboard, setDashboard] = useState<VendorDashboard | null>(null);
@@ -33,6 +34,8 @@ const VendorHomepage = () => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
   const [eventForm, setEventForm] = useState({
     clientName: "",
     eventDate: "",
@@ -87,6 +90,35 @@ const VendorHomepage = () => {
       status: "pending",
       totalAmount: "",
       notes: "",
+    });
+  };
+
+  const handleOpenInquiry = (inquiryId: string) => {
+    setSelectedInquiryId(inquiryId);
+    setIsInquiryModalOpen(true);
+  };
+
+  const handleInquiryStatusChange = (inquiryId: string, newStatus: 'new' | 'replied' | 'archived') => {
+    setInquiryList((prev) =>
+      prev.map((item) => (item.id === inquiryId ? { ...item, status: newStatus } : item))
+    );
+    // Update dashboard stats if we're changing from/to "new" status
+    setDashboard((prev) => {
+      if (!prev) return prev;
+      const oldInquiry = inquiryList.find((i) => i.id === inquiryId);
+      if (!oldInquiry) return prev;
+
+      let newCount = prev.stats.inquiries_new;
+      if (oldInquiry.status === "new" && newStatus !== "new") {
+        newCount = Math.max(0, newCount - 1);
+      } else if (oldInquiry.status !== "new" && newStatus === "new") {
+        newCount = newCount + 1;
+      }
+
+      return {
+        ...prev,
+        stats: { ...prev.stats, inquiries_new: newCount },
+      };
     });
   };
 
@@ -337,7 +369,11 @@ const VendorHomepage = () => {
                       <div className="text-center py-6 text-muted-foreground">No inquiries yet.</div>
                     ) : (
                       inquiries.map((inquiry) => (
-                        <div key={inquiry.id} className="flex items-center justify-between border-b py-4 last:border-b-0 last:pb-0">
+                        <div
+                          key={inquiry.id}
+                          className="flex items-center justify-between border-b py-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-muted/50 -mx-4 px-4 transition-colors"
+                          onClick={() => handleOpenInquiry(inquiry.id)}
+                        >
                           <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-full ${
                               inquiry.status === 'new' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
@@ -346,7 +382,7 @@ const VendorHomepage = () => {
                             </div>
                             <div>
                               <h3 className="font-medium">{inquiry.name}</h3>
-                              <p className="text-sm text-muted-foreground">{inquiry.message}</p>
+                              <p className="text-sm text-muted-foreground line-clamp-1">{inquiry.message}</p>
                               {inquiry.eventDate && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Event date: {new Date(inquiry.eventDate).toLocaleDateString('en-US', {
@@ -356,12 +392,9 @@ const VendorHomepage = () => {
                                   })}
                                 </p>
                               )}
-                              {inquiry.notes && (
-                                <p className="text-xs text-muted-foreground mt-1">Notes: {inquiry.notes}</p>
-                              )}
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right" onClick={(e) => e.stopPropagation()}>
                             <div className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                               <Clock className="h-3 w-3" />
                               {inquiry.date}
@@ -369,46 +402,15 @@ const VendorHomepage = () => {
                             <div className={`text-xs px-2 py-1 mt-1 rounded-full inline-block ${
                               inquiry.status === 'new' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
                             }`}>
-                              {inquiry.status === 'new' ? 'New' : 'Replied'}
+                              {inquiry.status === 'new' ? 'New' : inquiry.status === 'replied' ? 'Replied' : 'Archived'}
                             </div>
                             <div className="mt-2 flex justify-end gap-2">
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                onClick={async () => {
-                                  try {
-                                    const updated = await vendorService.updateVendorInquiry(inquiry.id, {
-                                      status: inquiry.status === "replied" ? "new" : "replied",
-                                    });
-                                    setInquiryList((prev) =>
-                                      prev.map((item) => (item.id === updated.id ? updated : item))
-                                    );
-                                  } catch (err) {
-                                    const message = err instanceof Error ? err.message : "Failed to update inquiry";
-                                    setError(message);
-                                  }
-                                }}
+                                onClick={() => handleOpenInquiry(inquiry.id)}
                               >
-                                {inquiry.status === "replied" ? "Mark New" : "Mark Replied"}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-                                  try {
-                                    const updated = await vendorService.updateVendorInquiry(inquiry.id, {
-                                      status: "archived",
-                                    });
-                                    setInquiryList((prev) =>
-                                      prev.map((item) => (item.id === updated.id ? updated : item))
-                                    );
-                                  } catch (err) {
-                                    const message = err instanceof Error ? err.message : "Failed to archive inquiry";
-                                    setError(message);
-                                  }
-                                }}
-                              >
-                                Archive
+                                View
                               </Button>
                             </div>
                           </div>
@@ -452,6 +454,7 @@ const VendorHomepage = () => {
                 title="Analytics" 
                 description="View performance stats" 
                 icon={BarChart4} 
+                to="/vendor-analytics"
               />
             </div>
           </section>
@@ -552,6 +555,14 @@ const VendorHomepage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <InquiryDetailModal
+        open={isInquiryModalOpen}
+        onOpenChange={setIsInquiryModalOpen}
+        inquiryId={selectedInquiryId}
+        mode="vendor"
+        onStatusChange={handleInquiryStatusChange}
+      />
     </div>
   );
 };

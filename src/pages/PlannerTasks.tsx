@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { CheckSquare, Calendar, Plus, Search, Filter, Clock, ArrowUpDown, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { usePlannerTasks } from "@/hooks/usePlannerTasks";
@@ -21,6 +22,19 @@ const PlannerTasks = () => {
   const { clients, getClientName } = usePlannerClients();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [taskComments, setTaskComments] = useState<Record<string, { id: string; text: string; createdAt: string }[]>>(() => {
+    const stored = localStorage.getItem("plannerTaskComments");
+    if (!stored) return {};
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      return {};
+    }
+    return {};
+  });
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [newTask, setNewTask] = useState({
     title: "",
     clientId: "none",
@@ -87,24 +101,122 @@ const PlannerTasks = () => {
     }
   };
 
+  const getNoteItems = (task: PlannerTask) =>
+    (task.description || "")
+      .split(/\r?\n/)
+      .map((note) => note.trim())
+      .filter(Boolean);
+
+  useEffect(() => {
+    localStorage.setItem("plannerTaskComments", JSON.stringify(taskComments));
+  }, [taskComments]);
+
+  const addTaskComment = (taskId: string) => {
+    const text = (commentDrafts[taskId] || "").trim();
+    if (!text) return;
+    const nextComment = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    setTaskComments((prev) => ({
+      ...prev,
+      [taskId]: [...(prev[taskId] || []), nextComment],
+    }));
+    setCommentDrafts((prev) => ({ ...prev, [taskId]: "" }));
+  };
+
   // Task row component
-  const TaskRow = ({ task }: { task: PlannerTask }) => (
-    <div key={task.id} className="p-4 hover:bg-muted/50 transition-colors">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-medium mb-1">{task.title}</h3>
-          <p className="text-sm text-muted-foreground">{task.client_name || 'No client'}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          {getStatusBadge(task.status)}
-          <div className="flex items-center text-sm">
-            <Clock className="mr-1 h-3 w-3 text-muted-foreground" />
-            <span className={getPriorityColor(task.priority)}>{formatDate(task.due_date)}</span>
+  const TaskRow = ({ task }: { task: PlannerTask }) => {
+    const isExpanded = expandedTaskId === task.id;
+    const noteItems = getNoteItems(task);
+    const comments = taskComments[task.id] || [];
+    return (
+      <Fragment key={task.id}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+              onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-medium mb-1">{task.title}</h3>
+                  <p className="text-sm text-muted-foreground">{task.client_name || 'No client'}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  {getStatusBadge(task.status)}
+                  <div className="flex items-center text-sm">
+                    <Clock className="mr-1 h-3 w-3 text-muted-foreground" />
+                    <span className={getPriorityColor(task.priority)}>{formatDate(task.due_date)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top">Click to view comments/notes</TooltipContent>
+        </Tooltip>
+        {isExpanded && (
+          <div className="bg-muted/20 px-4 py-4">
+            <div className="text-sm font-medium mb-3">Notes</div>
+            {noteItems.length === 0 ? (
+              <div className="rounded-2xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+                No notes for this task yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {noteItems.map((note, index) => (
+                  <div key={`${task.id}-${index}`} className="flex">
+                    <div className="rounded-2xl bg-muted/60 px-4 py-2 text-sm text-foreground shadow-sm">
+                      {note}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="text-sm font-medium mt-6 mb-3">Comments</div>
+            {comments.length === 0 ? (
+              <div className="rounded-2xl bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+                No comments yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex">
+                    <div className="rounded-2xl bg-muted/60 px-4 py-2 text-sm text-foreground shadow-sm">
+                      <p className="whitespace-pre-wrap">{comment.text}</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-4 space-y-2">
+              <label className="text-sm font-medium">Add comment</label>
+              <Textarea
+                value={commentDrafts[task.id] || ""}
+                onChange={(event) =>
+                  setCommentDrafts((prev) => ({ ...prev, [task.id]: event.target.value }))
+                }
+                placeholder="Write a quick update..."
+              />
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  onClick={() => addTaskComment(task.id)}
+                  disabled={!commentDrafts[task.id]?.trim()}
+                >
+                  Add Comment
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
+        )}
+      </Fragment>
+    );
+  };
 
   // Loading state
   if (isLoading) {
@@ -177,6 +289,7 @@ const PlannerTasks = () => {
           </div>
         </div>
 
+        <TooltipProvider>
         <Tabs defaultValue="all" className="space-y-6">
           <TabsList className="grid grid-cols-4 w-full max-w-md">
             <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
@@ -277,6 +390,7 @@ const PlannerTasks = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        </TooltipProvider>
       </main>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { userService } from '../services/userService.js';
+import { vendorService } from '../services/vendorService.js';
 
 // ========== VALIDATION SCHEMAS ==========
 
@@ -90,6 +91,21 @@ const updateTodoItemSchema = z.object({
   completed: z.boolean().optional(),
   status: z.enum(['todo', 'in_progress', 'done']).optional(),
   sortOrder: z.number().optional(),
+});
+
+// Inquiry message schema
+const sendMessageSchema = z.object({
+  message: z.string().min(1, 'Message is required'),
+});
+
+// Public RSVP schema
+const publicRsvpSchema = z.object({
+  rsvpCode: z.string().min(1, 'RSVP code is required'),
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email().optional().or(z.literal('')),
+  status: z.enum(['confirmed', 'declined']),
+  guestCount: z.number().min(1).max(10).optional(),
+  dietaryNotes: z.string().optional(),
 });
 
 // ========== CONTROLLER ==========
@@ -504,6 +520,126 @@ export const userController = {
     try {
       const link = await userService.getPlannerLink(req.user!.userId);
       res.json(link);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== CLIENT INQUIRIES ==========
+
+  async listMyInquiries(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const inquiries = await vendorService.listClientInquiries(req.user!.userId);
+      res.json(inquiries);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getMyInquiry(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await vendorService.getClientInquiryWithMessages(req.user!.userId, req.params.id);
+      if (!result) {
+        res.status(404).json({ error: 'Inquiry not found' });
+        return;
+      }
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async sendMyInquiryMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = sendMessageSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const message = await vendorService.sendInquiryMessageAsClient(
+        req.user!.userId,
+        req.params.id,
+        validation.data.message
+      );
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Inquiry not found') {
+        res.status(404).json({ error: 'Inquiry not found' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  // ========== PUBLIC RSVP (No auth required) ==========
+
+  async getEventInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { code } = req.params;
+      if (!code) {
+        res.status(400).json({ error: 'RSVP code is required' });
+        return;
+      }
+
+      const event = await userService.getEventByRsvpCode(code);
+      if (!event) {
+        res.status(404).json({ error: 'Event not found' });
+        return;
+      }
+
+      res.json({
+        partner1Name: event.partner1Name,
+        partner2Name: event.partner2Name,
+        eventDate: event.eventDate,
+        venue: event.venue,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async submitPublicRsvp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = publicRsvpSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const guest = await userService.submitPublicRsvp(data.rsvpCode, {
+        name: data.name,
+        email: data.email || undefined,
+        status: data.status,
+        guestCount: data.guestCount,
+        dietaryNotes: data.dietaryNotes,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: data.status === 'confirmed'
+          ? 'Thank you! We can\'t wait to celebrate with you!'
+          : 'Thank you for letting us know. We\'ll miss you!',
+        guest: {
+          id: guest.id,
+          name: guest.name,
+          status: guest.status,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid RSVP code') {
+        res.status(404).json({ error: 'Invalid RSVP code' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async getRsvpCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const code = await userService.getRsvpCode(req.user!.userId);
+      res.json({ rsvpCode: code });
     } catch (error) {
       next(error);
     }

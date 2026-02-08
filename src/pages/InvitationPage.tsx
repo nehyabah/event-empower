@@ -1,50 +1,77 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useParams } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import SaveTheDateCard from "@/components/dashboard/SaveTheDateCard";
+import { rsvpService } from "@/services/api/rsvpService";
 
 const InvitationPage = () => {
-  const location = useLocation();
-  const { code } = useParams();
-  const queryParams = new URLSearchParams(location.search);
+  const { code: rsvpCode } = useParams();
 
-  // Extract guest details from URL if available
-  const guestNameFromURL = queryParams.get("name") || "";
-  const guestEmailFromURL = queryParams.get("email") || "";
-
-  const [submitted, setSubmitted] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!rsvpCode);
+  const [eventData, setEventData] = useState<{
+    partner1Name: string;
+    partner2Name: string;
+    eventDate: string;
+    venue: string;
+  } | null>(null);
 
-  // Get the wedding date from localStorage (fallback to a future date if not set)
-  const weddingDate = localStorage.getItem("weddingDate") || "2024-12-31";
-  const parsedDate = new Date(weddingDate);
-  const formattedDate = parsedDate.toLocaleDateString(undefined, {
+  // Get fallback data from localStorage
+  const localWeddingDate = localStorage.getItem("weddingDate") || "2024-12-31";
+  const localParsedDate = new Date(localWeddingDate);
+  const localFormattedDate = localParsedDate.toLocaleDateString(undefined, {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+  const localPartner1Name = localStorage.getItem("partner1Name") || "Partner 1";
+  const localPartner2Name = localStorage.getItem("partner2Name") || "Partner 2";
+  const localVenue = localStorage.getItem("venue") || "The Grand Estate";
+  const templateId = localStorage.getItem("saveTheDateTemplate") || "classic-roses";
 
-  // Get couple names from localStorage or use fallback
-  const partner1Name = localStorage.getItem("partner1Name") || "Partner 1";
-  const partner2Name = localStorage.getItem("partner2Name") || "Partner 2";
-  const venue = localStorage.getItem("venue") || "The Grand Estate";
-  const templateId = localStorage.getItem("saveTheDateTemplate") || "garden-ivory";
-
-  // Check if an invitation code was provided
+  // Fetch event details from backend if we have an RSVP code
   useEffect(() => {
-    if (code) {
-      console.log("Invitation code:", code);
-      toast.info("Loading invitation details...");
+    if (!rsvpCode) {
+      setIsLoading(false);
+      return;
     }
-  }, [code]);
+
+    const fetchEventInfo = async () => {
+      try {
+        const info = await rsvpService.getEventInfo(rsvpCode);
+        if (info) {
+          const eventDate = info.eventDate
+            ? new Date(info.eventDate).toLocaleDateString(undefined, {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "Date TBD";
+
+          setEventData({
+            partner1Name: info.partner1Name || "Partner 1",
+            partner2Name: info.partner2Name || "Partner 2",
+            eventDate,
+            venue: info.venue || "Venue TBD",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch event info:", error);
+        toast.error("Could not load invitation details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEventInfo();
+  }, [rsvpCode]);
 
   // Show swipe hint after a few seconds for better UX
   useEffect(() => {
+    if (isLoading) return;
+
     const timer = setTimeout(() => {
-      // Only show hint if user hasn't already flipped
       if (!isFlipped) {
         toast("Swipe the card to RSVP", {
           icon: <Sparkles className="w-4 h-4" />,
@@ -53,41 +80,27 @@ const InvitationPage = () => {
       }
     }, 4000);
     return () => clearTimeout(timer);
-  }, [isFlipped]);
+  }, [isFlipped, isLoading]);
 
-  if (submitted) {
+  // Use event data from backend, or fall back to localStorage
+  const partner1Name = eventData?.partner1Name || localPartner1Name;
+  const partner2Name = eventData?.partner2Name || localPartner2Name;
+  const formattedDate = eventData?.eventDate || localFormattedDate;
+  const venue = eventData?.venue || localVenue;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-zinc-50 to-zinc-100">
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-wedding-gold/10 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-gradient-to-tr from-wedding-burgundy/10 to-transparent rounded-full blur-3xl" />
-
-        <Card className="w-full max-w-md border border-wedding-gold/20 shadow-xl relative overflow-hidden">
-          <CardContent className="p-8 text-center">
-            <div className="my-6">
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                <Heart className="w-10 h-10 text-green-600 fill-current" />
-              </div>
-              <h1 className="text-3xl font-serif mb-4 text-zinc-800">Thank You!</h1>
-              <p className="text-zinc-600 mb-8 leading-relaxed">
-                Your response has been recorded. We're so excited to celebrate this special day with you!
-              </p>
-              <div className="space-y-3">
-                <p className="text-sm text-zinc-500">
-                  {formattedDate} at {venue}
-                </p>
-                <Button asChild className="w-full">
-                  <Link to="/">Return Home</Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Sparkles className="w-8 h-8 text-wedding-burgundy animate-pulse mx-auto mb-4" />
+          <p className="text-zinc-500">Loading invitation...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100">
+    <div className="min-h-screen flex flex-col items-center justify-center p-3 sm:p-4 md:p-8 bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-wedding-gold/15 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3" />
@@ -96,19 +109,19 @@ const InvitationPage = () => {
       </div>
 
       {/* Header */}
-      <div className="text-center mb-6 md:mb-8 relative z-10">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Heart className="w-5 h-5 text-wedding-burgundy animate-pulse" />
-          <span className="text-sm uppercase tracking-[0.3em] text-zinc-500">You're Invited</span>
-          <Heart className="w-5 h-5 text-wedding-burgundy animate-pulse" />
+      <div className="text-center mb-4 sm:mb-6 md:mb-8 relative z-10">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+          <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-wedding-burgundy animate-pulse" />
+          <span className="text-xs sm:text-sm uppercase tracking-[0.2em] sm:tracking-[0.3em] text-zinc-500">You're Invited</span>
+          <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-wedding-burgundy animate-pulse" />
         </div>
-        <h1 className="font-serif text-2xl md:text-3xl text-zinc-800">
+        <h1 className="font-serif text-xl sm:text-2xl md:text-3xl text-zinc-800">
           {partner1Name} & {partner2Name}
         </h1>
       </div>
 
       {/* 3D Flip Card */}
-      <div className="relative z-10 w-full max-w-sm h-[560px] md:h-[600px]">
+      <div className="relative z-10 w-full max-w-[300px] sm:max-w-sm h-[440px] sm:h-[520px] md:h-[600px]">
         <SaveTheDateCard
           templateId={templateId}
           names={{ partner1: partner1Name, partner2: partner2Name }}
@@ -117,11 +130,12 @@ const InvitationPage = () => {
           isEditable={false}
           isFlipped={isFlipped}
           onFlip={() => setIsFlipped(!isFlipped)}
+          rsvpCode={rsvpCode}
         />
       </div>
 
       {/* Footer hint */}
-      <p className="text-center text-xs text-zinc-400 mt-6 relative z-10">
+      <p className="text-center text-[10px] sm:text-xs text-zinc-400 mt-4 sm:mt-6 relative z-10">
         Swipe the card to see the RSVP form
       </p>
     </div>

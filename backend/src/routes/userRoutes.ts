@@ -11,6 +11,7 @@ router.use(authenticate);
 // Dashboard
 router.get('/dashboard', userController.getDashboard);
 router.get('/planner', userController.getPlannerLink);
+router.get('/rsvp-code', userController.getRsvpCode);
 
 // User Event (wedding configuration)
 router.get('/event', userController.getUserEvent);
@@ -48,11 +49,40 @@ router.delete('/todos/:id/items/:itemId', userController.deleteTodoItem);
 // Couple story (private)
 router.get('/story', storyController.getMyStory);
 router.patch('/story', storyController.updateMyStory);
+router.get('/story/check-slug', storyController.checkSlug);
 router.get('/story/images', storyController.listMyImages);
 router.post('/story/images', storyController.addMyImage);
 router.delete('/story/images/:id', storyController.deleteMyImage);
 router.get('/story/comments', storyController.listMyComments);
 router.post('/story/comments', storyController.addMyComment);
+
+// Timeline
+router.get('/story/timeline', storyController.listTimeline);
+router.post('/story/timeline', storyController.addTimeline);
+router.patch('/story/timeline/reorder', storyController.reorderTimeline);
+router.patch('/story/timeline/:id', storyController.updateTimeline);
+router.delete('/story/timeline/:id', storyController.deleteTimeline);
+
+// Wedding Party
+router.get('/story/wedding-party', storyController.listWeddingParty);
+router.post('/story/wedding-party', storyController.addWeddingParty);
+router.patch('/story/wedding-party/reorder', storyController.reorderWeddingParty);
+router.patch('/story/wedding-party/:id', storyController.updateWeddingParty);
+router.delete('/story/wedding-party/:id', storyController.deleteWeddingParty);
+
+// Travel
+router.get('/story/travel', storyController.listTravel);
+router.post('/story/travel', storyController.addTravel);
+router.patch('/story/travel/reorder', storyController.reorderTravel);
+router.patch('/story/travel/:id', storyController.updateTravel);
+router.delete('/story/travel/:id', storyController.deleteTravel);
+
+// FAQ
+router.get('/story/faq', storyController.listFaq);
+router.post('/story/faq', storyController.addFaq);
+router.patch('/story/faq/reorder', storyController.reorderFaq);
+router.patch('/story/faq/:id', storyController.updateFaq);
+router.delete('/story/faq/:id', storyController.deleteFaq);
 
 // Wishlist + bank details (private)
 router.get('/wishlist', storyController.listMyWishlist);
@@ -63,5 +93,10 @@ router.get('/bank-details', storyController.listMyBankDetails);
 router.post('/bank-details', storyController.addMyBankDetail);
 router.patch('/bank-details/:id', storyController.updateMyBankDetail);
 router.delete('/bank-details/:id', storyController.deleteMyBankDetail);
+
+// Client inquiries (for messaging with vendors)
+router.get('/inquiries', userController.listMyInquiries);
+router.get('/inquiries/:id', userController.getMyInquiry);
+router.post('/inquiries/:id/messages', userController.sendMyInquiryMessage);
 
 export default router;

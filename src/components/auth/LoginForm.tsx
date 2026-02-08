@@ -6,12 +6,11 @@ import { z } from "zod";
 import { Form } from "@/components/ui/form";
 import { toast } from "@/hooks/use-toast";
 import LoginFormFields from "./LoginFormFields";
-import { useAuth, UserType } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  userType: z.enum(["client", "vendor", "planner"]).default("client"),
 });
 
 type LoginFormValues = z.infer<typeof formSchema>;
@@ -29,7 +28,6 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     defaultValues: {
       email: "",
       password: "",
-      userType: "client",
     },
   });
 
@@ -39,11 +37,17 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     try {
       console.log("Login data:", data);
 
-      await login(data.email, data.password, data.userType as UserType);
+      const authUser = await login(data.email, data.password);
+
+      // Debug: Log the user type returned from API
+      console.log("Login response - userType:", authUser.userType, "Full user:", authUser);
 
       // Extract first name for greeting
-      const firstName = data.email.split('@')[0];
-      const capitalizedName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+      const rawName = (authUser.name || authUser.email || "").trim();
+      const firstName = rawName ? rawName.split(" ")[0] : "";
+      const capitalizedName = firstName
+        ? firstName.charAt(0).toUpperCase() + firstName.slice(1)
+        : "there";
 
       toast({
         title: `Welcome back, ${capitalizedName}!`,
@@ -55,11 +59,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Login error:", error);
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      const message =
+        error instanceof Error ? error.message : "Please check your credentials and try again.";
+      form.setError("password", { type: "manual", message }, { shouldFocus: true });
     } finally {
       setIsLoading(false);
     }

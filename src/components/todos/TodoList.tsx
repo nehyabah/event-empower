@@ -42,7 +42,7 @@ const TodoList = ({ filter, searchQuery }: TodoListProps) => {
   }
   
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       {filteredLists.map((list: TodoListItem) => (
         <TodoListCard key={list.id} todoList={list} />
       ))}

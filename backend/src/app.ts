@@ -11,7 +11,10 @@ import plannerRoutes from './routes/plannerRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import invitationRoutes from './routes/invitationRoutes.js';
 import sharedStoryRoutes from './routes/sharedStoryRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import publicRoutes from './routes/publicRoutes.js';
 import { vendorController } from './controllers/vendorController.js';
+import { userController } from './controllers/userController.js';
 
 const app = express();
 
@@ -41,9 +44,15 @@ app.use('/api/planner', plannerRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/shared-story', sharedStoryRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/public', publicRoutes);
 
 // Public inquiries (client -> vendor)
 app.post('/api/inquiries', vendorController.createInquiry);
+
+// Public RSVP endpoints (no auth required)
+app.get('/api/rsvp/:code', userController.getEventInfo);
+app.post('/api/rsvp', userController.submitPublicRsvp);
 
 // Error handling
 app.use(notFoundHandler);

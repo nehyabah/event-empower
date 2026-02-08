@@ -88,6 +88,33 @@ export interface VendorInquiry {
   created_at: string;
 }
 
+export interface InquiryMessage {
+  id: string;
+  inquiry_id: string;
+  sender_id: string | null;
+  sender_type: 'vendor' | 'client';
+  message: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface InquiryWithMessages {
+  inquiry: VendorInquiry;
+  messages: InquiryMessage[];
+  unreadCount: number;
+}
+
+export interface ClientInquiry extends VendorInquiry {
+  vendor_name: string;
+  unread_count: number;
+}
+
+export interface ClientInquiryWithMessages {
+  inquiry: VendorInquiry & { vendor_name: string };
+  messages: InquiryMessage[];
+  unreadCount: number;
+}
+
 export interface CreateInquiryInput {
   vendorId: string;
   senderName: string;
@@ -266,6 +293,70 @@ export const vendorService = {
       throw new Error('Upload failed');
     }
     return { key: data.key as string, url: data.url as string };
+  },
+
+  // ========== INQUIRY MESSAGES (VENDOR) ==========
+
+  async getInquiryWithMessages(inquiryId: string): Promise<InquiryWithMessages> {
+    const response = await apiClient.get<InquiryWithMessages>(`/vendors/inquiries/${inquiryId}`);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (!response.data) {
+      throw new Error("Inquiry not found");
+    }
+    return response.data;
+  },
+
+  async getInquiryMessages(inquiryId: string): Promise<InquiryMessage[]> {
+    const response = await apiClient.get<InquiryMessage[]>(`/vendors/inquiries/${inquiryId}/messages`);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    return response.data || [];
+  },
+
+  async sendInquiryMessage(inquiryId: string, message: string): Promise<InquiryMessage> {
+    const response = await apiClient.post<InquiryMessage>(`/vendors/inquiries/${inquiryId}/messages`, { message });
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (!response.data) {
+      throw new Error("Failed to send message");
+    }
+    return response.data;
+  },
+
+  // ========== CLIENT INQUIRIES ==========
+
+  async listMyInquiries(): Promise<ClientInquiry[]> {
+    const response = await apiClient.get<ClientInquiry[]>("/users/me/inquiries");
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    return response.data || [];
+  },
+
+  async getMyInquiry(inquiryId: string): Promise<ClientInquiryWithMessages> {
+    const response = await apiClient.get<ClientInquiryWithMessages>(`/users/me/inquiries/${inquiryId}`);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (!response.data) {
+      throw new Error("Inquiry not found");
+    }
+    return response.data;
+  },
+
+  async sendMyInquiryMessage(inquiryId: string, message: string): Promise<InquiryMessage> {
+    const response = await apiClient.post<InquiryMessage>(`/users/me/inquiries/${inquiryId}/messages`, { message });
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (!response.data) {
+      throw new Error("Failed to send message");
+    }
+    return response.data;
   },
 };
 

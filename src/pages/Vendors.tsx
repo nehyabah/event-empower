@@ -1,10 +1,9 @@
-
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Star, Filter } from "lucide-react";
+import { Search, MapPin, Star, SlidersHorizontal } from "lucide-react";
 import VendorDetail from "@/components/vendors/VendorDetail";
 import { vendorService, VendorDetails } from "@/services/api/vendorService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,59 +34,39 @@ interface VendorCardProps {
   onViewDetails: () => void;
 }
 
-const VendorCard = ({ 
-  name, 
-  category, 
-  location, 
-  rating, 
-  reviewCount, 
+const VendorCard = ({
+  name,
+  category,
+  location,
+  rating,
+  reviewCount,
   imageUrl,
   onViewDetails
 }: VendorCardProps) => {
-  const [currentImage, setCurrentImage] = useState(0);
-  const [showControls, setShowControls] = useState(false);
-  
   return (
-    <div 
-      className="glass rounded-xl overflow-hidden transition-all hover:shadow-elegant hover:translate-y-[-2px] cursor-pointer"
+    <div
+      className="bg-card border rounded-xl overflow-hidden transition-all hover:shadow-lg active:scale-[0.98] cursor-pointer"
       onClick={onViewDetails}
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(false)}
     >
       <div className="relative">
-        <div 
-          className="h-48 bg-cover bg-center bg-gradient-to-br from-muted/80 to-muted/40" 
+        <div
+          className="h-40 sm:h-48 bg-cover bg-center bg-muted"
           style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
         />
-        {showControls && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white hover:bg-black/40"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewDetails();
-              }}
-            >
-              View Details
-            </Button>
-          </div>
-        )}
       </div>
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-medium text-lg">{name}</h3>
-          <div className="flex items-center">
-            <Star className="w-4 h-4 fill-wedding-gold text-wedding-gold mr-1" />
-            <span>{rating.toFixed(1)}</span>
-            <span className="text-muted-foreground text-sm ml-1">({reviewCount})</span>
+      <div className="p-3 sm:p-4">
+        <div className="flex justify-between items-start gap-2 mb-1">
+          <h3 className="font-medium text-base sm:text-lg truncate">{name}</h3>
+          <div className="flex items-center shrink-0">
+            <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400 mr-0.5" />
+            <span className="text-sm font-medium">{rating.toFixed(1)}</span>
+            <span className="text-muted-foreground text-xs ml-1">({reviewCount})</span>
           </div>
         </div>
-        <p className="text-muted-foreground text-sm mb-3">{category}</p>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4 mr-1" />
-          <span>{location}</span>
+        <p className="text-muted-foreground text-xs sm:text-sm mb-2">{category}</p>
+        <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
+          <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
+          <span className="truncate">{location}</span>
         </div>
       </div>
     </div>
@@ -101,6 +80,7 @@ const VendorsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [vendors, setVendors] = useState<Omit<VendorCardProps, 'onViewDetails'>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({
     name: "",
@@ -108,7 +88,7 @@ const VendorsPage = () => {
     eventDate: "",
     message: "",
   });
-  
+
   const handleViewVendorDetails = (vendor: Omit<VendorCardProps, 'onViewDetails'>) => {
     setSelectedVendor(vendor);
   };
@@ -176,35 +156,55 @@ const VendorsPage = () => {
       return matchesCategory && matchesRegion && matchesQuery;
     });
   }, [vendors, searchQuery, selectedCategory, selectedRegion]);
-  
+
+  const activeFiltersCount = (selectedCategory !== "All Categories" ? 1 : 0) + (selectedRegion !== "All Regions" ? 1 : 0);
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <div className="pt-24 flex-grow">
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-12">
-            <h1 className="text-3xl md:text-4xl font-serif mb-4">Find the Perfect Vendors</h1>
-            <p className="text-muted-foreground">
-              Browse our curated selection of top Nigerian wedding vendors
+      <div className="pt-20 flex-grow">
+        <div className="container mx-auto px-4 py-6">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-serif mb-1">Find Vendors</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Browse top Nigerian wedding vendors
             </p>
           </div>
-          
-          {/* Search and Filters */}
-          <div className="mb-8 glass rounded-xl p-6">
-            <div className="flex flex-col md:flex-row gap-4 mb-4">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                  placeholder="Search vendors..." 
-                  className="pl-10"
+
+          {/* Search and Filter Bar */}
+          <div className="mb-6 space-y-3">
+            {/* Search Row */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search vendors..."
+                  className="pl-9"
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <select 
-                  className="bg-background border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring h-10"
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 relative"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {activeFiltersCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+
+            {/* Filter Dropdowns - Collapsible on mobile */}
+            {showFilters && (
+              <div className="flex flex-col sm:flex-row gap-2 p-3 bg-muted/50 rounded-lg">
+                <select
+                  className="flex-1 bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
@@ -212,9 +212,9 @@ const VendorsPage = () => {
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
-                
-                <select 
-                  className="bg-background border border-input rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring h-10"
+
+                <select
+                  className="flex-1 bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={selectedRegion}
                   onChange={(e) => setSelectedRegion(e.target.value)}
                 >
@@ -222,28 +222,42 @@ const VendorsPage = () => {
                     <option key={region} value={region}>{region}</option>
                   ))}
                 </select>
-                
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Filter className="w-4 h-4" />
-                  <span>More Filters</span>
-                </Button>
+
+                {activeFiltersCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCategory("All Categories");
+                      setSelectedRegion("All Regions");
+                    }}
+                    className="text-xs"
+                  >
+                    Clear filters
+                  </Button>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Results count */}
+            <p className="text-xs text-muted-foreground">
+              {filteredVendors.length} vendor{filteredVendors.length !== 1 ? "s" : ""} found
+            </p>
           </div>
-          
+
           {/* Vendor Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8">
             {isLoading ? (
               <div className="col-span-full text-center text-muted-foreground py-12">
                 Loading vendors...
               </div>
             ) : filteredVendors.length === 0 ? (
               <div className="col-span-full text-center text-muted-foreground py-12">
-                No vendors found yet.
+                No vendors found.
               </div>
             ) : (
               filteredVendors.map((vendor, index) => (
-                <VendorCard 
+                <VendorCard
                   key={`${vendor.name}-${index}`}
                   {...vendor}
                   onViewDetails={() => handleViewVendorDetails(vendor)}
@@ -251,14 +265,16 @@ const VendorsPage = () => {
               ))
             )}
           </div>
-          
+
           {/* Load More */}
-          <div className="flex justify-center mt-8">
-            <Button variant="outline" className="px-8">Load More</Button>
-          </div>
+          {filteredVendors.length > 0 && (
+            <div className="flex justify-center">
+              <Button variant="outline" size="sm">Load More</Button>
+            </div>
+          )}
         </div>
       </div>
-      
+
       {/* Vendor Detail Modal */}
       {selectedVendor && (
         <VendorDetail
@@ -268,8 +284,9 @@ const VendorsPage = () => {
         />
       )}
 
+      {/* Inquiry Dialog */}
       <Dialog open={isInquiryOpen} onOpenChange={setIsInquiryOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Contact Vendor</DialogTitle>
           </DialogHeader>
@@ -279,7 +296,7 @@ const VendorsPage = () => {
               <Input
                 id="inquiry-name"
                 value={inquiryForm.name}
-                onChange={(event) => setInquiryForm((prev) => ({ ...prev, name: event.target.value }))}
+                onChange={(e) => setInquiryForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Your full name"
               />
             </div>
@@ -288,7 +305,7 @@ const VendorsPage = () => {
               <Input
                 id="inquiry-email"
                 value={inquiryForm.email}
-                onChange={(event) => setInquiryForm((prev) => ({ ...prev, email: event.target.value }))}
+                onChange={(e) => setInquiryForm(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="you@example.com"
               />
             </div>
@@ -298,7 +315,7 @@ const VendorsPage = () => {
                 id="inquiry-date"
                 type="date"
                 value={inquiryForm.eventDate}
-                onChange={(event) => setInquiryForm((prev) => ({ ...prev, eventDate: event.target.value }))}
+                onChange={(e) => setInquiryForm(prev => ({ ...prev, eventDate: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -306,12 +323,12 @@ const VendorsPage = () => {
               <Textarea
                 id="inquiry-message"
                 value={inquiryForm.message}
-                onChange={(event) => setInquiryForm((prev) => ({ ...prev, message: event.target.value }))}
+                onChange={(e) => setInquiryForm(prev => ({ ...prev, message: e.target.value }))}
                 placeholder="Tell the vendor what you need..."
                 rows={4}
               />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
               <Button variant="outline" onClick={() => setIsInquiryOpen(false)}>
                 Cancel
               </Button>
@@ -322,7 +339,7 @@ const VendorsPage = () => {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <Footer />
     </div>
   );
@@ -341,14 +358,14 @@ const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps
       </svg>`
     );
 
-    return vendors.map(({ profile, services, images }) => {
+  return vendors.map(({ profile, services, images }) => {
     const primaryImage = images.find(image => image.is_primary)?.url;
     const imageUrl = profile.profile_image_url || primaryImage || profile.cover_image_url || placeholderImage;
     const gallery = images.length > 0
       ? images.map(image => ({
-          url: image.url,
-          alt: image.alt_text || `${profile.business_name} image`,
-        }))
+        url: image.url,
+        alt: image.alt_text || `${profile.business_name} image`,
+      }))
       : [{ url: imageUrl, alt: `${profile.business_name} image` }];
 
     return {

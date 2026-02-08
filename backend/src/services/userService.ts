@@ -282,4 +282,68 @@ export const userService = {
   async getPlannerLink(userId: string): Promise<PlannerLink | null> {
     return PlannerClientModel.findPlannerLinkByUserId(userId);
   },
+
+  // ========== PUBLIC RSVP ==========
+
+  async getEventByRsvpCode(rsvpCode: string): Promise<{ userId: string; partner1Name: string | null; partner2Name: string | null; eventDate: Date | null; venue: string | null } | null> {
+    const event = await UserEventModel.findByRsvpCode(rsvpCode);
+    if (!event) {
+      return null;
+    }
+    return {
+      userId: event.user_id,
+      partner1Name: event.partner1_name,
+      partner2Name: event.partner2_name,
+      eventDate: event.event_date,
+      venue: event.venue,
+    };
+  },
+
+  async submitPublicRsvp(rsvpCode: string, input: {
+    name: string;
+    email?: string;
+    status: 'confirmed' | 'declined';
+    guestCount?: number;
+    dietaryNotes?: string;
+  }): Promise<Guest> {
+    const event = await UserEventModel.findByRsvpCode(rsvpCode);
+    if (!event) {
+      throw new Error('Invalid RSVP code');
+    }
+
+    // Check if guest already exists by name (case-insensitive)
+    const existingGuests = await GuestModel.findByUserId(event.user_id);
+    const existingGuest = existingGuests.find(
+      g => g.name.toLowerCase() === input.name.toLowerCase()
+    );
+
+    if (existingGuest) {
+      // Update existing guest
+      const updated = await GuestModel.update(existingGuest.id, {
+        status: input.status,
+        email: input.email || existingGuest.email,
+        dietary_restrictions: input.dietaryNotes || existingGuest.dietary_restrictions,
+        plus_one: (input.guestCount || 1) > 1,
+        notes: input.guestCount && input.guestCount > 1 ? `Party of ${input.guestCount}` : existingGuest.notes,
+      });
+      return updated!;
+    }
+
+    // Create new guest
+    return GuestModel.create({
+      user_id: event.user_id,
+      name: input.name,
+      email: input.email,
+      status: input.status,
+      plus_one: (input.guestCount || 1) > 1,
+      dietary_restrictions: input.dietaryNotes,
+      notes: input.guestCount && input.guestCount > 1 ? `Party of ${input.guestCount}` : undefined,
+      guest_group: 'RSVP',
+    });
+  },
+
+  async getRsvpCode(userId: string): Promise<string | null> {
+    const event = await UserEventModel.findByUserId(userId);
+    return event?.rsvp_code || null;
+  },
 };

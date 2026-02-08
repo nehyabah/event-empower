@@ -1,10 +1,36 @@
-
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, Mail, Instagram, Twitter, Facebook, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { subscribeToNewsletter } from "@/services/api/publicService";
 
 const Footer = () => {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubscribe = async () => {
+    setFeedback(null);
+    setError(null);
+    if (!email) {
+      setError("Email is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await subscribeToNewsletter({ email, source: "footer" });
+      setEmail("");
+      setFeedback("Subscribed successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to subscribe");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <footer className="bg-secondary pt-20 pb-10">
       <div className="container">
@@ -32,7 +58,7 @@ const Footer = () => {
               </Button>
             </div>
           </div>
-          
+
           <div>
             <h3 className="font-serif text-lg font-medium mb-4">Quick Links</h3>
             <ul className="space-y-3">
@@ -52,13 +78,13 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Wedding Blog
+                <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Contact Support
                 </Link>
               </li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="font-serif text-lg font-medium mb-4">Resources</h3>
             <ul className="space-y-3">
@@ -84,25 +110,32 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="font-serif text-lg font-medium mb-4">Subscribe</h3>
             <p className="text-muted-foreground mb-4">
               Get wedding planning tips and updates delivered to your inbox.
             </p>
+            {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+            {feedback && <p className="mb-2 text-xs text-green-700">{feedback}</p>}
             <div className="flex gap-2">
-              <Input placeholder="Your email" className="input-elegant" />
-              <Button>
+              <Input
+                placeholder="Your email"
+                className="input-elegant"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Button onClick={handleSubscribe} disabled={isSubmitting}>
                 <Mail className="w-4 h-4 mr-2" />
-                Subscribe
+                {isSubmitting ? "..." : "Subscribe"}
               </Button>
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-muted-foreground text-sm mb-4 md:mb-0">
-            © {new Date().getFullYear()} Planr. All rights reserved.
+            (c) {new Date().getFullYear()} Planr. All rights reserved.
           </p>
           <div className="flex space-x-6">
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -112,7 +145,7 @@ const Footer = () => {
               Terms of Service
             </Link>
             <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Contact Us
+              Contact Support
             </Link>
           </div>
         </div>

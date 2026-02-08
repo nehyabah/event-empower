@@ -286,6 +286,16 @@ export interface VendorInquiry {
   updated_at: Date;
 }
 
+export interface InquiryMessage {
+  id: string;
+  inquiry_id: string;
+  sender_id: string | null;
+  sender_type: 'vendor' | 'client';
+  message: string;
+  read_at: Date | null;
+  created_at: Date;
+}
+
 export const VendorBookingModel = {
   async findById(id: string): Promise<VendorBooking | null> {
     return queryOne<VendorBooking>(
@@ -523,5 +533,74 @@ export const VendorInquiryModel = {
       total: parseInt(result?.total || '0', 10),
       new: parseInt(result?.new || '0', 10),
     };
+  },
+
+  async listBySenderId(senderId: string): Promise<VendorInquiry[]> {
+    return query<VendorInquiry>(
+      `SELECT * FROM vendor_inquiries WHERE sender_id = $1 ORDER BY created_at DESC`,
+      [senderId]
+    );
+  },
+
+  async findByIdAndSenderId(id: string, senderId: string): Promise<VendorInquiry | null> {
+    return queryOne<VendorInquiry>(
+      'SELECT * FROM vendor_inquiries WHERE id = $1 AND sender_id = $2',
+      [id, senderId]
+    );
+  },
+};
+
+export const InquiryMessageModel = {
+  async create(input: {
+    inquiry_id: string;
+    sender_id: string | null;
+    sender_type: 'vendor' | 'client';
+    message: string;
+  }): Promise<InquiryMessage> {
+    const result = await queryOne<InquiryMessage>(
+      `INSERT INTO inquiry_messages (inquiry_id, sender_id, sender_type, message)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [input.inquiry_id, input.sender_id, input.sender_type, input.message]
+    );
+
+    if (!result) {
+      throw new Error('Failed to create inquiry message');
+    }
+
+    return result;
+  },
+
+  async listByInquiryId(inquiryId: string): Promise<InquiryMessage[]> {
+    return query<InquiryMessage>(
+      `SELECT * FROM inquiry_messages WHERE inquiry_id = $1 ORDER BY created_at ASC`,
+      [inquiryId]
+    );
+  },
+
+  async markAsRead(messageId: string): Promise<InquiryMessage | null> {
+    return queryOne<InquiryMessage>(
+      `UPDATE inquiry_messages SET read_at = NOW() WHERE id = $1 RETURNING *`,
+      [messageId]
+    );
+  },
+
+  async markAllAsReadByInquiryId(inquiryId: string, senderType: 'vendor' | 'client'): Promise<void> {
+    const oppositeType = senderType === 'vendor' ? 'client' : 'vendor';
+    await query(
+      `UPDATE inquiry_messages SET read_at = NOW()
+       WHERE inquiry_id = $1 AND sender_type = $2 AND read_at IS NULL`,
+      [inquiryId, oppositeType]
+    );
+  },
+
+  async countUnreadByInquiryId(inquiryId: string, forSenderType: 'vendor' | 'client'): Promise<number> {
+    const oppositeType = forSenderType === 'vendor' ? 'client' : 'vendor';
+    const result = await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM inquiry_messages
+       WHERE inquiry_id = $1 AND sender_type = $2 AND read_at IS NULL`,
+      [inquiryId, oppositeType]
+    );
+    return parseInt(result?.count || '0', 10);
   },
 };

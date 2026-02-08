@@ -19,6 +19,12 @@ export interface CoupleStory {
   groom_name: string | null;
   groom_bio: string | null;
   groom_image_url: string | null;
+  slug: string | null;
+  accent_color: string | null;
+  font_pair: string | null;
+  section_order: string[] | null;
+  hidden_sections: string[] | null;
+  site_published: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +46,12 @@ export interface UpsertCoupleStoryInput {
   groom_name?: string | null;
   groom_bio?: string | null;
   groom_image_url?: string | null;
+  slug?: string | null;
+  accent_color?: string | null;
+  font_pair?: string | null;
+  section_order?: string[] | null;
+  hidden_sections?: string[] | null;
+  site_published?: boolean;
 }
 
 export const CoupleStoryModel = {
@@ -50,6 +62,22 @@ export const CoupleStoryModel = {
     );
   },
 
+  async findBySlug(slug: string): Promise<CoupleStory | null> {
+    return queryOne<CoupleStory>(
+      'SELECT * FROM couple_stories WHERE slug = $1',
+      [slug]
+    );
+  },
+
+  async isSlugAvailable(slug: string, excludeUserId?: string): Promise<boolean> {
+    const sql = excludeUserId
+      ? 'SELECT id FROM couple_stories WHERE slug = $1 AND user_id != $2'
+      : 'SELECT id FROM couple_stories WHERE slug = $1';
+    const params = excludeUserId ? [slug, excludeUserId] : [slug];
+    const existing = await queryOne<{ id: string }>(sql, params);
+    return !existing;
+  },
+
   async upsert(userId: string, input: UpsertCoupleStoryInput): Promise<CoupleStory> {
     const existing = await this.findByUserId(userId);
 
@@ -58,11 +86,11 @@ export const CoupleStoryModel = {
         `INSERT INTO couple_stories (
           user_id, title, content, hashtag, wedding_date, wedding_time, venue, love_quote,
           selected_icon, banner_image_url, template_id, bride_name, bride_bio, bride_image_url, groom_name,
-          groom_bio, groom_image_url
+          groom_bio, groom_image_url, slug, accent_color, font_pair, section_order, hidden_sections, site_published
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8,
           $9, $10, $11, $12, $13, $14,
-          $15, $16, $17
+          $15, $16, $17, $18, $19, $20, $21, $22, $23
         ) RETURNING *`,
         [
           userId,
@@ -82,6 +110,12 @@ export const CoupleStoryModel = {
           input.groom_name || null,
           input.groom_bio || null,
           input.groom_image_url || null,
+          input.slug || null,
+          input.accent_color || null,
+          input.font_pair || 'classic',
+          input.section_order ? JSON.stringify(input.section_order) : null,
+          input.hidden_sections ? JSON.stringify(input.hidden_sections) : '[]',
+          input.site_published !== undefined ? input.site_published : true,
         ]
       );
 
@@ -117,6 +151,12 @@ export const CoupleStoryModel = {
     if (input.groom_name !== undefined) addField('groom_name', input.groom_name);
     if (input.groom_bio !== undefined) addField('groom_bio', input.groom_bio);
     if (input.groom_image_url !== undefined) addField('groom_image_url', input.groom_image_url);
+    if (input.slug !== undefined) addField('slug', input.slug);
+    if (input.accent_color !== undefined) addField('accent_color', input.accent_color);
+    if (input.font_pair !== undefined) addField('font_pair', input.font_pair);
+    if (input.section_order !== undefined) addField('section_order', JSON.stringify(input.section_order));
+    if (input.hidden_sections !== undefined) addField('hidden_sections', JSON.stringify(input.hidden_sections));
+    if (input.site_published !== undefined) addField('site_published', input.site_published);
 
     if (fields.length === 0) {
       return existing;

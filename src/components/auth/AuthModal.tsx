@@ -45,7 +45,7 @@ const AuthModal = ({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-white gap-0 border-none shadow-2xl">
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-white gap-0 border-none shadow-2xl z-[80]">
         <div className="flex flex-col md:flex-row h-full md:min-h-[550px]">
           <div className="hidden md:flex flex-col justify-between w-1/2 bg-zinc-900 p-10 text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1519225469958-3160e0d5a3c2?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>

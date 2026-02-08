@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
 
-export type UserType = 'client' | 'vendor' | 'planner';
+export type UserType = 'client' | 'vendor' | 'planner' | 'admin';
 
 export interface AuthUser {
   id: string;
@@ -9,13 +10,14 @@ export interface AuthUser {
   name: string | null;
   userType: UserType;
   avatarUrl: string | null;
+  adminRole?: string | null;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, userType?: UserType) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   register: (email: string, password: string, name: string, userType?: UserType) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: (idToken: string, userType?: UserType) => Promise<void>;
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const initialized = useRef(false);
+  const queryClient = useQueryClient();
 
   // Check for existing session on mount - only once
   useEffect(() => {
@@ -57,42 +60,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  // Set up token refresh interval (every 14 minutes)
-  useEffect(() => {
-    if (!user) return;
+  // Token refresh interval disabled for development
+  // TODO: Re-enable for production
+  // useEffect(() => {
+  //   if (!user) return;
+  //
+  //   const interval = setInterval(async () => {
+  //     try {
+  //       const response = await apiClient.post<{
+  //         user: AuthUser;
+  //         accessToken: string;
+  //       }>('/auth/refresh');
+  //
+  //       if (response.data) {
+  //         apiClient.setAccessToken(response.data.accessToken);
+  //       }
+  //     } catch {
+  //       // Token refresh failed, user will be logged out on next protected action
+  //     }
+  //   }, 14 * 60 * 1000);
+  //
+  //   return () => clearInterval(interval);
+  // }, [user]);
 
-    const interval = setInterval(async () => {
-      try {
-        const response = await apiClient.post<{
-          user: AuthUser;
-          accessToken: string;
-        }>('/auth/refresh');
-
-        if (response.data) {
-          apiClient.setAccessToken(response.data.accessToken);
-        }
-      } catch {
-        // Token refresh failed, user will be logged out on next protected action
-      }
-    }, 14 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const login = async (email: string, password: string, userType?: UserType) => {
+  const login = async (email: string, password: string) => {
     const response = await apiClient.post<{
       user: AuthUser;
       accessToken: string;
-    }>('/auth/login', { email, password, userType });
+    }>('/auth/login', { email, password });
 
     if (response.error) {
       throw new Error(response.error);
     }
 
     if (response.data) {
+      queryClient.clear();
       setUser(response.data.user);
       apiClient.setAccessToken(response.data.accessToken);
+      return response.data.user;
     }
+
+    throw new Error("Failed to sign in");
   };
 
   const register = async (email: string, password: string, name: string, userType?: UserType) => {
@@ -115,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await apiClient.post('/auth/logout');
     setUser(null);
     apiClient.setAccessToken(null);
+    queryClient.clear();
   };
 
   const loginWithGoogle = async (idToken: string, userType?: UserType) => {

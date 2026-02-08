@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -21,10 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Camera, X, Heart, Wine, Gift, Sparkles, ImageIcon } from "lucide-react";
+import { Camera, X, Heart, Wine, Gift, Sparkles, ImageIcon, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImageGallery from "./ImageGallery";
-import storyService from "@/services/api/storyService";
+import storyService, {
+  type TimelineEvent,
+  type WeddingPartyMember,
+  type TravelInfoItem,
+  type FaqItem,
+} from "@/services/api/storyService";
 
 // Image type
 export type StoryImage = {
@@ -148,6 +153,32 @@ const StoryEditor = ({
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const brideFileInputRef = useRef<HTMLInputElement>(null);
   const groomFileInputRef = useRef<HTMLInputElement>(null);
+
+  // New entity states
+  const [timelineItems, setTimelineItems] = useState<TimelineEvent[]>([]);
+  const [partyMembers, setPartyMembers] = useState<WeddingPartyMember[]>([]);
+  const [travelItems, setTravelItems] = useState<TravelInfoItem[]>([]);
+  const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [tl, wp, tr, fq] = await Promise.all([
+          storyService.listTimeline(),
+          storyService.listWeddingParty(),
+          storyService.listTravel(),
+          storyService.listFaq(),
+        ]);
+        setTimelineItems(tl);
+        setPartyMembers(wp);
+        setTravelItems(tr);
+        setFaqItems(fq);
+      } catch (e) {
+        console.error("Failed to load editor data:", e);
+      }
+    };
+    void load();
+  }, []);
 
   // Story form
   const storyForm = useForm<z.infer<typeof storySchema>>({
@@ -331,10 +362,14 @@ const StoryEditor = ({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="basic">Basic Information</TabsTrigger>
-          <TabsTrigger value="stories">Bride & Groom Stories</TabsTrigger>
-          <TabsTrigger value="images">Images{managedStoryImageCount}</TabsTrigger>
+        <TabsList className="flex w-full mb-4 overflow-x-auto">
+          <TabsTrigger value="basic" className="flex-1 min-w-[100px]">Basic Info</TabsTrigger>
+          <TabsTrigger value="stories" className="flex-1 min-w-[100px]">Partners</TabsTrigger>
+          <TabsTrigger value="images" className="flex-1 min-w-[80px]">Photos</TabsTrigger>
+          <TabsTrigger value="timeline" className="flex-1 min-w-[80px]">Timeline</TabsTrigger>
+          <TabsTrigger value="party" className="flex-1 min-w-[80px]">Party</TabsTrigger>
+          <TabsTrigger value="travel" className="flex-1 min-w-[80px]">Travel</TabsTrigger>
+          <TabsTrigger value="faq" className="flex-1 min-w-[60px]">FAQ</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-4">
@@ -346,27 +381,45 @@ const StoryEditor = ({
                   <div className="mb-4">
                     <FormLabel>Banner Image</FormLabel>
                     <div className="mt-2">
+                      <input
+                        type="file"
+                        ref={bannerInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                      />
                       {coupleStory.bannerImage ? (
                         <div className="relative w-full h-48 mb-2">
-                          <img 
-                            src={coupleStory.bannerImage} 
-                            alt="Banner" 
+                          <img
+                            src={coupleStory.bannerImage}
+                            alt="Banner"
                             className="w-full h-full object-cover rounded-md"
                           />
-                          <Button 
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2"
-                            onClick={removeBanner}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <div className="absolute top-2 right-2 flex gap-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => bannerInputRef.current?.click()}
+                              disabled={isUploading}
+                            >
+                              {isUploading ? "Processing..." : <><Camera className="h-4 w-4 mr-1" />Change</>}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={removeBanner}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ) : (
                         <div className="border-2 border-dashed rounded-md p-8 text-center">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
+                          <Button
+                            type="button"
+                            variant="outline"
                             onClick={() => bannerInputRef.current?.click()}
                             disabled={isUploading}
                           >
@@ -379,13 +432,6 @@ const StoryEditor = ({
                               </>
                             )}
                           </Button>
-                          <input
-                            type="file"
-                            ref={bannerInputRef}
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleBannerUpload}
-                          />
                           <p className="text-sm text-muted-foreground mt-2">
                             Recommended size: 1200×400 pixels
                           </p>
@@ -740,8 +786,8 @@ const StoryEditor = ({
           <div className="border-t pt-4">
             <h3 className="text-lg font-medium mb-2">Add Images to Your Story</h3>
             <div className="flex gap-2 mb-2">
-              <Select 
-                value={currentStoryType} 
+              <Select
+                value={currentStoryType}
                 onValueChange={(value: 'general' | 'bride' | 'groom') => setCurrentStoryType(value)}
               >
                 <SelectTrigger className="w-[180px]">
@@ -753,16 +799,16 @@ const StoryEditor = ({
                   <SelectItem value="groom">Groom's Story</SelectItem>
                 </SelectContent>
               </Select>
-              <Input 
-                type="text" 
+              <Input
+                type="text"
                 placeholder="Image caption (optional)"
                 value={imageCaption}
                 onChange={(e) => setImageCaption(e.target.value)}
                 className="flex-grow"
               />
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
@@ -781,7 +827,7 @@ const StoryEditor = ({
                 onChange={(e) => handleImageUpload(e, currentStoryType)}
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               {storyImages.map((image) => (
                 <div key={image.id} className="relative border rounded-md p-2">
@@ -814,6 +860,26 @@ const StoryEditor = ({
             </div>
           </div>
         </TabsContent>
+
+        {/* Timeline Tab */}
+        <TabsContent value="timeline" className="space-y-4">
+          <TimelineEditor items={timelineItems} setItems={setTimelineItems} />
+        </TabsContent>
+
+        {/* Wedding Party Tab */}
+        <TabsContent value="party" className="space-y-4">
+          <WeddingPartyEditor items={partyMembers} setItems={setPartyMembers} />
+        </TabsContent>
+
+        {/* Travel Tab */}
+        <TabsContent value="travel" className="space-y-4">
+          <TravelEditor items={travelItems} setItems={setTravelItems} />
+        </TabsContent>
+
+        {/* FAQ Tab */}
+        <TabsContent value="faq" className="space-y-4">
+          <FaqEditor items={faqItems} setItems={setFaqItems} />
+        </TabsContent>
       </Tabs>
       
       <input
@@ -826,5 +892,236 @@ const StoryEditor = ({
     </div>
   );
 };
+
+// --- Inline Sub-Editors ---
+
+function TimelineEditor({ items, setItems }: { items: TimelineEvent[]; setItems: React.Dispatch<React.SetStateAction<TimelineEvent[]>> }) {
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
+
+  const handleAdd = async () => {
+    if (!title.trim()) { toast.error("Title is required"); return; }
+    try {
+      const item = await storyService.addTimeline({ title, date: date || undefined, description: description || undefined });
+      setItems((prev) => [...prev, item]);
+      setTitle(""); setDate(""); setDescription("");
+      toast.success("Timeline event added!");
+    } catch { toast.error("Failed to add"); }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await storyService.deleteTimeline(id);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      toast.success("Removed");
+    } catch { toast.error("Failed to remove"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Timeline Events</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <Input placeholder="Event title *" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Input placeholder="Date (e.g. June 2020)" value={date} onChange={(e) => setDate(e.target.value)} />
+        <Input placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <Button type="button" size="sm" onClick={handleAdd}><Plus className="w-4 h-4 mr-1" /> Add Event</Button>
+
+      <div className="space-y-2 mt-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <p className="font-medium">{item.title}</p>
+              {item.date && <p className="text-xs text-muted-foreground">{item.date}</p>}
+              {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No timeline events yet</p>}
+      </div>
+    </div>
+  );
+}
+
+function WeddingPartyEditor({ items, setItems }: { items: WeddingPartyMember[]; setItems: React.Dispatch<React.SetStateAction<WeddingPartyMember[]>> }) {
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [side, setSide] = useState<string>("both");
+  const [bio, setBio] = useState("");
+
+  const handleAdd = async () => {
+    if (!name.trim() || !role.trim()) { toast.error("Name and role are required"); return; }
+    try {
+      const item = await storyService.addWeddingParty({ name, role, side, bio: bio || undefined });
+      setItems((prev) => [...prev, item]);
+      setName(""); setRole(""); setBio("");
+      toast.success("Party member added!");
+    } catch { toast.error("Failed to add"); }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await storyService.deleteWeddingParty(id);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      toast.success("Removed");
+    } catch { toast.error("Failed to remove"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Wedding Party</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Input placeholder="Name *" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input placeholder="Role * (e.g. Best Man)" value={role} onChange={(e) => setRole(e.target.value)} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Select value={side} onValueChange={setSide}>
+          <SelectTrigger><SelectValue placeholder="Side" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="bride">Bride's Side</SelectItem>
+            <SelectItem value="groom">Groom's Side</SelectItem>
+            <SelectItem value="both">Both</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input placeholder="Short bio (optional)" value={bio} onChange={(e) => setBio(e.target.value)} />
+      </div>
+      <Button type="button" size="sm" onClick={handleAdd}><Plus className="w-4 h-4 mr-1" /> Add Member</Button>
+
+      <div className="space-y-2 mt-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <p className="font-medium">{item.name} <span className="text-muted-foreground text-sm">- {item.role}</span></p>
+              <p className="text-xs text-muted-foreground capitalize">{item.side}'s side</p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No wedding party members yet</p>}
+      </div>
+    </div>
+  );
+}
+
+function TravelEditor({ items, setItems }: { items: TravelInfoItem[]; setItems: React.Dispatch<React.SetStateAction<TravelInfoItem[]>> }) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("hotel");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [link, setLink] = useState("");
+
+  const handleAdd = async () => {
+    if (!title.trim()) { toast.error("Title is required"); return; }
+    try {
+      const item = await storyService.addTravel({
+        title, category, description: description || undefined, address: address || undefined, link: link || undefined,
+      });
+      setItems((prev) => [...prev, item]);
+      setTitle(""); setDescription(""); setAddress(""); setLink("");
+      toast.success("Travel info added!");
+    } catch { toast.error("Failed to add"); }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await storyService.deleteTravel(id);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      toast.success("Removed");
+    } catch { toast.error("Failed to remove"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Travel & Stay</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Input placeholder="Title * (e.g. Hilton Downtown)" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="hotel">Hotel</SelectItem>
+            <SelectItem value="transport">Transport</SelectItem>
+            <SelectItem value="parking">Parking</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <Textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} className="min-h-[60px]" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Input placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+        <Input placeholder="Website link" value={link} onChange={(e) => setLink(e.target.value)} />
+      </div>
+      <Button type="button" size="sm" onClick={handleAdd}><Plus className="w-4 h-4 mr-1" /> Add Info</Button>
+
+      <div className="space-y-2 mt-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <p className="font-medium">{item.title}</p>
+              <p className="text-xs text-muted-foreground capitalize">{item.category}</p>
+              {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No travel info yet</p>}
+      </div>
+    </div>
+  );
+}
+
+function FaqEditor({ items, setItems }: { items: FaqItem[]; setItems: React.Dispatch<React.SetStateAction<FaqItem[]>> }) {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+
+  const handleAdd = async () => {
+    if (!question.trim() || !answer.trim()) { toast.error("Both question and answer are required"); return; }
+    try {
+      const item = await storyService.addFaq({ question, answer });
+      setItems((prev) => [...prev, item]);
+      setQuestion(""); setAnswer("");
+      toast.success("FAQ added!");
+    } catch { toast.error("Failed to add"); }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await storyService.deleteFaq(id);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      toast.success("Removed");
+    } catch { toast.error("Failed to remove"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Frequently Asked Questions</h3>
+      <Input placeholder="Question *" value={question} onChange={(e) => setQuestion(e.target.value)} />
+      <Textarea placeholder="Answer *" value={answer} onChange={(e) => setAnswer(e.target.value)} className="min-h-[60px]" />
+      <Button type="button" size="sm" onClick={handleAdd}><Plus className="w-4 h-4 mr-1" /> Add FAQ</Button>
+
+      <div className="space-y-2 mt-4">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-start justify-between p-3 border rounded-lg">
+            <div>
+              <p className="font-medium">{item.question}</p>
+              <p className="text-sm text-muted-foreground mt-1">{item.answer}</p>
+            </div>
+            <Button variant="ghost" size="icon" className="shrink-0" onClick={() => handleDelete(item.id)}>
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
+          </div>
+        ))}
+        {items.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No FAQ items yet</p>}
+      </div>
+    </div>
+  );
+}
 
 export default StoryEditor;

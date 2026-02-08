@@ -10,6 +10,7 @@ export interface UserEvent {
   total_budget: number;
   guest_count_estimate: number;
   notes: string | null;
+  rsvp_code: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -50,10 +51,20 @@ export const UserEventModel = {
     );
   },
 
+  async findByRsvpCode(rsvpCode: string): Promise<UserEvent | null> {
+    return queryOne<UserEvent>(
+      'SELECT * FROM user_events WHERE rsvp_code = $1',
+      [rsvpCode.toUpperCase()]
+    );
+  },
+
   async create(input: CreateUserEventInput): Promise<UserEvent> {
+    // Generate a random 8-character RSVP code
+    const rsvpCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
     const result = await queryOne<UserEvent>(
-      `INSERT INTO user_events (user_id, partner1_name, partner2_name, event_date, venue, total_budget, guest_count_estimate, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO user_events (user_id, partner1_name, partner2_name, event_date, venue, total_budget, guest_count_estimate, notes, rsvp_code)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         input.user_id,
@@ -64,6 +75,7 @@ export const UserEventModel = {
         input.total_budget || 0,
         input.guest_count_estimate || 0,
         input.notes || null,
+        rsvpCode,
       ]
     );
 

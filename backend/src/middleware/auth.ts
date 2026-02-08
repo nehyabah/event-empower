@@ -1,10 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { tokenService, TokenPayload } from '../services/tokenService.js';
+import { queryOne } from '../config/database.js';
+
+export type AdminRole = 'super_admin' | 'admin' | 'support' | 'analyst';
 
 declare global {
   namespace Express {
     interface Request {
       user?: TokenPayload;
+      adminRole?: AdminRole;
     }
   }
 }
@@ -57,6 +61,39 @@ export function requireUserType(...types: string[]) {
 
     if (!types.includes(req.user.userType)) {
       res.status(403).json({ error: 'Insufficient permissions' });
+      return;
+    }
+
+    next();
+  };
+}
+
+export function requireAdminRole(...roles: AdminRole[]) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    if (req.user.userType !== 'admin') {
+      res.status(403).json({ error: 'Admin access required' });
+      return;
+    }
+
+    const row = await queryOne<{ admin_role: AdminRole | null }>(
+      'SELECT admin_role FROM users WHERE id = $1',
+      [req.user.userId]
+    );
+
+    if (!row || !row.admin_role) {
+      res.status(403).json({ error: 'Admin role not assigned' });
+      return;
+    }
+
+    req.adminRole = row.admin_role;
+
+    if (roles.length > 0 && !roles.includes(row.admin_role)) {
+      res.status(403).json({ error: 'Insufficient admin permissions' });
       return;
     }
 

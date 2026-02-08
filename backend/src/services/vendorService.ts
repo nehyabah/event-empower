@@ -4,11 +4,13 @@ import {
   VendorImageModel,
   VendorBookingModel,
   VendorInquiryModel,
+  InquiryMessageModel,
   VendorProfile,
   VendorService,
   VendorImage,
   VendorBooking,
   VendorInquiry,
+  InquiryMessage,
 } from '../models/VendorProfile.js';
 
 export interface VendorProfileInput {
@@ -247,5 +249,138 @@ export const vendorService = {
     }
 
     return VendorInquiryModel.delete(inquiryId);
+  },
+
+  // ========== INQUIRY MESSAGES (VENDOR) ==========
+
+  async getInquiryWithMessages(userId: string, inquiryId: string): Promise<{
+    inquiry: VendorInquiry;
+    messages: InquiryMessage[];
+    unreadCount: number;
+  } | null> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) {
+      throw new Error('Vendor profile not found');
+    }
+
+    const inquiry = await VendorInquiryModel.findById(inquiryId);
+    if (!inquiry || inquiry.vendor_id !== profile.id) {
+      return null;
+    }
+
+    const [messages, unreadCount] = await Promise.all([
+      InquiryMessageModel.listByInquiryId(inquiryId),
+      InquiryMessageModel.countUnreadByInquiryId(inquiryId, 'vendor'),
+    ]);
+
+    // Mark messages from client as read
+    await InquiryMessageModel.markAllAsReadByInquiryId(inquiryId, 'vendor');
+
+    return { inquiry, messages, unreadCount };
+  },
+
+  async sendInquiryMessageAsVendor(userId: string, inquiryId: string, message: string): Promise<InquiryMessage> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) {
+      throw new Error('Vendor profile not found');
+    }
+
+    const inquiry = await VendorInquiryModel.findById(inquiryId);
+    if (!inquiry || inquiry.vendor_id !== profile.id) {
+      throw new Error('Inquiry not found');
+    }
+
+    const newMessage = await InquiryMessageModel.create({
+      inquiry_id: inquiryId,
+      sender_id: userId,
+      sender_type: 'vendor',
+      message,
+    });
+
+    // Update inquiry status to replied if it was new
+    if (inquiry.status === 'new') {
+      await VendorInquiryModel.update(inquiryId, { status: 'replied' });
+    }
+
+    return newMessage;
+  },
+
+  async getInquiryMessages(userId: string, inquiryId: string): Promise<InquiryMessage[]> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) {
+      throw new Error('Vendor profile not found');
+    }
+
+    const inquiry = await VendorInquiryModel.findById(inquiryId);
+    if (!inquiry || inquiry.vendor_id !== profile.id) {
+      throw new Error('Inquiry not found');
+    }
+
+    return InquiryMessageModel.listByInquiryId(inquiryId);
+  },
+
+  // ========== CLIENT INQUIRIES ==========
+
+  async listClientInquiries(userId: string): Promise<Array<VendorInquiry & { vendor_name: string; unread_count: number }>> {
+    const inquiries = await VendorInquiryModel.listBySenderId(userId);
+
+    const enrichedInquiries = await Promise.all(
+      inquiries.map(async (inquiry) => {
+        const [vendor, unreadCount] = await Promise.all([
+          VendorProfileModel.findById(inquiry.vendor_id),
+          InquiryMessageModel.countUnreadByInquiryId(inquiry.id, 'client'),
+        ]);
+        return {
+          ...inquiry,
+          vendor_name: vendor?.business_name || 'Unknown Vendor',
+          unread_count: unreadCount,
+        };
+      })
+    );
+
+    return enrichedInquiries;
+  },
+
+  async getClientInquiryWithMessages(userId: string, inquiryId: string): Promise<{
+    inquiry: VendorInquiry & { vendor_name: string };
+    messages: InquiryMessage[];
+    unreadCount: number;
+  } | null> {
+    const inquiry = await VendorInquiryModel.findByIdAndSenderId(inquiryId, userId);
+    if (!inquiry) {
+      return null;
+    }
+
+    const [vendor, messages, unreadCount] = await Promise.all([
+      VendorProfileModel.findById(inquiry.vendor_id),
+      InquiryMessageModel.listByInquiryId(inquiryId),
+      InquiryMessageModel.countUnreadByInquiryId(inquiryId, 'client'),
+    ]);
+
+    // Mark messages from vendor as read
+    await InquiryMessageModel.markAllAsReadByInquiryId(inquiryId, 'client');
+
+    return {
+      inquiry: {
+        ...inquiry,
+        vendor_name: vendor?.business_name || 'Unknown Vendor',
+      },
+      messages,
+      unreadCount,
+    };
+  },
+
+  async sendInquiryMessageAsClient(userId: string, inquiryId: string, message: string): Promise<InquiryMessage> {
+    const inquiry = await VendorInquiryModel.findByIdAndSenderId(inquiryId, userId);
+    if (!inquiry) {
+      throw new Error('Inquiry not found');
+    }
+
+    return InquiryMessageModel.create({
+      inquiry_id: inquiryId,
+      sender_id: userId,
+      sender_type: 'client',
+      message,
+    });
   },
 };

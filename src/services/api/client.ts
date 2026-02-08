@@ -84,10 +84,28 @@ class ApiClient {
         }
       }
 
-      const data = await response.json();
+      // Handle 204 No Content (common for DELETE)
+      if (response.status === 204) {
+        return { data: undefined as T };
+      }
+
+      // Try to parse JSON, but handle empty responses
+      let data: T | undefined;
+      const text = await response.text();
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          // If JSON parsing fails and response is ok, return undefined
+          if (response.ok) {
+            return { data: undefined as T };
+          }
+          return { error: 'Invalid response from server' };
+        }
+      }
 
       if (!response.ok) {
-        return { error: data.error || 'Request failed' };
+        return { error: (data as { error?: string })?.error || 'Request failed' };
       }
 
       return { data };

@@ -201,7 +201,7 @@ const PlannerHomepage = () => {
                   <CardTitle>Recent Activities</CardTitle>
                   <CardDescription>Your latest planning activities</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 max-h-80 overflow-y-auto">
                   {(stats?.recentTasks || []).slice(0, 5).map((task) => (
                     <div key={task.id} className="flex items-start space-x-4 rounded-md p-2 transition-all hover:bg-muted/50">
                       <div className="flex-1">
@@ -233,7 +233,7 @@ const PlannerHomepage = () => {
                   <CardTitle>Upcoming Deadlines</CardTitle>
                   <CardDescription>Tasks due in the next 7 days</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 max-h-80 overflow-y-auto">
                   {deadlineTasks.slice(0, 5).map((task) => {
                     const dueLabel = renderDueLabel(task);
                     const isOverdue = dueLabel === "Overdue";
