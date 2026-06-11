@@ -12,6 +12,8 @@ export interface VendorService {
   name: string;
   description: string | null;
   price: number | null;
+  price_min: number | null;
+  price_max: number | null;
 }
 
 export interface VendorImage {
@@ -37,6 +39,7 @@ export interface VendorProfile {
   review_count: number;
   is_verified: boolean;
   is_active: boolean;
+  open_to_travel: boolean;
   profile_image_url: string | null;
   cover_image_url: string | null;
   profile_image_key?: string | null;
@@ -154,13 +157,15 @@ export interface VendorProfileInput {
   email?: string;
   phone?: string;
   website?: string;
+  openToTravel?: boolean;
   profileImageUrl?: string | null;
   coverImageUrl?: string | null;
   socialLinks?: VendorSocialLink[];
   services?: Array<{
     name: string;
     description?: string;
-    price?: string;
+    priceMin?: string;
+    priceMax?: string;
   }>;
   images?: Array<{
     url: string;

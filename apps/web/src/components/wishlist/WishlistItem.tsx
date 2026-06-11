@@ -66,65 +66,85 @@ const WishlistItem = ({
     low: "Nice to Have"
   };
   
-  return (
-    <Card className={cn(
-      "overflow-hidden hover:shadow-md transition-shadow border-l-4",
-      item.purchasedBy ? "bg-muted/30" : "",
-      priorityColors[item.priority]
-    )}>
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div className="space-y-2 flex-1">
-            <h3 className={`text-lg font-medium ${item.purchasedBy ? "line-through text-muted-foreground" : ""}`}>
+  const cardContent = (
+    <CardContent className="p-0">
+      {/* Image */}
+      {item.imageUrl && (
+        <div className="relative w-full h-40 bg-muted overflow-hidden">
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          {item.link && (
+            <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+              <ExternalLink className="h-6 w-6 text-white drop-shadow" />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="p-4 sm:p-5">
+        <div className="flex justify-between items-start gap-2">
+          <div className="space-y-1.5 flex-1 min-w-0">
+            <h3 className={`text-base font-medium truncate ${item.purchasedBy ? "line-through text-muted-foreground" : ""}`}>
               {item.name}
             </h3>
-            
-            <div className="flex items-center gap-2">
-              <Badge 
-                variant="outline" 
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge
+                variant="outline"
                 className={cn("text-xs font-normal", priorityBadgeColors[item.priority])}
               >
                 <Tag className="h-3 w-3 mr-1" />
                 {priorityLabels[item.priority]}
               </Badge>
+              {item.link && !item.imageUrl && (
+                <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                  <ExternalLink size={11} />
+                  Buy link
+                </span>
+              )}
             </div>
-            
+
             {item.purchasedBy && (
-              <p className="text-sm text-primary/80 font-medium mt-2">
-                <Check className="inline-block h-4 w-4 mr-1" />
+              <p className="text-sm text-primary/80 font-medium">
                 {item.isAnonymous ? (
-                  <>
-                    <UserX className="inline-block h-4 w-4 mr-1" />
+                  <span className="flex items-center gap-1">
+                    <UserX className="h-3.5 w-3.5" />
                     Being purchased anonymously
-                  </>
+                  </span>
                 ) : (
-                  <>Being purchased by: {item.purchasedBy}</>
+                  <span className="flex items-center gap-1">
+                    <Check className="h-3.5 w-3.5" />
+                    Being purchased by: {item.purchasedBy}
+                  </span>
                 )}
               </p>
             )}
           </div>
-          
+
           {item.price && (
-            <Badge variant="secondary" className="text-sm font-medium">
+            <Badge variant="secondary" className="text-sm font-medium shrink-0">
               {item.price}
             </Badge>
           )}
         </div>
-        
-        <div className="mt-4 flex items-center justify-between">
-          {item.link && (
-            <a 
-              href={item.link} 
-              target="_blank" 
+
+        <div className="mt-4 flex items-center justify-between gap-2">
+          {item.link && !item.imageUrl ? (
+            <a
+              href={item.link}
+              target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
               className="text-sm text-primary/80 hover:underline flex items-center gap-1 hover:text-primary/60 transition-colors"
             >
               <ExternalLink size={14} />
-              View Item
+              Buy now
             </a>
-          )}
-          
-          {!item.link && <div />}
+          ) : <div />}
           
           {!item.purchasedBy ? (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -182,8 +202,26 @@ const WishlistItem = ({
           )}
         </div>
       </CardContent>
-    </Card>
   );
+
+  const cardClass = cn(
+    "overflow-hidden hover:shadow-md transition-shadow border-l-4",
+    item.purchasedBy ? "bg-muted/30" : "",
+    priorityColors[item.priority],
+    item.link ? "cursor-pointer" : ""
+  );
+
+  if (item.link && item.imageUrl) {
+    return (
+      <>
+        <a href={item.link} target="_blank" rel="noopener noreferrer">
+          <Card className={cardClass}>{cardContent}</Card>
+        </a>
+      </>
+    );
+  }
+
+  return <Card className={cardClass}>{cardContent}</Card>;
 };
 
 export default WishlistItem;

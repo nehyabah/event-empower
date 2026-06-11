@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Check, X, Loader2, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -334,6 +335,7 @@ interface SaveTheDateCardProps {
   isFlipped?: boolean;
   onFlip?: () => void;
   rsvpCode?: string;
+  storySlug?: string | null;
 }
 
 const SaveTheDateCard = ({
@@ -344,7 +346,9 @@ const SaveTheDateCard = ({
   isFlipped: controlledIsFlipped,
   onFlip,
   rsvpCode,
+  storySlug,
 }: SaveTheDateCardProps) => {
+  const navigate = useNavigate();
   const [internalIsFlipped, setInternalIsFlipped] = useState(false);
   const [rsvpStatus, setRsvpStatus] = useState<"attending" | "declined" | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -431,6 +435,8 @@ const SaveTheDateCard = ({
     e.preventDefault();
     if (!guestName.trim()) { toast.error("Please enter your name"); return; }
     if (!rsvpStatus) { toast.error("Please select if you're attending"); return; }
+    const count = parseInt(guestCount, 10);
+    if (count > 2) { toast.error("Party size cannot exceed 2 people"); return; }
 
     setIsSubmitting(true);
 
@@ -445,13 +451,18 @@ const SaveTheDateCard = ({
           dietaryNotes: dietaryNotes.trim() || undefined,
         });
         toast.success(response.message);
+        setGuestName(""); setGuestCount("1"); setDietaryNotes(""); setRsvpStatus(null);
+        // Redirect to the couple's story website if published
+        if (storySlug) {
+          setTimeout(() => navigate(`/s/${storySlug}`), 1200);
+        }
       } else {
         // Fallback for preview mode (no rsvpCode)
         toast.success(rsvpStatus === "attending"
           ? "Thank you! We can't wait to celebrate with you!"
           : "Thank you for letting us know. We'll miss you!");
+        setGuestName(""); setGuestCount("1"); setDietaryNotes(""); setRsvpStatus(null);
       }
-      setGuestName(""); setGuestCount("1"); setDietaryNotes(""); setRsvpStatus(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to submit RSVP");
     } finally {
@@ -694,7 +705,7 @@ const SaveTheDateCard = ({
                 <>
                   <div className="space-y-1">
                     <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
-                      Number of Guests
+                      Party Size (max 2)
                     </label>
                     <select
                       className="w-full h-8 sm:h-9 rounded-md px-2 text-xs sm:text-sm"
@@ -702,7 +713,8 @@ const SaveTheDateCard = ({
                       value={guestCount}
                       onChange={(e) => setGuestCount(e.target.value)}
                     >
-                      {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} Guest{n > 1 ? 's' : ''}</option>)}
+                      <option value={1}>Just me</option>
+                      <option value={2}>Me + 1 guest</option>
                     </select>
                   </div>
                   <div className="space-y-1">

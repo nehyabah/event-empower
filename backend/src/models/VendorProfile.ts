@@ -14,6 +14,7 @@ export interface VendorProfile {
   review_count: number;
   is_verified: boolean;
   is_active: boolean;
+  open_to_travel: boolean;
   profile_image_url: string | null;
   cover_image_url: string | null;
   social_links: unknown;
@@ -27,6 +28,8 @@ export interface VendorService {
   name: string;
   description: string | null;
   price: number | null;
+  price_min: number | null;
+  price_max: number | null;
   created_at: Date;
 }
 
@@ -66,6 +69,7 @@ export interface UpdateVendorProfileInput {
   cover_image_url?: string | null;
   social_links?: unknown;
   is_active?: boolean;
+  open_to_travel?: boolean;
 }
 
 export const VendorProfileModel = {
@@ -184,6 +188,10 @@ export const VendorProfileModel = {
       fields.push(`is_active = $${paramIndex++}`);
       values.push(input.is_active);
     }
+    if (input.open_to_travel !== undefined) {
+      fields.push(`open_to_travel = $${paramIndex++}`);
+      values.push(input.open_to_travel);
+    }
 
     if (fields.length === 0) {
       return this.findById(id);
@@ -214,13 +222,15 @@ export const VendorServiceModel = {
     await Promise.all(
       services.map(service =>
         query(
-          `INSERT INTO vendor_services (vendor_id, name, description, price)
-           VALUES ($1, $2, $3, $4)`,
+          `INSERT INTO vendor_services (vendor_id, name, description, price, price_min, price_max)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
           [
             vendorId,
             service.name,
             service.description || null,
-            service.price ?? null,
+            service.price_min ?? null,
+            service.price_min ?? null,
+            service.price_max ?? null,
           ]
         )
       )

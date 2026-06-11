@@ -34,6 +34,7 @@ export const useWishlist = (): WishlistHook => {
           name: item.name,
           price: item.price || undefined,
           link: item.link || undefined,
+          imageUrl: item.image_url || undefined,
           priority: item.priority,
           purchasedBy: item.purchased_by || undefined,
           isAnonymous: item.is_anonymous || undefined,
@@ -75,6 +76,7 @@ export const useWishlist = (): WishlistHook => {
           name: item.name,
           price: item.price,
           link: item.link,
+          image_url: item.imageUrl,
           priority: item.priority,
         });
         setWishlistItems((prev) => [
@@ -84,6 +86,7 @@ export const useWishlist = (): WishlistHook => {
             name: created.name,
             price: created.price || undefined,
             link: created.link || undefined,
+            imageUrl: created.image_url || undefined,
             priority: created.priority,
             purchasedBy: created.purchased_by || undefined,
             isAnonymous: created.is_anonymous || undefined,

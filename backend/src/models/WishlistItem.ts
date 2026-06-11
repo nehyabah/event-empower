@@ -8,6 +8,7 @@ export interface WishlistItem {
   name: string;
   price: string | null;
   link: string | null;
+  image_url: string | null;
   priority: WishlistPriority;
   purchased_by: string | null;
   is_anonymous: boolean;
@@ -19,6 +20,7 @@ export interface CreateWishlistItemInput {
   name: string;
   price?: string | null;
   link?: string | null;
+  image_url?: string | null;
   priority?: WishlistPriority;
 }
 
@@ -26,6 +28,7 @@ export interface UpdateWishlistItemInput {
   name?: string;
   price?: string | null;
   link?: string | null;
+  image_url?: string | null;
   priority?: WishlistPriority;
   purchased_by?: string | null;
   is_anonymous?: boolean | null;
@@ -41,10 +44,10 @@ export const WishlistItemModel = {
 
   async create(userId: string, input: CreateWishlistItemInput): Promise<WishlistItem> {
     const result = await queryOne<WishlistItem>(
-      `INSERT INTO wishlist_items (user_id, name, price, link, priority)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO wishlist_items (user_id, name, price, link, image_url, priority)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [userId, input.name, input.price || null, input.link || null, input.priority || 'medium']
+      [userId, input.name, input.price || null, input.link || null, input.image_url || null, input.priority || 'medium']
     );
 
     if (!result) {
@@ -67,6 +70,7 @@ export const WishlistItemModel = {
     if (input.name !== undefined) addField('name', input.name);
     if (input.price !== undefined) addField('price', input.price);
     if (input.link !== undefined) addField('link', input.link);
+    if (input.image_url !== undefined) addField('image_url', input.image_url);
     if (input.priority !== undefined) addField('priority', input.priority);
     if (input.purchased_by !== undefined) addField('purchased_by', input.purchased_by);
     if (input.is_anonymous !== undefined) addField('is_anonymous', input.is_anonymous);

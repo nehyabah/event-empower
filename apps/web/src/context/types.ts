@@ -14,6 +14,7 @@ export interface TodoListItem {
   createdAt: Date;
   items: TodoItem[];
   isCompleted: boolean;
+  isShared: boolean;
 }
 
 export interface WishlistItem {
@@ -21,6 +22,7 @@ export interface WishlistItem {
   name: string;
   price?: string;
   link?: string;
+  imageUrl?: string;
   priority: "high" | "medium" | "low";
   purchasedBy?: string;
   isAnonymous?: boolean;

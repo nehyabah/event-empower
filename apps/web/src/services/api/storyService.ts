@@ -56,6 +56,7 @@ export interface WishlistItem {
   name: string;
   price: string | null;
   link: string | null;
+  image_url: string | null;
   priority: WishlistPriority;
   purchased_by: string | null;
   is_anonymous: boolean;
@@ -175,6 +176,7 @@ export interface CreateWishlistItemInput {
   name: string;
   price?: string | null;
   link?: string | null;
+  image_url?: string | null;
   priority?: WishlistPriority;
 }
 
@@ -182,6 +184,7 @@ export interface UpdateWishlistItemInput {
   name?: string;
   price?: string | null;
   link?: string | null;
+  image_url?: string | null;
   priority?: WishlistPriority;
   purchased_by?: string | null;
   is_anonymous?: boolean | null;

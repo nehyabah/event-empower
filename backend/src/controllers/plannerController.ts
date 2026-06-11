@@ -76,6 +76,17 @@ const inviteSchema = z.object({
   clientId: z.string().uuid(),
 });
 
+const addClientTodoItemSchema = z.object({
+  text: z.string().min(1, 'Text is required'),
+  status: z.enum(['todo', 'in_progress', 'done']).optional(),
+});
+
+const updateClientTodoItemSchema = z.object({
+  text: z.string().min(1).optional(),
+  status: z.enum(['todo', 'in_progress', 'done']).optional(),
+  completed: z.boolean().optional(),
+});
+
 // ========== CONTROLLER ==========
 
 export const plannerController = {
@@ -316,6 +327,177 @@ export const plannerController = {
         return;
       }
       res.json({ message: 'Event deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== CLIENT PROJECT ==========
+
+  async getClientProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const project = await plannerService.getClientProject(req.user!.userId, String(req.params.clientId));
+      if (!project) {
+        res.status(404).json({ error: 'Client project not found' });
+        return;
+      }
+      res.json(project);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async addClientProjectVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        vendorProfileId: z.string().uuid(),
+        category: z.string().optional(),
+        status: z.enum(['inquired', 'quoted', 'booked', 'confirmed', 'cancelled']).optional(),
+        amount: z.number().min(0).optional(),
+        notes: z.string().optional(),
+      });
+      const data = schema.parse(req.body);
+      const pv = await plannerService.addClientProjectVendor(req.user!.userId, String(req.params.clientId), {
+        vendor_profile_id: data.vendorProfileId,
+        category: data.category,
+        status: data.status,
+        amount: data.amount,
+        notes: data.notes,
+      });
+      res.status(201).json(pv);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Client project not found') {
+        res.status(404).json({ error: 'Client project not found' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async updateClientProjectVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        status: z.enum(['inquired', 'quoted', 'booked', 'confirmed', 'cancelled']).optional(),
+        amount: z.number().min(0).nullable().optional(),
+        notes: z.string().nullable().optional(),
+        category: z.string().nullable().optional(),
+      });
+      const data = schema.parse(req.body);
+      const pv = await plannerService.updateClientProjectVendor(
+        req.user!.userId,
+        String(req.params.clientId),
+        String(req.params.vendorId),
+        data
+      );
+      if (!pv) {
+        res.status(404).json({ error: 'Project vendor not found' });
+        return;
+      }
+      res.json(pv);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async removeClientProjectVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await plannerService.removeClientProjectVendor(
+        req.user!.userId,
+        String(req.params.clientId),
+        String(req.params.vendorId)
+      );
+      if (!deleted) {
+        res.status(404).json({ error: 'Project vendor not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== CLIENT TODO LISTS (shared) ==========
+
+  async getClientTodos(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const todos = await plannerService.getClientSharedTodos(req.user!.userId, String(req.params.clientId));
+      res.json(todos);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async addClientTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = addClientTodoItemSchema.parse(req.body);
+      const item = await plannerService.addClientTodoItem(
+        req.user!.userId,
+        String(req.params.clientId),
+        String(req.params.listId),
+        input
+      );
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Todo list not found') {
+        res.status(404).json({ error: 'Todo list not found' });
+        return;
+      }
+      if (error instanceof Error && error.message === 'Client not found or not linked') {
+        res.status(404).json({ error: 'Client not found or not linked' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async toggleClientTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const item = await plannerService.toggleClientTodoItem(
+        req.user!.userId,
+        String(req.params.clientId),
+        String(req.params.itemId)
+      );
+      if (!item) {
+        res.status(404).json({ error: 'Todo item not found' });
+        return;
+      }
+      res.json(item);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateClientTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = updateClientTodoItemSchema.parse(req.body);
+      const item = await plannerService.updateClientTodoItem(
+        req.user!.userId,
+        String(req.params.clientId),
+        String(req.params.itemId),
+        input
+      );
+      if (!item) {
+        res.status(404).json({ error: 'Todo item not found' });
+        return;
+      }
+      res.json(item);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteClientTodoItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await plannerService.deleteClientTodoItem(
+        req.user!.userId,
+        String(req.params.clientId),
+        String(req.params.itemId)
+      );
+      if (!deleted) {
+        res.status(404).json({ error: 'Todo item not found' });
+        return;
+      }
+      res.status(204).send();
     } catch (error) {
       next(error);
     }

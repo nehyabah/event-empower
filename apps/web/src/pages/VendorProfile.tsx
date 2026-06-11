@@ -8,22 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { 
-  Facebook, 
-  Instagram, 
-  Twitter, 
-  Linkedin, 
-  Youtube, 
-  Globe, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Image, 
-  Upload, 
+import {
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Youtube,
+  Globe,
+  MapPin,
+  Phone,
+  Mail,
+  Image,
+  Upload,
   Plus,
   Save,
-  Trash
+  Trash,
+  Plane
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
 import { vendorService } from "@/services/api/vendorService";
@@ -39,7 +41,8 @@ interface ServiceItem {
   id: string;
   name: string;
   description: string;
-  price: string;
+  priceMin: string;
+  priceMax: string;
 }
 
 const VendorProfile = () => {
@@ -53,6 +56,7 @@ const VendorProfile = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [vendorEmail, setVendorEmail] = useState<string>("");
   
+  const [openToTravel, setOpenToTravel] = useState(false);
   const [formData, setFormData] = useState({
     companyName: "",
     category: "Venues",
@@ -71,7 +75,7 @@ const VendorProfile = () => {
   ]);
   
   const [services, setServices] = useState<ServiceItem[]>([
-    { id: crypto.randomUUID(), name: "", description: "", price: "" }
+    { id: crypto.randomUUID(), name: "", description: "", priceMin: "", priceMax: "" }
   ]);
 
   // Basic auth check
@@ -104,6 +108,7 @@ const VendorProfile = () => {
           phone: vendor.profile.phone || "",
           website: vendor.profile.website || "",
         });
+        setOpenToTravel(vendor.profile.open_to_travel ?? false);
         if (vendor.profile.cover_image_url) {
           setCoverImage({
             key: vendor.profile.cover_image_key || vendor.profile.cover_image_url,
@@ -148,7 +153,8 @@ const VendorProfile = () => {
               id: service.id,
               name: service.name,
               description: service.description || "",
-              price: service.price !== null ? String(service.price) : "",
+              priceMin: service.price_min !== null ? String(service.price_min) : "",
+              priceMax: service.price_max !== null ? String(service.price_max) : "",
             }))
           );
         }
@@ -182,7 +188,7 @@ const VendorProfile = () => {
   };
   
   const addService = () => {
-    setServices([...services, { id: crypto.randomUUID(), name: "", description: "", price: "" }]);
+    setServices([...services, { id: crypto.randomUUID(), name: "", description: "", priceMin: "", priceMax: "" }]);
   };
   
   const removeService = (id: string) => {
@@ -235,6 +241,7 @@ const VendorProfile = () => {
       email: vendorEmail,
       phone: formData.phone,
       website: formData.website,
+      openToTravel,
       profileImageUrl: profileImage?.key,
       coverImageUrl: coverImage?.key,
       socialLinks: socialLinks
@@ -248,7 +255,8 @@ const VendorProfile = () => {
         .map((service) => ({
           name: service.name,
           description: service.description,
-          price: normalizePrice(service.price),
+          priceMin: normalizePrice(service.priceMin),
+          priceMax: normalizePrice(service.priceMax),
         })),
       images: galleryImages.map((image, index) => ({
         url: image.key,
@@ -466,6 +474,17 @@ const VendorProfile = () => {
                       </div>
                     </div>
                     
+                    <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Plane className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Open to travel</p>
+                          <p className="text-xs text-muted-foreground">I'm available for events outside my base location</p>
+                        </div>
+                      </div>
+                      <Switch checked={openToTravel} onCheckedChange={setOpenToTravel} />
+                    </div>
+
                     <div className="space-y-3">
                       <h3 className="text-lg font-medium">Social Media Links</h3>
                       <p className="text-sm text-muted-foreground">Add your social media profiles to help couples connect with you</p>
@@ -513,24 +532,38 @@ const VendorProfile = () => {
                             )}
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="space-y-2">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="space-y-2 md:col-span-1">
                               <Label htmlFor={`service-name-${service.id}`}>Service Name</Label>
                               <Input
                                 id={`service-name-${service.id}`}
                                 value={service.name}
                                 onChange={(e) => handleServiceChange(service.id, 'name', e.target.value)}
-                                placeholder="e.g., Basic Photography Package"
+                                placeholder="e.g., Basic Package"
                               />
                             </div>
-                            
+
                             <div className="space-y-2">
-                              <Label htmlFor={`service-price-${service.id}`}>Price</Label>
+                              <Label htmlFor={`service-price-min-${service.id}`}>Min Price (₦)</Label>
                               <Input
-                                id={`service-price-${service.id}`}
-                                value={service.price}
-                                onChange={(e) => handleServiceChange(service.id, 'price', e.target.value)}
-                                placeholder="e.g., ₦50,000 or 'Starting at ₦50,000'"
+                                id={`service-price-min-${service.id}`}
+                                value={service.priceMin}
+                                onChange={(e) => handleServiceChange(service.id, 'priceMin', e.target.value)}
+                                placeholder="e.g., 150000"
+                                type="number"
+                                min="0"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`service-price-max-${service.id}`}>Max Price (₦)</Label>
+                              <Input
+                                id={`service-price-max-${service.id}`}
+                                value={service.priceMax}
+                                onChange={(e) => handleServiceChange(service.id, 'priceMax', e.target.value)}
+                                placeholder="e.g., 500000"
+                                type="number"
+                                min="0"
                               />
                             </div>
                           </div>

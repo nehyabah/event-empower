@@ -12,6 +12,8 @@ import {
   VendorInquiry,
   InquiryMessage,
 } from '../models/VendorProfile.js';
+import { ProjectVendorModel, ProjectVendor } from '../models/ProjectVendor.js';
+import { UserEventModel } from '../models/UserEvent.js';
 
 export interface VendorProfileInput {
   business_name: string;
@@ -21,6 +23,7 @@ export interface VendorProfileInput {
   email?: string | null;
   phone?: string | null;
   website?: string | null;
+  open_to_travel?: boolean;
   profile_image_url?: string | null;
   cover_image_url?: string | null;
   social_links?: unknown;
@@ -28,6 +31,8 @@ export interface VendorProfileInput {
     name: string;
     description?: string | null;
     price?: number | null;
+    price_min?: number | null;
+    price_max?: number | null;
   }>;
   images?: Array<{
     url: string;
@@ -97,6 +102,7 @@ export const vendorService = {
           email: input.email,
           phone: input.phone,
           website: input.website,
+          open_to_travel: input.open_to_travel,
           profile_image_url: input.profile_image_url,
           cover_image_url: input.cover_image_url,
           social_links: input.social_links,
@@ -120,11 +126,22 @@ export const vendorService = {
     }
 
     if (input.services) {
-      await VendorServiceModel.replaceForVendor(profile.id, input.services);
+      await VendorServiceModel.replaceForVendor(profile.id, input.services.map(s => ({
+        name: s.name,
+        description: s.description ?? null,
+        price: s.price_min ?? s.price ?? null,
+        price_min: s.price_min ?? null,
+        price_max: s.price_max ?? null,
+      })));
     }
 
     if (input.images) {
-      await VendorImageModel.replaceForVendor(profile.id, input.images);
+      await VendorImageModel.replaceForVendor(profile.id, input.images.map(img => ({
+        url: img.url,
+        alt_text: img.alt_text ?? null,
+        is_primary: img.is_primary ?? false,
+        display_order: img.display_order ?? 0,
+      })));
     }
 
     return buildDetails(profile);
@@ -382,5 +399,30 @@ export const vendorService = {
       sender_type: 'client',
       message,
     });
+  },
+
+  // ========== VENDOR PROJECTS ==========
+
+  async getVendorProjects(userId: string): Promise<Array<ProjectVendor & { couple_names: string | null; event_date: Date | null }>> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) return [];
+
+    const projectVendors = await ProjectVendorModel.findByVendorProfileId(profile.id);
+
+    const enriched = await Promise.all(
+      projectVendors.map(async (pv) => {
+        const event = await UserEventModel.findById(pv.event_id);
+        const couple_names = event
+          ? [event.partner1_name, event.partner2_name].filter(Boolean).join(' & ') || null
+          : null;
+        return {
+          ...pv,
+          couple_names,
+          event_date: event?.event_date ?? null,
+        };
+      })
+    );
+
+    return enriched;
   },
 };

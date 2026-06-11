@@ -17,6 +17,7 @@ export interface TodoList {
   title: string;
   description: string | null;
   is_completed: boolean;
+  is_shared: boolean;
   created_at: Date;
   updated_at: Date;
   items?: TodoItem[];
@@ -26,12 +27,14 @@ export interface CreateTodoListInput {
   user_id: string;
   title: string;
   description?: string;
+  is_shared?: boolean;
 }
 
 export interface UpdateTodoListInput {
   title?: string;
   description?: string | null;
   is_completed?: boolean;
+  is_shared?: boolean;
 }
 
 export interface CreateTodoItemInput {
@@ -111,15 +114,44 @@ export const TodoListModel = {
     }));
   },
 
+  async findSharedByUserId(userId: string): Promise<TodoList[]> {
+    const lists = await query<TodoList>(
+      'SELECT * FROM todo_lists WHERE user_id = $1 AND is_shared = true ORDER BY created_at DESC',
+      [userId]
+    );
+
+    if (lists.length === 0) return lists;
+
+    const listIds = lists.map(l => l.id);
+    const items = await query<TodoItem>(
+      'SELECT * FROM todo_items WHERE list_id = ANY($1) ORDER BY sort_order ASC, created_at ASC',
+      [listIds]
+    );
+
+    const itemsByListId = new Map<string, TodoItem[]>();
+    items.forEach(item => {
+      if (!itemsByListId.has(item.list_id)) {
+        itemsByListId.set(item.list_id, []);
+      }
+      itemsByListId.get(item.list_id)!.push(item);
+    });
+
+    return lists.map(list => ({
+      ...list,
+      items: itemsByListId.get(list.id) || [],
+    }));
+  },
+
   async create(input: CreateTodoListInput): Promise<TodoList> {
     const result = await queryOne<TodoList>(
-      `INSERT INTO todo_lists (user_id, title, description)
-       VALUES ($1, $2, $3)
+      `INSERT INTO todo_lists (user_id, title, description, is_shared)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [
         input.user_id,
         input.title,
         input.description || null,
+        input.is_shared ?? false,
       ]
     );
 
@@ -146,6 +178,10 @@ export const TodoListModel = {
     if (input.is_completed !== undefined) {
       fields.push(`is_completed = $${paramIndex++}`);
       values.push(input.is_completed);
+    }
+    if (input.is_shared !== undefined) {
+      fields.push(`is_shared = $${paramIndex++}`);
+      values.push(input.is_shared);
     }
 
     if (fields.length === 0) {

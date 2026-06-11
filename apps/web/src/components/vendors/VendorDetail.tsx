@@ -7,7 +7,8 @@ import {
   Mail,
   Phone,
   Heart,
-  Globe
+  Globe,
+  Plane
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,13 @@ import { toast } from "sonner";
 interface VendorImage {
   url: string;
   alt: string;
+}
+
+interface ServiceSummary {
+  name: string;
+  description: string | null;
+  price_min: number | null;
+  price_max: number | null;
 }
 
 interface VendorDetailProps {
@@ -27,7 +35,8 @@ interface VendorDetailProps {
   reviewCount: number;
   description: string;
   images: VendorImage[];
-  services: string[];
+  services: ServiceSummary[];
+  openToTravel?: boolean;
   contact: {
     email: string;
     phone: string;
@@ -47,6 +56,7 @@ const VendorDetail = ({
   description,
   images,
   services,
+  openToTravel,
   contact,
   onClose,
   onContact
@@ -145,6 +155,12 @@ const VendorDetail = ({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{category}</Badge>
               <Badge variant="outline">{location}</Badge>
+              {openToTravel && (
+                <Badge variant="outline" className="gap-1 border-blue-400 text-blue-600">
+                  <Plane className="h-3 w-3" />
+                  Open to travel
+                </Badge>
+              )}
               <div className="flex items-center text-yellow-500 text-sm">
                 <span className="font-medium">{rating.toFixed(1)}</span>
                 <span className="text-muted-foreground ml-1">({reviewCount})</span>
@@ -160,13 +176,33 @@ const VendorDetail = ({
             {/* Services */}
             {services.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium mb-2">Services</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {services.map((service, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {service}
-                    </Badge>
-                  ))}
+                <h3 className="text-sm font-medium mb-3">Services & Pricing</h3>
+                <div className="space-y-2">
+                  {services.map((service, index) => {
+                    const hasMin = service.price_min !== null;
+                    const hasMax = service.price_max !== null;
+                    const priceLabel = hasMin && hasMax
+                      ? `₦${service.price_min!.toLocaleString()} – ₦${service.price_max!.toLocaleString()}`
+                      : hasMin
+                      ? `From ₦${service.price_min!.toLocaleString()}`
+                      : hasMax
+                      ? `Up to ₦${service.price_max!.toLocaleString()}`
+                      : null;
+
+                    return (
+                      <div key={index} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{service.name}</p>
+                          {service.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{service.description}</p>
+                          )}
+                        </div>
+                        {priceLabel && (
+                          <span className="text-xs font-medium text-primary shrink-0 mt-0.5">{priceLabel}</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

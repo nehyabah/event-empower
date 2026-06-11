@@ -12,6 +12,7 @@ const vendorProfileSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
   website: z.string().optional(),
+  openToTravel: z.boolean().optional(),
   profileImageUrl: z.string().optional(),
   coverImageUrl: z.string().optional(),
   socialLinks: z.array(
@@ -25,6 +26,8 @@ const vendorProfileSchema = z.object({
       name: z.string().min(1),
       description: z.string().optional(),
       price: z.union([z.number(), z.string()]).optional(),
+      priceMin: z.union([z.number(), z.string()]).optional(),
+      priceMax: z.union([z.number(), z.string()]).optional(),
     })
   ).optional(),
   images: z.array(
@@ -172,6 +175,15 @@ export const vendorController = {
     try {
       const data = await vendorService.getVendorDashboard(req.user!.userId);
       res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getVendorProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const projects = await vendorService.getVendorProjects(req.user!.userId);
+      res.json(projects);
     } catch (error) {
       next(error);
     }
@@ -335,13 +347,16 @@ export const vendorController = {
         email: data.email || undefined,
         phone: data.phone,
         website: data.website,
+        open_to_travel: data.openToTravel,
         profile_image_url: data.profileImageUrl,
         cover_image_url: data.coverImageUrl,
         social_links: data.socialLinks,
         services: (data.services || []).map(service => ({
           name: service.name,
           description: service.description,
-          price: toNumber(service.price),
+          price: toNumber(service.priceMin ?? service.price),
+          price_min: toNumber(service.priceMin ?? service.price),
+          price_max: toNumber(service.priceMax),
         })),
         images: mappedImages,
       });

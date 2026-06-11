@@ -5,6 +5,7 @@ export interface EventInfo {
   partner2Name: string | null;
   eventDate: string | null;
   venue: string | null;
+  storySlug: string | null;
 }
 
 export interface RsvpSubmission {

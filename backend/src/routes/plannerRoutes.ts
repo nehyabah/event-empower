@@ -19,6 +19,19 @@ router.patch('/clients/:id', plannerController.updateClient);
 router.delete('/clients/:id', plannerController.deleteClient);
 router.post('/clients/:id/invite', plannerController.createInvite);
 
+// Client project (event + vendor roster)
+router.get('/clients/:clientId/project', plannerController.getClientProject);
+router.post('/clients/:clientId/project/vendors', plannerController.addClientProjectVendor);
+router.patch('/clients/:clientId/project/vendors/:vendorId', plannerController.updateClientProjectVendor);
+router.delete('/clients/:clientId/project/vendors/:vendorId', plannerController.removeClientProjectVendor);
+
+// Client shared todo lists (read) + item management
+router.get('/clients/:clientId/todos', plannerController.getClientTodos);
+router.post('/clients/:clientId/todos/:listId/items', plannerController.addClientTodoItem);
+router.patch('/clients/:clientId/todos/:listId/items/:itemId', plannerController.updateClientTodoItem);
+router.post('/clients/:clientId/todos/:listId/items/:itemId/toggle', plannerController.toggleClientTodoItem);
+router.delete('/clients/:clientId/todos/:listId/items/:itemId', plannerController.deleteClientTodoItem);
+
 // Tasks
 router.get('/tasks', plannerController.getTasks);
 router.get('/tasks/:id', plannerController.getTask);

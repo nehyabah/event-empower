@@ -128,6 +128,29 @@ export interface UpdateEventInput {
   location?: string | null;
 }
 
+export interface ClientTodoItem {
+  id: string;
+  list_id: string;
+  text: string;
+  completed: boolean;
+  status: 'todo' | 'in_progress' | 'done';
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientTodoList {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  is_completed: boolean;
+  is_shared: boolean;
+  created_at: string;
+  updated_at: string;
+  items: ClientTodoItem[];
+}
+
 export interface DashboardStats {
   clients: {
     total: number;
@@ -327,6 +350,41 @@ export const plannerService = {
     if (response.error) {
       throw new Error(response.error);
     }
+  },
+
+  // ========== CLIENT SHARED TODOS ==========
+
+  async getClientTodos(clientId: string): Promise<ClientTodoList[]> {
+    const response = await apiClient.get<ClientTodoList[]>(`/planner/clients/${clientId}/todos`);
+    if (response.error) throw new Error(response.error);
+    return response.data || [];
+  },
+
+  async addClientTodoItem(clientId: string, listId: string, text: string, status?: ClientTodoItem['status']): Promise<ClientTodoItem> {
+    const response = await apiClient.post<ClientTodoItem>(
+      `/planner/clients/${clientId}/todos/${listId}/items`,
+      { text, status }
+    );
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('Failed to add item');
+    return response.data;
+  },
+
+  async toggleClientTodoItem(clientId: string, listId: string, itemId: string): Promise<ClientTodoItem> {
+    const response = await apiClient.post<ClientTodoItem>(
+      `/planner/clients/${clientId}/todos/${listId}/items/${itemId}/toggle`,
+      {}
+    );
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('Failed to toggle item');
+    return response.data;
+  },
+
+  async deleteClientTodoItem(clientId: string, listId: string, itemId: string): Promise<void> {
+    const response = await apiClient.delete(
+      `/planner/clients/${clientId}/todos/${listId}/items/${itemId}`
+    );
+    if (response.error) throw new Error(response.error);
   },
 
   // ========== DASHBOARD ==========

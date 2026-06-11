@@ -15,6 +15,13 @@ interface VendorImage {
   alt: string;
 }
 
+interface ServiceSummary {
+  name: string;
+  description: string | null;
+  price_min: number | null;
+  price_max: number | null;
+}
+
 interface VendorCardProps {
   id: string;
   name: string;
@@ -25,7 +32,8 @@ interface VendorCardProps {
   imageUrl: string;
   images: VendorImage[];
   description: string;
-  services: string[];
+  services: ServiceSummary[];
+  openToTravel: boolean;
   contact: {
     email: string;
     phone: string;
@@ -34,6 +42,15 @@ interface VendorCardProps {
   onViewDetails: () => void;
 }
 
+const formatPrice = (n: number) =>
+  new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(n);
+
+const getStartingPrice = (services: ServiceSummary[]): string | null => {
+  const prices = services.map(s => s.price_min).filter((p): p is number => p !== null);
+  if (prices.length === 0) return null;
+  return `From ${formatPrice(Math.min(...prices))}`;
+};
+
 const VendorCard = ({
   name,
   category,
@@ -41,8 +58,10 @@ const VendorCard = ({
   rating,
   reviewCount,
   imageUrl,
+  services,
   onViewDetails
 }: VendorCardProps) => {
+  const startingPrice = getStartingPrice(services);
   return (
     <div
       className="bg-card border rounded-xl overflow-hidden transition-all hover:shadow-lg active:scale-[0.98] cursor-pointer"
@@ -64,9 +83,14 @@ const VendorCard = ({
           </div>
         </div>
         <p className="text-muted-foreground text-xs sm:text-sm mb-2">{category}</p>
-        <div className="flex items-center text-xs sm:text-sm text-muted-foreground">
-          <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
-          <span className="truncate">{location}</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center text-xs sm:text-sm text-muted-foreground min-w-0">
+            <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
+            <span className="truncate">{location}</span>
+          </div>
+          {startingPrice && (
+            <span className="text-xs font-medium text-primary shrink-0">{startingPrice}</span>
+          )}
         </div>
       </div>
     </div>
@@ -378,7 +402,13 @@ const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps
       imageUrl,
       images: gallery,
       description: profile.description || "No description provided yet.",
-      services: services.map(service => service.name),
+      openToTravel: profile.open_to_travel ?? false,
+      services: services.map(service => ({
+        name: service.name,
+        description: service.description,
+        price_min: service.price_min,
+        price_max: service.price_max,
+      })),
       contact: {
         email: profile.email || "Not provided",
         phone: profile.phone || "Not provided",

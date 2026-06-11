@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { TodoListItem, useTodo } from "@/context/TodoContext";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, MoreVertical, PlusCircle, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, MoreVertical, PlusCircle, Trash2, Users } from "lucide-react";
 import TodoItemComponent from "./TodoItem";
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
     reorderTodoItems,
     setAllCompleted,
     clearCompleted,
+    hasPlanner,
   } = useTodo();
   const [newItemText, setNewItemText] = useState("");
   const [itemFilter, setItemFilter] = useState<"all" | "todo" | "in_progress" | "done">("all");
@@ -56,6 +58,10 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
 
   const handleMarkCompleted = () => {
     updateTodoList(todoList.id, { isCompleted: !todoList.isCompleted });
+  };
+
+  const handleToggleShared = () => {
+    updateTodoList(todoList.id, { isShared: !todoList.isShared });
   };
 
   const handleStatusChange = (itemId: string, status: "todo" | "in_progress" | "done") => {
@@ -114,7 +120,15 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
           {/* Title and Menu */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-base sm:text-lg font-medium truncate">{todoList.title}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-medium truncate">{todoList.title}</h3>
+                {todoList.isShared && (
+                  <Badge variant="secondary" className="gap-1 text-xs shrink-0">
+                    <Users className="h-3 w-3" />
+                    Shared
+                  </Badge>
+                )}
+              </div>
               {todoList.description && (
                 <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 line-clamp-2">
                   {todoList.description}
@@ -132,6 +146,12 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   {todoList.isCompleted ? "Mark as Active" : "Mark as Completed"}
                 </DropdownMenuItem>
+                {hasPlanner && (
+                  <DropdownMenuItem onClick={handleToggleShared}>
+                    <Users className="mr-2 h-4 w-4" />
+                    {todoList.isShared ? "Make private" : "Share with planner"}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setAllCompleted(todoList.id, true)}>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Mark all done

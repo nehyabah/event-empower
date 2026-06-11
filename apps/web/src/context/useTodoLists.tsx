@@ -8,7 +8,8 @@ export interface TodoListsHook {
   todoLists: TodoListItem[];
   isLoading: boolean;
   error: string | null;
-  createTodoList: (title: string, description?: string) => Promise<void>;
+  hasPlanner: boolean;
+  createTodoList: (title: string, description?: string, isShared?: boolean) => Promise<void>;
   updateTodoList: (id: string, updates: Partial<TodoListItem>) => Promise<void>;
   deleteTodoList: (id: string) => Promise<void>;
   addTodoItem: (listId: string, text: string, status?: TodoItem["status"]) => Promise<void>;
@@ -36,6 +37,7 @@ const toLocalTodoList = (apiList: ApiTodoList): TodoListItem => ({
   description: apiList.description || undefined,
   createdAt: new Date(apiList.created_at),
   isCompleted: apiList.is_completed,
+  isShared: apiList.is_shared,
   items: (apiList.items || []).map(toLocalTodoItem).sort((a, b) => a.sortOrder - b.sortOrder),
 });
 
@@ -44,8 +46,9 @@ export const useTodoLists = (): TodoListsHook => {
   const [todoLists, setTodoLists] = useState<TodoListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasPlanner, setHasPlanner] = useState(false);
 
-  // Fetch todo lists on mount
+  // Fetch todo lists and planner link on mount
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -59,8 +62,12 @@ export const useTodoLists = (): TodoListsHook => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await userService.getTodoLists();
+        const [data, plannerLink] = await Promise.all([
+          userService.getTodoLists(),
+          userService.getPlannerLink().catch(() => null),
+        ]);
         setTodoLists(data.map(toLocalTodoList));
+        setHasPlanner(plannerLink !== null);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to fetch todo lists';
         setError(message);
@@ -73,9 +80,9 @@ export const useTodoLists = (): TodoListsHook => {
     fetchData();
   }, [authLoading, isAuthenticated]);
 
-  const createTodoList = useCallback(async (title: string, description?: string) => {
+  const createTodoList = useCallback(async (title: string, description?: string, isShared?: boolean) => {
     try {
-      const newList = await userService.createTodoList({ title, description });
+      const newList = await userService.createTodoList({ title, description, isShared });
       setTodoLists(prev => [...prev, toLocalTodoList(newList)]);
       toast.success("New list created", {
         description: `${title} has been added to your lists`
@@ -89,10 +96,11 @@ export const useTodoLists = (): TodoListsHook => {
 
   const updateTodoList = useCallback(async (id: string, updates: Partial<TodoListItem>) => {
     try {
-      const apiUpdates: { title?: string; description?: string | null; isCompleted?: boolean } = {};
+      const apiUpdates: { title?: string; description?: string | null; isCompleted?: boolean; isShared?: boolean } = {};
       if (updates.title !== undefined) apiUpdates.title = updates.title;
       if (updates.description !== undefined) apiUpdates.description = updates.description || null;
       if (updates.isCompleted !== undefined) apiUpdates.isCompleted = updates.isCompleted;
+      if (updates.isShared !== undefined) apiUpdates.isShared = updates.isShared;
 
       const updatedList = await userService.updateTodoList(id, apiUpdates);
       setTodoLists(prev =>
@@ -308,6 +316,7 @@ export const useTodoLists = (): TodoListsHook => {
     todoLists,
     isLoading,
     error,
+    hasPlanner,
     createTodoList,
     updateTodoList,
     deleteTodoList,

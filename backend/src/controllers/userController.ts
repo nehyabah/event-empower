@@ -72,12 +72,14 @@ const updateExpenseSchema = z.object({
 const createTodoListSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
+  isShared: z.boolean().optional(),
 });
 
 const updateTodoListSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   isCompleted: z.boolean().optional(),
+  isShared: z.boolean().optional(),
 });
 
 const createTodoItemSchema = z.object({
@@ -104,7 +106,7 @@ const publicRsvpSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(['confirmed', 'declined']),
-  guestCount: z.number().min(1).max(10).optional(),
+  guestCount: z.number().min(1).max(2).optional(),
   dietaryNotes: z.string().optional(),
 });
 
@@ -385,7 +387,11 @@ export const userController = {
         return;
       }
 
-      const list = await userService.createTodoList(req.user!.userId, validation.data);
+      const list = await userService.createTodoList(req.user!.userId, {
+        title: validation.data.title,
+        description: validation.data.description,
+        is_shared: validation.data.isShared,
+      });
       res.status(201).json(list);
     } catch (error) {
       next(error);
@@ -405,6 +411,7 @@ export const userController = {
         title: data.title,
         description: data.description,
         is_completed: data.isCompleted,
+        is_shared: data.isShared,
       });
 
       if (!list) {
@@ -593,6 +600,7 @@ export const userController = {
         partner2Name: event.partner2Name,
         eventDate: event.eventDate,
         venue: event.venue,
+        storySlug: event.storySlug,
       });
     } catch (error) {
       next(error);
@@ -640,6 +648,77 @@ export const userController = {
     try {
       const code = await userService.getRsvpCode(req.user!.userId);
       res.json({ rsvpCode: code });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== PROJECT ==========
+
+  async getProject(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const project = await userService.getProject(req.user!.userId);
+      res.json(project);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async addProjectVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        vendorProfileId: z.string().uuid(),
+        category: z.string().optional(),
+        status: z.enum(['inquired', 'quoted', 'booked', 'confirmed', 'cancelled']).optional(),
+        amount: z.number().min(0).optional(),
+        notes: z.string().optional(),
+      });
+      const data = schema.parse(req.body);
+      const pv = await userService.addProjectVendor(req.user!.userId, {
+        vendor_profile_id: data.vendorProfileId,
+        category: data.category,
+        status: data.status,
+        amount: data.amount,
+        notes: data.notes,
+      });
+      res.status(201).json(pv);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Vendor already on project') {
+        res.status(409).json({ error: 'Vendor already on project' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async updateProjectVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        status: z.enum(['inquired', 'quoted', 'booked', 'confirmed', 'cancelled']).optional(),
+        amount: z.number().min(0).nullable().optional(),
+        notes: z.string().nullable().optional(),
+        category: z.string().nullable().optional(),
+      });
+      const data = schema.parse(req.body);
+      const pv = await userService.updateProjectVendor(req.user!.userId, String(req.params.id), data);
+      if (!pv) {
+        res.status(404).json({ error: 'Project vendor not found' });
+        return;
+      }
+      res.json(pv);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async removeProjectVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await userService.removeProjectVendor(req.user!.userId, String(req.params.id));
+      if (!deleted) {
+        res.status(404).json({ error: 'Project vendor not found' });
+        return;
+      }
+      res.status(204).send();
     } catch (error) {
       next(error);
     }

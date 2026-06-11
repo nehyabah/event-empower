@@ -151,6 +151,7 @@ export interface TodoList {
   title: string;
   description: string | null;
   is_completed: boolean;
+  is_shared: boolean;
   created_at: string;
   updated_at: string;
   items: TodoItem[];
@@ -159,12 +160,14 @@ export interface TodoList {
 export interface CreateTodoListInput {
   title: string;
   description?: string;
+  isShared?: boolean;
 }
 
 export interface UpdateTodoListInput {
   title?: string;
   description?: string | null;
   isCompleted?: boolean;
+  isShared?: boolean;
 }
 
 export interface CreateTodoItemInput {

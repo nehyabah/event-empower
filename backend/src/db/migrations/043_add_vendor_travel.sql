@@ -1,0 +1,1 @@
+ALTER TABLE vendor_profiles ADD COLUMN open_to_travel BOOLEAN NOT NULL DEFAULT FALSE;

@@ -13,6 +13,7 @@ const upload = multer({
 router.get('/me', authenticate, requireUserType('vendor'), vendorController.getMyVendorProfile);
 router.patch('/me', authenticate, requireUserType('vendor'), vendorController.upsertMyVendorProfile);
 router.get('/dashboard', authenticate, requireUserType('vendor'), vendorController.getVendorDashboard);
+router.get('/me/projects', authenticate, requireUserType('vendor'), vendorController.getVendorProjects);
 router.post('/bookings', authenticate, requireUserType('vendor'), vendorController.createVendorBooking);
 router.patch('/bookings/:id', authenticate, requireUserType('vendor'), vendorController.updateVendorBooking);
 router.get('/inquiries', authenticate, requireUserType('vendor'), vendorController.listVendorInquiries);

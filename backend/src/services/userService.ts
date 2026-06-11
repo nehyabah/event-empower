@@ -3,6 +3,8 @@ import { GuestModel, Guest, CreateGuestInput, UpdateGuestInput, GuestStatus } fr
 import { ExpenseModel, Expense, CreateExpenseInput, UpdateExpenseInput, ExpenseCategory } from '../models/Expense.js';
 import { TodoListModel, TodoItemModel, TodoList, TodoItem, CreateTodoListInput, UpdateTodoListInput, CreateTodoItemInput, UpdateTodoItemInput } from '../models/TodoList.js';
 import { PlannerClientModel, PlannerLink } from '../models/PlannerClient.js';
+import { ProjectVendorModel, ProjectVendor, CreateProjectVendorInput, UpdateProjectVendorInput } from '../models/ProjectVendor.js';
+import { CoupleStoryModel } from '../models/CoupleStory.js';
 
 export const userService = {
   // ========== USER EVENT ==========
@@ -27,6 +29,45 @@ export const userService = {
       ...input,
       user_id: userId,
     });
+  },
+
+  // ========== PROJECT (event + planner + vendor roster) ==========
+
+  async getProject(userId: string): Promise<{ event: UserEvent; vendors: ProjectVendor[] } | null> {
+    const event = await UserEventModel.findByUserId(userId);
+    if (!event) return null;
+    const vendors = await ProjectVendorModel.findByEventId(event.id);
+    return { event, vendors };
+  },
+
+  async addProjectVendor(userId: string, input: Omit<CreateProjectVendorInput, 'event_id' | 'added_by'>): Promise<ProjectVendor> {
+    const event = await UserEventModel.findByUserId(userId);
+    if (!event) throw new Error('No event found for user');
+
+    const existing = await ProjectVendorModel.findByEventAndVendor(event.id, input.vendor_profile_id);
+    if (existing) throw new Error('Vendor already on project');
+
+    return ProjectVendorModel.create({ ...input, event_id: event.id, added_by: userId });
+  },
+
+  async updateProjectVendor(userId: string, projectVendorId: string, input: UpdateProjectVendorInput): Promise<ProjectVendor | null> {
+    const event = await UserEventModel.findByUserId(userId);
+    if (!event) return null;
+
+    const pv = await ProjectVendorModel.findById(projectVendorId);
+    if (!pv || pv.event_id !== event.id) return null;
+
+    return ProjectVendorModel.update(projectVendorId, input);
+  },
+
+  async removeProjectVendor(userId: string, projectVendorId: string): Promise<boolean> {
+    const event = await UserEventModel.findByUserId(userId);
+    if (!event) return false;
+
+    const pv = await ProjectVendorModel.findById(projectVendorId);
+    if (!pv || pv.event_id !== event.id) return false;
+
+    return ProjectVendorModel.delete(projectVendorId);
   },
 
   // ========== GUESTS ==========
@@ -285,17 +326,20 @@ export const userService = {
 
   // ========== PUBLIC RSVP ==========
 
-  async getEventByRsvpCode(rsvpCode: string): Promise<{ userId: string; partner1Name: string | null; partner2Name: string | null; eventDate: Date | null; venue: string | null } | null> {
+  async getEventByRsvpCode(rsvpCode: string): Promise<{ userId: string; partner1Name: string | null; partner2Name: string | null; eventDate: Date | null; venue: string | null; storySlug: string | null } | null> {
     const event = await UserEventModel.findByRsvpCode(rsvpCode);
     if (!event) {
       return null;
     }
+    const story = await CoupleStoryModel.findByUserId(event.user_id);
+    const storySlug = (story?.site_published && story?.slug) ? story.slug : null;
     return {
       userId: event.user_id,
       partner1Name: event.partner1_name,
       partner2Name: event.partner2_name,
       eventDate: event.event_date,
       venue: event.venue,
+      storySlug,
     };
   },
 

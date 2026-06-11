@@ -15,6 +15,7 @@ const InvitationPage = () => {
     partner2Name: string;
     eventDate: string;
     venue: string;
+    storySlug: string | null;
   } | null>(null);
 
   // Get fallback data from localStorage
@@ -54,6 +55,7 @@ const InvitationPage = () => {
             partner2Name: info.partner2Name || "Partner 2",
             eventDate,
             venue: info.venue || "Venue TBD",
+            storySlug: info.storySlug || null,
           });
         }
       } catch (error) {
@@ -131,6 +133,7 @@ const InvitationPage = () => {
           isFlipped={isFlipped}
           onFlip={() => setIsFlipped(!isFlipped)}
           rsvpCode={rsvpCode}
+          storySlug={eventData?.storySlug || null}
         />
       </div>
 

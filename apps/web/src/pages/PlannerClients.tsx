@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,21 +14,86 @@ import {
   Mail,
   Phone,
   Heart,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  Circle,
+  Trash2,
+  PlusCircle,
+  ClipboardList,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePlannerClients } from "@/hooks/usePlannerClients";
-import { PlannerClient } from "@/services/api/plannerService";
+import { PlannerClient, ClientTodoList, ClientTodoItem, plannerService } from "@/services/api/plannerService";
 
 const PlannerClients = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { clients, isLoading, error, activeClients, upcomingClients, completedClients, getClientName, createClient, createInvite } = usePlannerClients();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Shared todos panel state
+  const [todosClient, setTodosClient] = useState<PlannerClient | null>(null);
+  const [clientTodos, setClientTodos] = useState<ClientTodoList[]>([]);
+  const [todosLoading, setTodosLoading] = useState(false);
+  const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({});
+
+  const openClientTodos = useCallback(async (client: PlannerClient) => {
+    setTodosClient(client);
+    setTodosLoading(true);
+    try {
+      const todos = await plannerService.getClientTodos(client.id);
+      setClientTodos(todos);
+    } catch {
+      toast.error("Failed to load shared todos");
+    } finally {
+      setTodosLoading(false);
+    }
+  }, []);
+
+  const handleToggleItem = useCallback(async (clientId: string, list: ClientTodoList, item: ClientTodoItem) => {
+    try {
+      const updated = await plannerService.toggleClientTodoItem(clientId, list.id, item.id);
+      setClientTodos(prev => prev.map(l =>
+        l.id === list.id
+          ? { ...l, items: l.items.map(i => i.id === item.id ? updated : i) }
+          : l
+      ));
+    } catch {
+      toast.error("Failed to update item");
+    }
+  }, []);
+
+  const handleDeleteItem = useCallback(async (clientId: string, list: ClientTodoList, item: ClientTodoItem) => {
+    try {
+      await plannerService.deleteClientTodoItem(clientId, list.id, item.id);
+      setClientTodos(prev => prev.map(l =>
+        l.id === list.id
+          ? { ...l, items: l.items.filter(i => i.id !== item.id) }
+          : l
+      ));
+    } catch {
+      toast.error("Failed to delete item");
+    }
+  }, []);
+
+  const handleAddItem = useCallback(async (clientId: string, list: ClientTodoList) => {
+    const text = (newItemTexts[list.id] || "").trim();
+    if (!text) return;
+    try {
+      const newItem = await plannerService.addClientTodoItem(clientId, list.id, text);
+      setClientTodos(prev => prev.map(l =>
+        l.id === list.id ? { ...l, items: [...l.items, newItem] } : l
+      ));
+      setNewItemTexts(prev => ({ ...prev, [list.id]: "" }));
+    } catch {
+      toast.error("Failed to add item");
+    }
+  }, [newItemTexts]);
   const [newClient, setNewClient] = useState({
     partner1Name: "",
     partner2Name: "",
@@ -113,11 +178,19 @@ const PlannerClients = () => {
             <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
             <span>{client.venue || 'Venue TBD'}</span>
           </div>
-          <div className="pt-2 flex justify-between">
-            <span className="font-medium">Budget: {formatBudget(client.budget)}</span>
-            <Button variant="outline" size="sm">
-              View
-            </Button>
+          <div className="pt-2 flex justify-between gap-2">
+            <span className="font-medium self-center">Budget: {formatBudget(client.budget)}</span>
+            <div className="flex gap-2">
+              {client.user_id && (
+                <Button variant="outline" size="sm" onClick={() => openClientTodos(client)} className="gap-1">
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  Todos
+                </Button>
+              )}
+              <Button variant="outline" size="sm">
+                View
+              </Button>
+            </div>
           </div>
           <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
             <span>
@@ -302,6 +375,108 @@ const PlannerClients = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Shared Todos Sheet */}
+      <Sheet open={!!todosClient} onOpenChange={(open) => { if (!open) setTodosClient(null); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Shared Todos — {todosClient ? getClientName(todosClient) : ""}
+            </SheetTitle>
+          </SheetHeader>
+
+          {todosLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : clientTodos.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              No shared lists yet. Ask your client to share a list with you.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {clientTodos.map(list => {
+                const completed = list.items.filter(i => i.completed).length;
+                const total = list.items.length;
+                return (
+                  <div key={list.id} className="rounded-lg border p-4 space-y-3">
+                    <div>
+                      <h3 className="font-medium">{list.title}</h3>
+                      {list.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{list.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all"
+                            style={{ width: total > 0 ? `${Math.round((completed / total) * 100)}%` : "0%" }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0">{completed}/{total}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                      {list.items.length === 0 ? (
+                        <p className="text-xs text-muted-foreground py-2">No items yet.</p>
+                      ) : (
+                        list.items.map(item => (
+                          <div key={item.id} className="flex items-center gap-2 group">
+                            <button
+                              onClick={() => todosClient && handleToggleItem(todosClient.id, list, item)}
+                              className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              {item.completed
+                                ? <CheckCircle2 className="h-4 w-4 text-primary" />
+                                : <Circle className="h-4 w-4" />
+                              }
+                            </button>
+                            <span className={`flex-1 text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                              {item.text}
+                            </span>
+                            <button
+                              onClick={() => todosClient && handleDeleteItem(todosClient.id, list, item)}
+                              className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 border-t">
+                      <PlusCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <input
+                        value={newItemTexts[list.id] || ""}
+                        onChange={(e) => setNewItemTexts(prev => ({ ...prev, [list.id]: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            todosClient && handleAddItem(todosClient.id, list);
+                          }
+                        }}
+                        placeholder="Add a task..."
+                        className="flex-1 bg-transparent text-sm outline-none min-w-0 py-1"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => todosClient && handleAddItem(todosClient.id, list)}
+                        disabled={!(newItemTexts[list.id] || "").trim()}
+                        className="h-7 px-2 text-xs shrink-0"
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="sm:max-w-[640px]">

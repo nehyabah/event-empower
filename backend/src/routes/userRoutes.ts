@@ -13,6 +13,12 @@ router.get('/dashboard', userController.getDashboard);
 router.get('/planner', userController.getPlannerLink);
 router.get('/rsvp-code', userController.getRsvpCode);
 
+// Project (event + planner + vendor roster)
+router.get('/project', userController.getProject);
+router.post('/project/vendors', userController.addProjectVendor);
+router.patch('/project/vendors/:id', userController.updateProjectVendor);
+router.delete('/project/vendors/:id', userController.removeProjectVendor);
+
 // User Event (wedding configuration)
 router.get('/event', userController.getUserEvent);
 router.patch('/event', userController.updateUserEvent);

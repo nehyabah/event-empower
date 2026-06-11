@@ -7,6 +7,7 @@ export interface PlannerClient {
   id: string;
   planner_id: string;
   user_id: string | null;
+  event_id: string | null;
   partner1_name: string;
   partner2_name: string;
   email: string;
@@ -54,6 +55,7 @@ export interface CreatePlannerClientInput {
 
 export interface UpdatePlannerClientInput {
   user_id?: string | null;
+  event_id?: string | null;
   partner1_name?: string;
   partner2_name?: string;
   email?: string;
@@ -181,6 +183,10 @@ export const PlannerClientModel = {
     if (input.user_id !== undefined) {
       fields.push(`user_id = $${paramIndex++}`);
       values.push(input.user_id || null);
+    }
+    if (input.event_id !== undefined) {
+      fields.push(`event_id = $${paramIndex++}`);
+      values.push(input.event_id || null);
     }
     if (input.partner1_name !== undefined) {
       fields.push(`partner1_name = $${paramIndex++}`);

@@ -2,7 +2,9 @@ import { randomBytes } from 'crypto';
 import { PlannerClientModel, PlannerClient, CreatePlannerClientInput, UpdatePlannerClientInput } from '../models/PlannerClient.js';
 import { PlannerTaskModel, PlannerTask, CreatePlannerTaskInput, UpdatePlannerTaskInput } from '../models/PlannerTask.js';
 import { PlannerEventModel, PlannerEvent, CreatePlannerEventInput, UpdatePlannerEventInput } from '../models/PlannerEvent.js';
-import { UserEventModel } from '../models/UserEvent.js';
+import { UserEventModel, UserEvent } from '../models/UserEvent.js';
+import { TodoListModel, TodoItemModel, TodoList, TodoItem } from '../models/TodoList.js';
+import { ProjectVendorModel, ProjectVendor, CreateProjectVendorInput, UpdateProjectVendorInput } from '../models/ProjectVendor.js';
 
 export const plannerService = {
   // ========== CLIENTS ==========
@@ -257,6 +259,109 @@ export const plannerService = {
     };
   },
 
+  // ========== CLIENT PROJECT ==========
+
+  async getClientProject(plannerId: string, clientId: string): Promise<{ event: UserEvent; vendors: ProjectVendor[] } | null> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.event_id) return null;
+
+    const event = await UserEventModel.findById(client.event_id);
+    if (!event) return null;
+
+    const vendors = await ProjectVendorModel.findByEventId(event.id);
+    return { event, vendors };
+  },
+
+  async addClientProjectVendor(plannerId: string, clientId: string, input: Omit<CreateProjectVendorInput, 'event_id' | 'added_by'>): Promise<ProjectVendor> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.event_id) throw new Error('Client project not found');
+
+    return ProjectVendorModel.create({
+      ...input,
+      event_id: client.event_id,
+      added_by: plannerId,
+    });
+  },
+
+  async updateClientProjectVendor(plannerId: string, clientId: string, projectVendorId: string, input: UpdateProjectVendorInput): Promise<ProjectVendor | null> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.event_id) return null;
+
+    const pv = await ProjectVendorModel.findById(projectVendorId);
+    if (!pv || pv.event_id !== client.event_id) return null;
+
+    return ProjectVendorModel.update(projectVendorId, input);
+  },
+
+  async removeClientProjectVendor(plannerId: string, clientId: string, projectVendorId: string): Promise<boolean> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.event_id) return false;
+
+    const pv = await ProjectVendorModel.findById(projectVendorId);
+    if (!pv || pv.event_id !== client.event_id) return false;
+
+    return ProjectVendorModel.delete(projectVendorId);
+  },
+
+  // ========== CLIENT TODO LISTS (shared) ==========
+
+  async getClientSharedTodos(plannerId: string, clientId: string): Promise<TodoList[]> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return [];
+    return TodoListModel.findSharedByUserId(client.user_id);
+  },
+
+  async addClientTodoItem(plannerId: string, clientId: string, listId: string, input: { text: string; status?: 'todo' | 'in_progress' | 'done' }): Promise<TodoItem> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) throw new Error('Client not found or not linked');
+
+    const list = await TodoListModel.findById(listId);
+    if (!list || list.user_id !== client.user_id || !list.is_shared) {
+      throw new Error('Todo list not found');
+    }
+
+    return TodoItemModel.create({ list_id: listId, text: input.text, status: input.status });
+  },
+
+  async toggleClientTodoItem(plannerId: string, clientId: string, itemId: string): Promise<TodoItem | null> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return null;
+
+    const item = await TodoItemModel.findById(itemId);
+    if (!item) return null;
+
+    const list = await TodoListModel.findById(item.list_id);
+    if (!list || list.user_id !== client.user_id || !list.is_shared) return null;
+
+    return TodoItemModel.toggleCompleted(itemId);
+  },
+
+  async updateClientTodoItem(plannerId: string, clientId: string, itemId: string, input: { text?: string; status?: 'todo' | 'in_progress' | 'done'; completed?: boolean }): Promise<TodoItem | null> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return null;
+
+    const item = await TodoItemModel.findById(itemId);
+    if (!item) return null;
+
+    const list = await TodoListModel.findById(item.list_id);
+    if (!list || list.user_id !== client.user_id || !list.is_shared) return null;
+
+    return TodoItemModel.update(itemId, input);
+  },
+
+  async deleteClientTodoItem(plannerId: string, clientId: string, itemId: string): Promise<boolean> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return false;
+
+    const item = await TodoItemModel.findById(itemId);
+    if (!item) return false;
+
+    const list = await TodoListModel.findById(item.list_id);
+    if (!list || list.user_id !== client.user_id || !list.is_shared) return false;
+
+    return TodoItemModel.delete(itemId);
+  },
+
   async acceptInvite(userId: string, inviteCode: string): Promise<PlannerClient> {
     const existingLink = await PlannerClientModel.findByUserId(userId);
     if (existingLink) {
@@ -284,7 +389,8 @@ export const plannerService = {
       throw new Error('Failed to accept invite');
     }
 
-    await UserEventModel.upsert({
+    // Upsert the couple's canonical event record
+    const userEvent = await UserEventModel.upsert({
       user_id: userId,
       partner1_name: updated.partner1_name,
       partner2_name: updated.partner2_name,
@@ -294,6 +400,12 @@ export const plannerService = {
       guest_count_estimate: updated.guest_count || 0,
       notes: updated.notes || undefined,
     });
+
+    // Wire: event.planner_id → this planner; planner_client.event_id → this event
+    await Promise.all([
+      UserEventModel.setPlanner(userId, client.planner_id),
+      PlannerClientModel.update(client.id, { event_id: userEvent.id }),
+    ]);
 
     return updated;
   },

@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(npm run migrate:*)",
-      "Bash(echo.:*)"
+      "Bash(echo.:*)",
+      "Bash(npm run:*)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c \"taskkill /PID 27516 /F\")",
+      "Bash(kill 27516)",
+      "Bash(__NEW_LINE_67cb2adbbfea6ed2__ FILE=\"/c/Users/NehemiahAbah/OneDrive - miagen.com/Desktop/event-empower/apps/web/src/components/auth/AuthModal.tsx\")",
+      "Bash(sed -i '/<Sparkles className=\"\"w-5 h-5 text-wedding-gold\"\" \\\\/>/d' \"$FILE\")",
+      "Bash(sed -i 's/Ac 2024 àjọyọ̀ Inc\\\\./© 2026 àjọyọ̀ Inc./g' \"$FILE\")"
     ]
   }
 }

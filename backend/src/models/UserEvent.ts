@@ -3,6 +3,7 @@ import { query, queryOne } from '../config/database.js';
 export interface UserEvent {
   id: string;
   user_id: string;
+  planner_id: string | null;
   partner1_name: string | null;
   partner2_name: string | null;
   event_date: Date | null;
@@ -140,6 +141,20 @@ export const UserEventModel = {
       return updated!;
     }
     return this.create(input);
+  },
+
+  async setPlanner(userId: string, plannerId: string | null): Promise<UserEvent | null> {
+    return queryOne<UserEvent>(
+      `UPDATE user_events SET planner_id = $1, updated_at = NOW() WHERE user_id = $2 RETURNING *`,
+      [plannerId, userId]
+    );
+  },
+
+  async findByPlannerId(plannerId: string): Promise<UserEvent[]> {
+    return query<UserEvent>(
+      'SELECT * FROM user_events WHERE planner_id = $1 ORDER BY event_date ASC NULLS LAST',
+      [plannerId]
+    );
   },
 
   async delete(userId: string): Promise<boolean> {

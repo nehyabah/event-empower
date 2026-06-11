@@ -14,6 +14,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   price: z.string().optional(),
   link: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal("")),
+  imageUrl: z.string().url({ message: "Please enter a valid image URL" }).optional().or(z.literal("")),
   priority: z.enum(["high", "medium", "low"])
 });
 
@@ -32,6 +33,7 @@ const WishlistForm = ({ onSuccess }: WishlistFormProps) => {
       name: "",
       price: "",
       link: "",
+      imageUrl: "",
       priority: "medium"
     }
   });
@@ -41,6 +43,7 @@ const WishlistForm = ({ onSuccess }: WishlistFormProps) => {
       name: values.name,
       price: values.price,
       link: values.link,
+      imageUrl: values.imageUrl || undefined,
       priority: values.priority
     });
     
@@ -89,15 +92,29 @@ const WishlistForm = ({ onSuccess }: WishlistFormProps) => {
               name="link"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Link (optional)</FormLabel>
+                  <FormLabel>Buy link (optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com/product" {...field} />
+                    <Input placeholder="https://shop.com/product" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Item image URL (optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com/image.jpg" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="priority"
