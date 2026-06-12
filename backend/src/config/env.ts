@@ -21,6 +21,9 @@ const envSchema = z.object({
   STORAGE_SECRET_KEY: z.string().optional(),
   STORAGE_REGION: z.string().default('us-east-1'),
   STORAGE_PUBLIC_URL: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  APP_URL: z.string().default('http://localhost:8083'),
+  EMAIL_FROM: z.string().default('Planr <onboarding@resend.dev>'),
 });
 
 const parsed = envSchema.safeParse(process.env);

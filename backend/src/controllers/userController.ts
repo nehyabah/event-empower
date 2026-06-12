@@ -653,6 +653,21 @@ export const userController = {
     }
   },
 
+  // ========== WORKSPACE ==========
+
+  async getWorkspace(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const workspace = await userService.getWorkspace(req.user!.userId);
+      if (!workspace) {
+        res.status(404).json({ error: 'No event found' });
+        return;
+      }
+      res.json(workspace);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ========== PROJECT ==========
 
   async getProject(req: Request, res: Response, next: NextFunction): Promise<void> {

@@ -7,6 +7,16 @@ const acceptInviteSchema = z.object({
 });
 
 export const invitationController = {
+  async previewInvite(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const code = req.params.code.trim().toUpperCase();
+      const preview = await plannerService.previewInvite(code);
+      res.json(preview);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async acceptInvite(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const input = acceptInviteSchema.parse(req.body);

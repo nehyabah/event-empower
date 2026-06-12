@@ -175,6 +175,20 @@ export interface VendorProfileInput {
   }>;
 }
 
+export interface VendorWorkspaceProject {
+  id: string;
+  event_id: string;
+  category: string | null;
+  status: 'inquired' | 'quoted' | 'booked' | 'confirmed' | 'cancelled';
+  amount: number | null;
+  notes: string | null;
+  couple_names: string | null;
+  event_date: string | null;
+  venue: string | null;
+  planner_name: string | null;
+  planner_email: string | null;
+}
+
 export const vendorService = {
   async getVendors(): Promise<VendorDetails[]> {
     const response = await apiClient.get<VendorDetails[]>("/vendors");
@@ -330,6 +344,14 @@ export const vendorService = {
       throw new Error("Failed to send message");
     }
     return response.data;
+  },
+
+  // ========== VENDOR WORKSPACE ==========
+
+  async getVendorWorkspace(): Promise<VendorWorkspaceProject[]> {
+    const response = await apiClient.get<VendorWorkspaceProject[]>('/vendors/workspace');
+    if (response.error) throw new Error(response.error);
+    return response.data || [];
   },
 
   // ========== CLIENT INQUIRIES ==========

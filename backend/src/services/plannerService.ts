@@ -5,6 +5,10 @@ import { PlannerEventModel, PlannerEvent, CreatePlannerEventInput, UpdatePlanner
 import { UserEventModel, UserEvent } from '../models/UserEvent.js';
 import { TodoListModel, TodoItemModel, TodoList, TodoItem } from '../models/TodoList.js';
 import { ProjectVendorModel, ProjectVendor, CreateProjectVendorInput, UpdateProjectVendorInput } from '../models/ProjectVendor.js';
+import { GuestModel } from '../models/Guest.js';
+import { VisionBoardItemModel, VisionBoardItem, CreateVisionBoardItemInput, UpdateVisionBoardItemInput } from '../models/VisionBoardItem.js';
+import { query, queryOne } from '../config/database.js';
+import { emailService } from './emailService.js';
 
 export const plannerService = {
   // ========== CLIENTS ==========
@@ -252,6 +256,22 @@ export const plannerService = {
       throw new Error('Failed to create invite');
     }
 
+    // Send email if client has an email address on file
+    if (client.email) {
+      const planner = await queryOne<{ name: string }>('SELECT name FROM users WHERE id = $1', [plannerId]);
+      const plannerName = planner?.name || 'Your planner';
+      const toName = [client.partner1_name, client.partner2_name].filter(Boolean).join(' & ') || '';
+      await emailService.sendPlannerInvite({
+        toEmail: client.email,
+        toName,
+        plannerName,
+        inviteCode,
+      }).catch((err) => {
+        // Non-fatal: log but don't block the response
+        console.error('[createInvite] email send failed:', err);
+      });
+    }
+
     return {
       inviteCode: updated.invite_code || inviteCode,
       inviteStatus: updated.invite_status || 'pending',
@@ -259,16 +279,67 @@ export const plannerService = {
     };
   },
 
+  async previewInvite(inviteCode: string): Promise<{ plannerName: string; coupleName: string }> {
+    const client = await PlannerClientModel.findByInviteCode(inviteCode);
+    if (!client) throw new Error('Invalid invite code');
+    if (client.invite_status === 'accepted') throw new Error('Invite already accepted');
+    if (client.invite_status === 'revoked' || client.invite_status === 'expired') throw new Error('Invite is no longer valid');
+
+    const planner = await queryOne<{ name: string }>('SELECT name FROM users WHERE id = $1', [client.planner_id]);
+    const coupleName = [client.partner1_name, client.partner2_name].filter(Boolean).join(' & ') || 'New couple';
+    return {
+      plannerName: planner?.name || 'Your planner',
+      coupleName,
+    };
+  },
+
+  // ========== CLIENT WORKSPACE ==========
+
+  async getClientWorkspace(plannerId: string, clientId: string) {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return null;
+    const event = await UserEventModel.findByUserId(client.user_id);
+    if (!event) return null;
+    const [vendors, sharedTodos, guestStats] = await Promise.all([
+      query<{
+        id: string; vendor_id: string; business_name: string | null;
+        vendor_category: string | null; status: string;
+        amount: number | null; notes: string | null;
+      }>(
+        `SELECT vb.id, vb.vendor_id, vp.business_name, vp.category AS vendor_category,
+                vb.status, vb.total_amount AS amount, vb.notes
+         FROM vendor_bookings vb
+         LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
+         WHERE vb.client_id = $1`,
+        [client.user_id]
+      ),
+      TodoListModel.findSharedByUserId(client.user_id),
+      GuestModel.countByUserId(client.user_id),
+    ]);
+    return { client, event, vendors, sharedTodos, guestStats };
+  },
+
   // ========== CLIENT PROJECT ==========
 
-  async getClientProject(plannerId: string, clientId: string): Promise<{ event: UserEvent; vendors: ProjectVendor[] } | null> {
+  async getClientProject(plannerId: string, clientId: string): Promise<{ event: UserEvent; vendors: unknown[] } | null> {
     const client = await this.getClient(clientId, plannerId);
-    if (!client || !client.event_id) return null;
+    if (!client || !client.user_id) return null;
 
-    const event = await UserEventModel.findById(client.event_id);
+    const event = await UserEventModel.findByUserId(client.user_id);
     if (!event) return null;
 
-    const vendors = await ProjectVendorModel.findByEventId(event.id);
+    const vendors = await query<{
+      id: string; vendor_id: string; business_name: string | null;
+      vendor_category: string | null; status: string;
+      amount: number | null; notes: string | null;
+    }>(
+      `SELECT vb.id, vb.vendor_id, vp.business_name, vp.category AS vendor_category,
+              vb.status, vb.total_amount AS amount, vb.notes
+       FROM vendor_bookings vb
+       LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
+       WHERE vb.client_id = $1`,
+      [client.user_id]
+    );
     return { event, vendors };
   },
 
@@ -362,21 +433,70 @@ export const plannerService = {
     return TodoItemModel.delete(itemId);
   },
 
-  async acceptInvite(userId: string, inviteCode: string): Promise<PlannerClient> {
-    const existingLink = await PlannerClientModel.findByUserId(userId);
-    if (existingLink) {
-      throw new Error('User already linked');
-    }
+  // ========== CLIENT VISION BOARD (shared) ==========
 
+  async getClientVisionBoard(plannerId: string, clientId: string): Promise<VisionBoardItem[]> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return [];
+    return VisionBoardItemModel.findByUserId(client.user_id);
+  },
+
+  async addClientVisionBoardItem(plannerId: string, clientId: string, input: Omit<CreateVisionBoardItemInput, 'user_id' | 'added_by'>): Promise<VisionBoardItem> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) throw new Error('Client not found or not linked');
+    return VisionBoardItemModel.create({ ...input, user_id: client.user_id, added_by: plannerId });
+  },
+
+  async updateClientVisionBoardItem(plannerId: string, clientId: string, itemId: string, input: UpdateVisionBoardItemInput): Promise<VisionBoardItem | null> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return null;
+    const item = await VisionBoardItemModel.findById(itemId);
+    if (!item || item.user_id !== client.user_id) return null;
+    return VisionBoardItemModel.update(itemId, client.user_id, input);
+  },
+
+  async deleteClientVisionBoardItem(plannerId: string, clientId: string, itemId: string): Promise<boolean> {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return false;
+    const item = await VisionBoardItemModel.findById(itemId);
+    if (!item || item.user_id !== client.user_id) return false;
+    await VisionBoardItemModel.delete(itemId, client.user_id);
+    return true;
+  },
+
+  async acceptInvite(userId: string, inviteCode: string): Promise<PlannerClient> {
     const client = await PlannerClientModel.findByInviteCode(inviteCode);
     if (!client) {
       throw new Error('Invalid invite code');
     }
+    if (client.invite_status === 'revoked' || client.invite_status === 'expired') {
+      throw new Error('Invite is no longer valid');
+    }
+
+    // Idempotent: if this user is already linked to this client record, return it
+    if (client.user_id === userId && client.invite_status === 'accepted') {
+      await UserEventModel.upsert({
+        user_id: userId,
+        partner1_name: client.partner1_name,
+        partner2_name: client.partner2_name,
+        event_date: client.event_date || undefined,
+        venue: client.venue || undefined,
+        total_budget: client.budget || 0,
+        guest_count_estimate: client.guest_count || 0,
+        notes: client.notes || undefined,
+      });
+      return client;
+    }
+
+    // If the invite was accepted by a different user, block it
     if (client.invite_status === 'accepted') {
       throw new Error('Invite already accepted');
     }
-    if (client.invite_status === 'revoked' || client.invite_status === 'expired') {
-      throw new Error('Invite is no longer valid');
+
+    // If this user is already linked to a different planner, block it
+    const existingLink = await PlannerClientModel.findByUserId(userId);
+    if (existingLink && existingLink.id !== client.id) {
+      throw new Error('You are already linked to a planner');
     }
 
     const updated = await PlannerClientModel.update(client.id, {
@@ -389,8 +509,8 @@ export const plannerService = {
       throw new Error('Failed to accept invite');
     }
 
-    // Upsert the couple's canonical event record
-    const userEvent = await UserEventModel.upsert({
+    // Create or update the couple's event record from the planner's client data
+    await UserEventModel.upsert({
       user_id: userId,
       partner1_name: updated.partner1_name,
       partner2_name: updated.partner2_name,
@@ -400,12 +520,6 @@ export const plannerService = {
       guest_count_estimate: updated.guest_count || 0,
       notes: updated.notes || undefined,
     });
-
-    // Wire: event.planner_id → this planner; planner_client.event_id → this event
-    await Promise.all([
-      UserEventModel.setPlanner(userId, client.planner_id),
-      PlannerClientModel.update(client.id, { event_id: userEvent.id }),
-    ]);
 
     return updated;
   },

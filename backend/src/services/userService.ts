@@ -1,4 +1,5 @@
 import { UserEventModel, UserEvent, CreateUserEventInput, UpdateUserEventInput } from '../models/UserEvent.js';
+import { query } from '../config/database.js';
 import { GuestModel, Guest, CreateGuestInput, UpdateGuestInput, GuestStatus } from '../models/Guest.js';
 import { ExpenseModel, Expense, CreateExpenseInput, UpdateExpenseInput, ExpenseCategory } from '../models/Expense.js';
 import { TodoListModel, TodoItemModel, TodoList, TodoItem, CreateTodoListInput, UpdateTodoListInput, CreateTodoItemInput, UpdateTodoItemInput } from '../models/TodoList.js';
@@ -38,6 +39,29 @@ export const userService = {
     if (!event) return null;
     const vendors = await ProjectVendorModel.findByEventId(event.id);
     return { event, vendors };
+  },
+
+  async getWorkspace(userId: string) {
+    const event = await UserEventModel.findByUserId(userId);
+    if (!event) return null;
+    const [planner, vendors, sharedTodos, guestStats] = await Promise.all([
+      PlannerClientModel.findPlannerLinkByUserId(userId),
+      query<{
+        id: string; vendor_id: string; business_name: string | null;
+        vendor_category: string | null; status: string;
+        amount: number | null; notes: string | null;
+      }>(
+        `SELECT vb.id, vb.vendor_id, vp.business_name, vp.category AS vendor_category,
+                vb.status, vb.total_amount AS amount, vb.notes
+         FROM vendor_bookings vb
+         LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
+         WHERE vb.client_id = $1`,
+        [userId]
+      ),
+      TodoListModel.findSharedByUserId(userId),
+      GuestModel.countByUserId(userId),
+    ]);
+    return { event, planner: planner || null, vendors, sharedTodos, guestStats };
   },
 
   async addProjectVendor(userId: string, input: Omit<CreateProjectVendorInput, 'event_id' | 'added_by'>): Promise<ProjectVendor> {

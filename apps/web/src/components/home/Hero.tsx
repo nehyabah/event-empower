@@ -150,7 +150,7 @@ const Hero = () => {
                   <Gem className="w-6 h-6 text-white" strokeWidth={1.4} />
                 </div>
                 <h3 className="text-2xl font-serif font-medium mb-3">
-                  Vision Board
+                  Mood Board
                 </h3>
                 <p className="text-zinc-400 leading-relaxed mb-6">
                   Access premium templates and style guides. Visualize your

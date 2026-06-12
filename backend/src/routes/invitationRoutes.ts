@@ -4,9 +4,10 @@ import { invitationController } from '../controllers/invitationController.js';
 
 const router = Router();
 
-router.use(authenticate);
-router.use(requireUserType('client'));
+// Public: anyone with the code can preview (needed before login)
+router.get('/preview/:code', invitationController.previewInvite);
 
-router.post('/accept', invitationController.acceptInvite);
+// Authenticated client: accept the invite
+router.post('/accept', authenticate, requireUserType('client'), invitationController.acceptInvite);
 
 export default router;

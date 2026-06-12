@@ -13,6 +13,9 @@ router.get('/dashboard', userController.getDashboard);
 router.get('/planner', userController.getPlannerLink);
 router.get('/rsvp-code', userController.getRsvpCode);
 
+// Workspace (combined view: event + planner + vendors + shared todos + guest stats)
+router.get('/workspace', userController.getWorkspace);
+
 // Project (event + planner + vendor roster)
 router.get('/project', userController.getProject);
 router.post('/project/vendors', userController.addProjectVendor);

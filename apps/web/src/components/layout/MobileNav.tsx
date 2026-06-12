@@ -1,4 +1,4 @@
-import { Home, Calendar, Users, BookOpen, Filter, Briefcase, CheckSquare, MessageSquare } from "lucide-react";
+import { Home, Calendar, Users, BookOpen, Filter, Briefcase, CheckSquare, MessageSquare, LayoutDashboard } from "lucide-react";
 import NavLink from "./NavLink";
 import { useAuth } from "@/context/AuthContext";
 import AuthButtons from "./AuthButtons";
@@ -85,11 +85,8 @@ const MobileNav = ({ isAuthenticated, isOpen, onClose }: MobileNavProps) => {
               <NavLink to="/dashboard" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Calendar className="w-5 h-5" />}>
                 IV & RSVP
               </NavLink>
-              <NavLink to="/todo-lists" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<CheckSquare className="w-5 h-5" />}>
-                To-Do Lists
-              </NavLink>
-              <NavLink to="/expense-tracker" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Calendar className="w-5 h-5" />}>
-                Expense Tracker
+              <NavLink to="/workspace" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<LayoutDashboard className="w-5 h-5" />}>
+                Workspace
               </NavLink>
               <NavLink to="/vendors" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Users className="w-5 h-5" />}>
                 Vendors

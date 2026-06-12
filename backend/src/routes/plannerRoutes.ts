@@ -19,11 +19,20 @@ router.patch('/clients/:id', plannerController.updateClient);
 router.delete('/clients/:id', plannerController.deleteClient);
 router.post('/clients/:id/invite', plannerController.createInvite);
 
+// Client workspace (combined view)
+router.get('/clients/:clientId/workspace', plannerController.getClientWorkspace);
+
 // Client project (event + vendor roster)
 router.get('/clients/:clientId/project', plannerController.getClientProject);
 router.post('/clients/:clientId/project/vendors', plannerController.addClientProjectVendor);
 router.patch('/clients/:clientId/project/vendors/:vendorId', plannerController.updateClientProjectVendor);
 router.delete('/clients/:clientId/project/vendors/:vendorId', plannerController.removeClientProjectVendor);
+
+// Client vision board (shared)
+router.get('/clients/:clientId/vision-board', plannerController.getClientVisionBoard);
+router.post('/clients/:clientId/vision-board', plannerController.addClientVisionBoardItem);
+router.patch('/clients/:clientId/vision-board/:itemId', plannerController.updateClientVisionBoardItem);
+router.delete('/clients/:clientId/vision-board/:itemId', plannerController.deleteClientVisionBoardItem);
 
 // Client shared todo lists (read) + item management
 router.get('/clients/:clientId/todos', plannerController.getClientTodos);

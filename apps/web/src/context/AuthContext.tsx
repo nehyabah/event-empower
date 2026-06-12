@@ -60,6 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
+  // Clear user when the API client fires a session-expired event
+  useEffect(() => {
+    const handler = () => {
+      setUser(null);
+      apiClient.setAccessToken(null);
+    };
+    window.addEventListener('session-expired', handler);
+    return () => window.removeEventListener('session-expired', handler);
+  }, []);
+
   // Token refresh interval disabled for development
   // TODO: Re-enable for production
   // useEffect(() => {

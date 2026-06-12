@@ -116,7 +116,7 @@ export const TodoListModel = {
 
   async findSharedByUserId(userId: string): Promise<TodoList[]> {
     const lists = await query<TodoList>(
-      'SELECT * FROM todo_lists WHERE user_id = $1 AND is_shared = true ORDER BY created_at DESC',
+      'SELECT * FROM todo_lists WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
 

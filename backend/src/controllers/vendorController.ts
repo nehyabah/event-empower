@@ -189,6 +189,15 @@ export const vendorController = {
     }
   },
 
+  async getVendorWorkspace(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const projects = await vendorService.getVendorWorkspace(req.user!.userId);
+      res.json(projects);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createVendorBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validation = vendorBookingSchema.safeParse(req.body);

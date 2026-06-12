@@ -4,18 +4,19 @@ import TodoListCard from "./TodoListCard";
 import { PlusCircle } from "lucide-react";
 
 interface TodoListProps {
-  filter: "all" | "active" | "completed";
+  filter: "all" | "active" | "completed" | "private";
   searchQuery: string;
 }
 
 const TodoList = ({ filter, searchQuery }: TodoListProps) => {
   const { todoLists } = useTodo();
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  
+
   const filteredLists = todoLists.filter(list => {
     if (filter === "all") return true;
     if (filter === "active") return !list.isCompleted;
     if (filter === "completed") return list.isCompleted;
+    if (filter === "private") return !list.isShared;
     return true;
   }).filter(list => {
     if (!normalizedQuery) return true;
@@ -31,11 +32,13 @@ const TodoList = ({ filter, searchQuery }: TodoListProps) => {
         <PlusCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium mb-2">No todo lists found</h3>
         <p className="text-muted-foreground">
-          {filter === "all" 
-            ? "Create your first todo list to get started" 
-            : filter === "active" 
-              ? "No active todo lists" 
-              : "No completed todo lists"}
+          {filter === "all"
+            ? "Create your first todo list to get started"
+            : filter === "active"
+            ? "No active todo lists"
+            : filter === "private"
+            ? "No private lists yet — new lists are private by default"
+            : "No completed todo lists"}
         </p>
       </div>
     );

@@ -151,6 +151,50 @@ export interface ClientTodoList {
   items: ClientTodoItem[];
 }
 
+// ========== WORKSPACE TYPES ==========
+
+export interface WorkspaceVendor {
+  id: string;
+  vendor_profile_id: string;
+  business_name?: string;
+  vendor_category?: string;
+  category: string | null;
+  status: 'inquired' | 'quoted' | 'booked' | 'confirmed' | 'cancelled';
+  amount: number | null;
+  notes: string | null;
+}
+
+export interface WorkspaceTodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  status: 'todo' | 'in_progress' | 'done';
+}
+
+export interface WorkspaceTodoList {
+  id: string;
+  title: string;
+  description: string | null;
+  is_completed: boolean;
+  items: WorkspaceTodoItem[];
+}
+
+export interface WorkspaceData {
+  client?: PlannerClient;
+  event: {
+    id: string;
+    partner1_name: string | null;
+    partner2_name: string | null;
+    event_date: string | null;
+    venue: string | null;
+    total_budget: number;
+    guest_count_estimate: number;
+  };
+  vendors: WorkspaceVendor[];
+  sharedTodos: WorkspaceTodoList[];
+  guestStats: { total: number; confirmed: number; pending: number; declined: number; maybe: number };
+}
+
 export interface DashboardStats {
   clients: {
     total: number;
@@ -385,6 +429,38 @@ export const plannerService = {
       `/planner/clients/${clientId}/todos/${listId}/items/${itemId}`
     );
     if (response.error) throw new Error(response.error);
+  },
+
+  // ========== CLIENT VISION BOARD (shared) ==========
+
+  async getClientVisionBoard(clientId: string): Promise<import('./visionBoardService').VisionBoardItem[]> {
+    const r = await apiClient.get<import('./visionBoardService').VisionBoardItem[]>(`/planner/clients/${clientId}/vision-board`);
+    if (r.error) throw new Error(r.error);
+    return r.data ?? [];
+  },
+
+  async addClientVisionBoardItem(clientId: string, input: import('./visionBoardService').CreateItemInput): Promise<import('./visionBoardService').VisionBoardItem> {
+    const r = await apiClient.post<import('./visionBoardService').VisionBoardItem>(`/planner/clients/${clientId}/vision-board`, input);
+    if (r.error) throw new Error(r.error);
+    return r.data!;
+  },
+
+  async updateClientVisionBoardItem(clientId: string, itemId: string, input: import('./visionBoardService').UpdateItemInput): Promise<import('./visionBoardService').VisionBoardItem> {
+    const r = await apiClient.patch<import('./visionBoardService').VisionBoardItem>(`/planner/clients/${clientId}/vision-board/${itemId}`, input);
+    if (r.error) throw new Error(r.error);
+    return r.data!;
+  },
+
+  async removeClientVisionBoardItem(clientId: string, itemId: string): Promise<void> {
+    await apiClient.delete(`/planner/clients/${clientId}/vision-board/${itemId}`);
+  },
+
+  // ========== CLIENT WORKSPACE ==========
+
+  async getClientWorkspace(clientId: string): Promise<WorkspaceData | null> {
+    const response = await apiClient.get<WorkspaceData>(`/planner/clients/${clientId}/workspace`);
+    if (response.error) throw new Error(response.error);
+    return response.data || null;
   },
 
   // ========== DASHBOARD ==========

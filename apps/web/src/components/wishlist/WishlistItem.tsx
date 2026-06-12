@@ -201,7 +201,8 @@ const WishlistItem = ({
             )
           )}
         </div>
-      </CardContent>
+      </div>
+    </CardContent>
   );
 
   const cardClass = cn(

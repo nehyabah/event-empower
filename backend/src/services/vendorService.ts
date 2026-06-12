@@ -14,6 +14,7 @@ import {
 } from '../models/VendorProfile.js';
 import { ProjectVendorModel, ProjectVendor } from '../models/ProjectVendor.js';
 import { UserEventModel } from '../models/UserEvent.js';
+import { queryOne } from '../config/database.js';
 
 export interface VendorProfileInput {
   business_name: string;
@@ -419,6 +420,52 @@ export const vendorService = {
           ...pv,
           couple_names,
           event_date: event?.event_date ?? null,
+        };
+      })
+    );
+
+    return enriched;
+  },
+
+  async getVendorWorkspace(userId: string): Promise<Array<ProjectVendor & {
+    couple_names: string | null;
+    event_date: Date | null;
+    venue: string | null;
+    planner_name: string | null;
+    planner_email: string | null;
+  }>> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) return [];
+
+    const projectVendors = await ProjectVendorModel.findByVendorProfileId(profile.id);
+
+    const enriched = await Promise.all(
+      projectVendors.map(async (pv) => {
+        const event = await UserEventModel.findById(pv.event_id);
+        const couple_names = event
+          ? [event.partner1_name, event.partner2_name].filter(Boolean).join(' & ') || null
+          : null;
+
+        let planner_name: string | null = null;
+        let planner_email: string | null = null;
+        if (event?.planner_id) {
+          const plannerRow = await queryOne<{ planner_name: string; planner_email: string }>(
+            'SELECT u.name as planner_name, u.email as planner_email FROM users u WHERE u.id = $1',
+            [event.planner_id]
+          );
+          if (plannerRow) {
+            planner_name = plannerRow.planner_name;
+            planner_email = plannerRow.planner_email;
+          }
+        }
+
+        return {
+          ...pv,
+          couple_names,
+          event_date: event?.event_date ?? null,
+          venue: event?.venue ?? null,
+          planner_name,
+          planner_email,
         };
       })
     );

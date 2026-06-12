@@ -23,6 +23,11 @@ import NotFound from "./pages/NotFound";
 import PlannerTasks from "./pages/PlannerTasks";
 import PlannerCalendar from "./pages/PlannerCalendar";
 import PlannerClients from "./pages/PlannerClients";
+import PlannerClientWorkspace from "./pages/PlannerClientWorkspace";
+import Workspace from "./pages/Workspace";
+import AcceptInvite from "./pages/AcceptInvite";
+import LoginPage from "./pages/LoginPage";
+import VisionBoard from "./pages/VisionBoard";
 import MyInquiries from "./pages/MyInquiries";
 import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -116,10 +121,12 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingRoute />} />
 
       {/* Public routes */}
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/features" element={<Features />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/invitation" element={<InvitationPage />} />
       <Route path="/invitation/:code" element={<InvitationPage />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/shared-story" element={<SharedStoryPage />} />
       <Route path="/s/:slug" element={<SharedStoryPage />} />
       <Route path="/vendors" element={<Vendors />} />
@@ -157,6 +164,16 @@ const AppRoutes = () => {
           <MyInquiries />
         </RequireAuth>
       } />
+      <Route path="/workspace" element={
+        <RequireAuth allowedTypes={["client"]}>
+          <Workspace />
+        </RequireAuth>
+      } />
+      <Route path="/vision-board" element={
+        <RequireAuth allowedTypes={["client"]}>
+          <VisionBoard />
+        </RequireAuth>
+      } />
 
       {/* Vendor routes */}
       <Route path="/vendor-home" element={
@@ -189,6 +206,11 @@ const AppRoutes = () => {
       <Route path="/clients" element={
         <RequireAuth allowedTypes={["planner"]}>
           <PlannerClients />
+        </RequireAuth>
+      } />
+      <Route path="/clients/:clientId/workspace" element={
+        <RequireAuth allowedTypes={["planner"]}>
+          <PlannerClientWorkspace />
         </RequireAuth>
       } />
 

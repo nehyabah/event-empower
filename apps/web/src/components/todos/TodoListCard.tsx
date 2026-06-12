@@ -3,7 +3,7 @@ import { TodoListItem, useTodo } from "@/context/TodoContext";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, MoreVertical, PlusCircle, Trash2, Users } from "lucide-react";
+import { CheckCircle2, Lock, MoreVertical, PlusCircle, Trash2, Users } from "lucide-react";
 import TodoItemComponent from "./TodoItem";
 import {
   DropdownMenu,
@@ -122,10 +122,15 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base sm:text-lg font-medium truncate">{todoList.title}</h3>
-                {todoList.isShared && (
+                {todoList.isShared ? (
                   <Badge variant="secondary" className="gap-1 text-xs shrink-0">
                     <Users className="h-3 w-3" />
                     Shared
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="gap-1 text-xs shrink-0 text-muted-foreground">
+                    <Lock className="h-3 w-3" />
+                    Private
                   </Badge>
                 )}
               </div>
@@ -146,12 +151,13 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   {todoList.isCompleted ? "Mark as Active" : "Mark as Completed"}
                 </DropdownMenuItem>
-                {hasPlanner && (
-                  <DropdownMenuItem onClick={handleToggleShared}>
-                    <Users className="mr-2 h-4 w-4" />
-                    {todoList.isShared ? "Make private" : "Share with planner"}
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={handleToggleShared} disabled={!hasPlanner && !todoList.isShared}>
+                  {todoList.isShared ? (
+                    <><Lock className="mr-2 h-4 w-4" />Make private</>
+                  ) : (
+                    <><Users className="mr-2 h-4 w-4" />Share with planner</>
+                  )}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setAllCompleted(todoList.id, true)}>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Mark all done

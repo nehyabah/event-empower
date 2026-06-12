@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Lock, Plus, Search } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import TodoList from "@/components/todos/TodoList";
 import CreateTodoList from "@/components/todos/CreateTodoList";
@@ -56,12 +56,19 @@ const TodoLists = () => {
 
           {/* Tabs */}
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full sm:w-auto sm:inline-grid mb-6 h-9 p-1 bg-muted/60 rounded-lg">
+            <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-grid mb-6 h-9 p-1 bg-muted/60 rounded-lg">
               <TabsTrigger
                 value="all"
                 className="text-xs sm:text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 All
+              </TabsTrigger>
+              <TabsTrigger
+                value="private"
+                className="text-xs sm:text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1"
+              >
+                <Lock className="h-3 w-3" />
+                Private
               </TabsTrigger>
               <TabsTrigger
                 value="active"
@@ -79,6 +86,9 @@ const TodoLists = () => {
 
             <TabsContent value="all">
               <TodoList filter="all" searchQuery={searchQuery} />
+            </TabsContent>
+            <TabsContent value="private">
+              <TodoList filter="private" searchQuery={searchQuery} />
             </TabsContent>
             <TabsContent value="active">
               <TodoList filter="active" searchQuery={searchQuery} />

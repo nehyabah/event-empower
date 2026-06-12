@@ -332,6 +332,21 @@ export const plannerController = {
     }
   },
 
+  // ========== CLIENT WORKSPACE ==========
+
+  async getClientWorkspace(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const workspace = await plannerService.getClientWorkspace(req.user!.userId, String(req.params.clientId));
+      if (!workspace) {
+        res.status(404).json({ error: 'Client workspace not found' });
+        return;
+      }
+      res.json(workspace);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ========== CLIENT PROJECT ==========
 
   async getClientProject(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -501,6 +516,78 @@ export const plannerController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  // ========== CLIENT VISION BOARD (shared) ==========
+
+  async getClientVisionBoard(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const items = await plannerService.getClientVisionBoard(req.user!.userId, String(req.params.clientId));
+      res.json(items);
+    } catch (error) { next(error); }
+  },
+
+  async addClientVisionBoardItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        type: z.enum(['note', 'image', 'concept']),
+        title: z.string().optional(),
+        content: z.string().optional(),
+        category: z.string().optional(),
+        color: z.enum(['cream', 'blush', 'sage', 'lavender', 'gold', 'sky', 'charcoal']).optional(),
+        position_x: z.number().optional(),
+        position_y: z.number().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+      });
+      const input = schema.parse(req.body);
+      const item = await plannerService.addClientVisionBoardItem(req.user!.userId, String(req.params.clientId), input);
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Client not found or not linked') {
+        res.status(404).json({ error: 'Client not found or not linked' });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async updateClientVisionBoardItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        title: z.string().nullable().optional(),
+        content: z.string().nullable().optional(),
+        category: z.string().nullable().optional(),
+        color: z.enum(['cream', 'blush', 'sage', 'lavender', 'gold', 'sky', 'charcoal']).optional(),
+        position_x: z.number().optional(),
+        position_y: z.number().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        pinned: z.boolean().optional(),
+      });
+      const input = schema.parse(req.body);
+      const item = await plannerService.updateClientVisionBoardItem(
+        req.user!.userId, String(req.params.clientId), String(req.params.itemId), input
+      );
+      if (!item) {
+        res.status(404).json({ error: 'Vision board item not found' });
+        return;
+      }
+      res.json(item);
+    } catch (error) { next(error); }
+  },
+
+  async deleteClientVisionBoardItem(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await plannerService.deleteClientVisionBoardItem(
+        req.user!.userId, String(req.params.clientId), String(req.params.itemId)
+      );
+      if (!deleted) {
+        res.status(404).json({ error: 'Vision board item not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) { next(error); }
   },
 
   async createInvite(req: Request, res: Response, next: NextFunction): Promise<void> {

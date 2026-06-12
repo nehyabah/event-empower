@@ -39,8 +39,7 @@ const DesktopNav = ({ isAuthenticated }: DesktopNavProps) => {
       ) : (
         <>
           <NavLink to="/dashboard">IV & RSVP</NavLink>
-          <NavLink to="/todo-lists">To-Do Lists</NavLink>
-          <NavLink to="/expense-tracker">Expense Tracker</NavLink>
+          <NavLink to="/workspace">Workspace</NavLink>
           <NavLink to="/vendors">Vendors</NavLink>
           <NavLink to="/my-inquiries">My Inquiries</NavLink>
           <NavLink to="/couple-story">Our Story</NavLink>

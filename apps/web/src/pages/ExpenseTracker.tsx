@@ -16,56 +16,44 @@ const ExpenseTracker = () => {
     <>
       <Navbar />
       <ExpenseProvider>
-        <div className="min-h-screen bg-background pt-20 pb-12">
-          <div className="container max-w-5xl px-4">
+        <div className="min-h-screen bg-background pt-20 pb-16">
+          <div className="container max-w-3xl px-4">
+
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-2xl md:text-3xl font-serif font-medium tracking-tight mb-1">
-                Wedding Budget
-              </h1>
-              <p className="text-sm md:text-base text-muted-foreground">
-                Track and manage your expenses
-              </p>
-            </div>
-
-            {/* Summary Cards */}
-            <ExpenseSummary />
-
-            {/* Add Expense Button */}
-            <div className="flex justify-between items-center mt-6 mb-4">
-              <h2 className="text-lg sm:text-xl font-serif">Expenses</h2>
-              <Button
-                onClick={() => setIsAddingExpense(true)}
-                className="gap-2"
-                size="sm"
-              >
-                <Plus size={16} />
+            <div className="mb-6 pt-4 flex items-end justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-serif font-medium tracking-tight">
+                  Budget
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Track every naira, see where it goes
+                </p>
+              </div>
+              <Button onClick={() => setIsAddingExpense(true)} className="gap-2 shrink-0" size="sm">
+                <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add Expense</span>
                 <span className="sm:hidden">Add</span>
               </Button>
             </div>
 
+            {/* Summary */}
+            <ExpenseSummary />
+
             {/* Add Expense Form */}
             {isAddingExpense && (
-              <div className="bg-card rounded-lg p-4 sm:p-6 shadow-sm border mb-6">
+              <div className="bg-card rounded-xl p-5 shadow-sm border mt-5">
                 <ExpenseForm onCancel={() => setIsAddingExpense(false)} />
               </div>
             )}
 
             {/* Tabs */}
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid grid-cols-2 w-full sm:w-auto sm:inline-grid mb-6 h-9 p-1 bg-muted/60 rounded-lg">
-                <TabsTrigger
-                  value="all"
-                  className="text-xs sm:text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
+            <Tabs defaultValue="all" className="w-full mt-6">
+              <TabsList className="grid grid-cols-2 w-full sm:w-64 mb-5 h-9 p-1 bg-muted/60 rounded-lg">
+                <TabsTrigger value="all" className="text-xs sm:text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
                   All Expenses
                 </TabsTrigger>
-                <TabsTrigger
-                  value="categories"
-                  className="text-xs sm:text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                >
-                  Categories
+                <TabsTrigger value="categories" className="text-xs sm:text-sm rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  By Category
                 </TabsTrigger>
               </TabsList>
 
@@ -76,6 +64,7 @@ const ExpenseTracker = () => {
                 <ExpenseCategories />
               </TabsContent>
             </Tabs>
+
           </div>
         </div>
       </ExpenseProvider>

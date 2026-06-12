@@ -176,29 +176,54 @@ const VendorDetail = ({
             {/* Services */}
             {services.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium mb-3">Services & Pricing</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm font-medium mb-3">Packages & Pricing</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {services.map((service, index) => {
-                    const hasMin = service.price_min !== null;
-                    const hasMax = service.price_max !== null;
-                    const priceLabel = hasMin && hasMax
-                      ? `₦${service.price_min!.toLocaleString()} – ₦${service.price_max!.toLocaleString()}`
+                    const hasMin = service.price_min != null;
+                    const hasMax = service.price_max != null;
+                    const hasPrice = hasMin || hasMax;
+
+                    const priceDisplay = hasMin && hasMax
+                      ? (
+                        <span>
+                          ₦{service.price_min!.toLocaleString()}
+                          <span className="text-muted-foreground font-normal text-sm"> – ₦{service.price_max!.toLocaleString()}</span>
+                        </span>
+                      )
                       : hasMin
-                      ? `From ₦${service.price_min!.toLocaleString()}`
+                      ? <span>₦{service.price_min!.toLocaleString()}</span>
                       : hasMax
-                      ? `Up to ₦${service.price_max!.toLocaleString()}`
+                      ? <span>₦{service.price_max!.toLocaleString()}</span>
                       : null;
 
+                    const priceLabel = hasMin && hasMax
+                      ? "Price range"
+                      : hasMin
+                      ? "Starting from"
+                      : "Up to";
+
                     return (
-                      <div key={index} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2.5">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{service.name}</p>
-                          {service.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{service.description}</p>
-                          )}
+                      <div
+                        key={index}
+                        className="rounded-xl border bg-card p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold leading-tight">{service.name}</p>
                         </div>
-                        {priceLabel && (
-                          <span className="text-xs font-medium text-primary shrink-0 mt-0.5">{priceLabel}</span>
+
+                        {hasPrice && (
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-0.5">{priceLabel}</p>
+                            <p className="text-lg font-bold text-primary leading-tight">{priceDisplay}</p>
+                          </div>
+                        )}
+
+                        {service.description && (
+                          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{service.description}</p>
+                        )}
+
+                        {!hasPrice && !service.description && (
+                          <p className="text-xs text-muted-foreground italic">Contact for pricing</p>
                         )}
                       </div>
                     );

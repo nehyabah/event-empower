@@ -13,6 +13,7 @@ import invitationRoutes from './routes/invitationRoutes.js';
 import sharedStoryRoutes from './routes/sharedStoryRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import visionBoardRoutes from './routes/visionBoardRoutes.js';
 import { vendorController } from './controllers/vendorController.js';
 import { userController } from './controllers/userController.js';
 
@@ -46,6 +47,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/shared-story', sharedStoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/vision-board', visionBoardRoutes);
 
 // Public inquiries (client -> vendor)
 app.post('/api/inquiries', vendorController.createInquiry);

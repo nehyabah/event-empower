@@ -23,12 +23,14 @@ import {
   Clock
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { vendorService, VendorDashboard, VendorInquiry } from "@/services/api/vendorService";
+import { vendorService, VendorDashboard, VendorInquiry, VendorWorkspaceProject } from "@/services/api/vendorService";
 import InquiryDetailModal from "@/components/vendors/InquiryDetailModal";
+import { Badge } from "@/components/ui/badge";
 
 const VendorHomepage = () => {
   const [dashboard, setDashboard] = useState<VendorDashboard | null>(null);
   const [inquiryList, setInquiryList] = useState<VendorInquiry[]>([]);
+  const [workspaceProjects, setWorkspaceProjects] = useState<VendorWorkspaceProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddingEvent, setIsAddingEvent] = useState(false);
@@ -195,8 +197,12 @@ const VendorHomepage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const data = await vendorService.getVendorDashboard();
+        const [data, projects] = await Promise.all([
+          vendorService.getVendorDashboard(),
+          vendorService.getVendorWorkspace().catch(() => []),
+        ]);
         setDashboard(data);
+        setWorkspaceProjects(projects);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load vendor dashboard";
         setError(message);
@@ -274,6 +280,7 @@ const VendorHomepage = () => {
                 <TabsList>
                   <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
                   <TabsTrigger value="inquiries">Inquiries</TabsTrigger>
+                  <TabsTrigger value="projects">Projects</TabsTrigger>
                 </TabsList>
               </div>
               
@@ -426,9 +433,94 @@ const VendorHomepage = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+              <TabsContent value="projects" className="mt-0">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle>My Projects</CardTitle>
+                    <CardDescription>Events where you are booked as a vendor</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoading ? (
+                      <div className="text-center py-6 text-muted-foreground">Loading projects...</div>
+                    ) : workspaceProjects.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground">No projects yet.</div>
+                    ) : (
+                      <div className="space-y-4">
+                        {workspaceProjects.map((project) => (
+                          <div key={project.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h3 className="font-medium">{project.couple_names || "Unnamed Couple"}</h3>
+                                {project.event_date && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(project.event_date).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                              {(() => {
+                                switch (project.status) {
+                                  case "inquired": return <Badge variant="secondary">Inquired</Badge>;
+                                  case "quoted": return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Quoted</Badge>;
+                                  case "booked": return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Booked</Badge>;
+                                  case "confirmed": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Confirmed</Badge>;
+                                  case "cancelled": return <Badge variant="destructive">Cancelled</Badge>;
+                                }
+                              })()}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              {project.venue && (
+                                <div>
+                                  <span className="text-muted-foreground">Venue: </span>
+                                  <span>{project.venue}</span>
+                                </div>
+                              )}
+                              {project.category && (
+                                <div>
+                                  <span className="text-muted-foreground">Category: </span>
+                                  <span>{project.category}</span>
+                                </div>
+                              )}
+                              {project.amount !== null && project.amount !== undefined && (
+                                <div>
+                                  <span className="text-muted-foreground">Amount: </span>
+                                  <span>
+                                    {new Intl.NumberFormat("en-US", {
+                                      style: "currency",
+                                      currency: "USD",
+                                      maximumFractionDigits: 0,
+                                    }).format(project.amount)}
+                                  </span>
+                                </div>
+                              )}
+                              {project.planner_name && (
+                                <div>
+                                  <span className="text-muted-foreground">Planner: </span>
+                                  <span>{project.planner_name}</span>
+                                </div>
+                              )}
+                            </div>
+                            {project.planner_email && (
+                              <p className="text-xs text-muted-foreground">
+                                Planner contact: {project.planner_email}
+                              </p>
+                            )}
+                            {project.notes && (
+                              <p className="text-xs text-muted-foreground border-t pt-2">{project.notes}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </section>
-          
+
           <section className="py-4">
             <h2 className="text-xl md:text-2xl font-serif mb-4">Manage Your Services</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

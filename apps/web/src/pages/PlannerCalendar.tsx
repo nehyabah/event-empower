@@ -276,11 +276,15 @@ const PlannerCalendar = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="container mx-auto px-4 pt-24 pb-16">
-          <div className="p-8 text-center bg-red-50 rounded-lg">
-            <p className="text-red-600">Error loading calendar: {error}</p>
-            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-              Try Again
+        <main className="container mx-auto px-4 pt-24 pb-16 flex items-start justify-center">
+          <div className="mt-16 max-w-md w-full text-center space-y-4 p-10 rounded-2xl border border-border/60 bg-card shadow-sm">
+            <div className="text-4xl">🗓️</div>
+            <h2 className="text-xl font-serif font-medium">Calendar unavailable</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              We couldn't load your calendar right now. Please try again in a moment.
+            </p>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Try again
             </Button>
           </div>
         </main>

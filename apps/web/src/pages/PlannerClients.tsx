@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import {
   Trash2,
   PlusCircle,
   ClipboardList,
+  LayoutDashboard,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -28,13 +30,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePlannerClients } from "@/hooks/usePlannerClients";
-import { PlannerClient, ClientTodoList, ClientTodoItem, plannerService } from "@/services/api/plannerService";
+import { PlannerClient, ClientTodoList, ClientTodoItem, WorkspaceData, plannerService } from "@/services/api/plannerService";
+import { Separator } from "@/components/ui/separator";
 
 const PlannerClients = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const { clients, isLoading, error, activeClients, upcomingClients, completedClients, getClientName, createClient, createInvite } = usePlannerClients();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Workspace panel state
+  const [workspaceClient, setWorkspaceClient] = useState<PlannerClient | null>(null);
+  const [workspaceData, setWorkspaceData] = useState<WorkspaceData | null>(null);
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+
+  const openClientWorkspace = useCallback(async (client: PlannerClient) => {
+    setWorkspaceClient(client);
+    setWorkspaceData(null);
+    setWorkspaceLoading(true);
+    try {
+      const data = await plannerService.getClientWorkspace(client.id);
+      setWorkspaceData(data);
+    } catch {
+      toast.error("Failed to load client workspace");
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  }, []);
 
   // Shared todos panel state
   const [todosClient, setTodosClient] = useState<PlannerClient | null>(null);
@@ -187,8 +210,9 @@ const PlannerClients = () => {
                   Todos
                 </Button>
               )}
-              <Button variant="outline" size="sm">
-                View
+              <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/workspace`)} className="gap-1">
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Workspace
               </Button>
             </div>
           </div>
@@ -375,6 +399,171 @@ const PlannerClients = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Workspace Sheet */}
+      <Sheet open={!!workspaceClient} onOpenChange={(open) => { if (!open) { setWorkspaceClient(null); setWorkspaceData(null); } }}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <LayoutDashboard className="h-5 w-5" />
+              Workspace — {workspaceClient ? getClientName(workspaceClient) : ""}
+            </SheetTitle>
+          </SheetHeader>
+
+          {workspaceLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : !workspaceData ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              No workspace data available. Client may not have linked their account yet.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Client Header */}
+              <div className="rounded-lg border p-4 space-y-2">
+                <h3 className="font-medium">Event Details</h3>
+                <Separator />
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground text-xs">Couple</p>
+                    <p className="font-medium">
+                      {[workspaceData.event.partner1_name, workspaceData.event.partner2_name].filter(Boolean).join(" & ") || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Event Type</p>
+                    <p className="font-medium">{workspaceClient?.event_type || "Wedding"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Date</p>
+                    <p className="font-medium">
+                      {workspaceData.event.event_date
+                        ? new Date(workspaceData.event.event_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                        : "TBD"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Venue</p>
+                    <p className="font-medium">{workspaceData.event.venue || "TBD"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Budget</p>
+                    <p className="font-medium">
+                      {workspaceData.event.total_budget
+                        ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(workspaceData.event.total_budget)
+                        : "TBD"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground text-xs">Guests</p>
+                    <p className="font-medium">{workspaceData.event.guest_count_estimate || "TBD"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vendor Roster */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h3 className="font-medium">Vendor Roster</h3>
+                <Separator />
+                {workspaceData.vendors.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No vendors added yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {workspaceData.vendors.map((vendor) => (
+                      <div key={vendor.id} className="flex items-center justify-between text-sm">
+                        <div>
+                          <p className="font-medium">{vendor.business_name || "Unnamed Vendor"}</p>
+                          <p className="text-xs text-muted-foreground">{vendor.vendor_category || vendor.category || "—"}</p>
+                        </div>
+                        <div className="text-right flex items-center gap-2">
+                          {vendor.amount ? (
+                            <span className="text-xs text-muted-foreground">
+                              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(vendor.amount)}
+                            </span>
+                          ) : null}
+                          {(() => {
+                            switch (vendor.status) {
+                              case "inquired": return <Badge variant="secondary" className="text-xs">Inquired</Badge>;
+                              case "quoted": return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs">Quoted</Badge>;
+                              case "booked": return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">Booked</Badge>;
+                              case "confirmed": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Confirmed</Badge>;
+                              case "cancelled": return <Badge variant="destructive" className="text-xs">Cancelled</Badge>;
+                            }
+                          })()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Shared Todos */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h3 className="font-medium">Shared Checklists</h3>
+                <Separator />
+                {workspaceData.sharedTodos.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No shared lists yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {workspaceData.sharedTodos.map((list) => {
+                      const completed = list.items.filter((i) => i.completed).length;
+                      const total = list.items.length;
+                      return (
+                        <div key={list.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{list.title}</p>
+                            <span className="text-xs text-muted-foreground">{completed}/{total}</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary transition-all"
+                              style={{ width: total > 0 ? `${Math.round((completed / total) * 100)}%` : "0%" }}
+                            />
+                          </div>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {list.items.map((item) => (
+                              <div key={item.id} className="flex items-center gap-2">
+                                {item.completed
+                                  ? <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  : <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                }
+                                <span className={`text-xs ${item.completed ? "line-through text-muted-foreground" : ""}`}>
+                                  {item.text}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Guest Summary */}
+              <div className="rounded-lg border p-4 space-y-3">
+                <h3 className="font-medium">Guest Summary</h3>
+                <Separator />
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-2 bg-muted/50 rounded-lg">
+                    <p className="text-xl font-bold">{workspaceData.guestStats.total}</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                  </div>
+                  <div className="p-2 bg-green-50 rounded-lg">
+                    <p className="text-xl font-bold text-green-700">{workspaceData.guestStats.confirmed}</p>
+                    <p className="text-xs text-green-600">Confirmed</p>
+                  </div>
+                  <div className="p-2 bg-amber-50 rounded-lg">
+                    <p className="text-xl font-bold text-amber-700">{workspaceData.guestStats.pending}</p>
+                    <p className="text-xs text-amber-600">Pending</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Shared Todos Sheet */}
       <Sheet open={!!todosClient} onOpenChange={(open) => { if (!open) setTodosClient(null); }}>

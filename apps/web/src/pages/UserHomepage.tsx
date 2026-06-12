@@ -25,7 +25,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ import invitationService from "@/services/api/invitationService";
 import rsvpService from "@/services/api/rsvpService";
 
 const UserHomepage = () => {
+  const navigate = useNavigate();
   const userEmail = localStorage.getItem("userEmail") || "user@example.com";
   const firstName = userEmail.split("@")[0].split(".")[0];
   const capitalizedName =
@@ -264,10 +265,8 @@ const UserHomepage = () => {
                       setIsLinkingPlanner(true);
                       try {
                         await invitationService.acceptInvite(plannerCode.trim());
-                        toast.success("Planner linked!");
-                        setPlannerCode("");
-                        const link = await userService.getPlannerLink();
-                        setPlannerName(link?.planner_name || null);
+                        toast.success("Planner linked! Taking you to your workspace…");
+                        navigate("/workspace");
                       } catch (err) {
                         toast.error(
                           err instanceof Error ? err.message : "Failed to link",
