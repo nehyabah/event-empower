@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -383,7 +382,6 @@ const CreateEvent = () => {
         </div>
       </div>
       
-      <Footer />
     </div>
   );
 };

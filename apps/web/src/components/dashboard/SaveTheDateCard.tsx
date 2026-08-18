@@ -1,336 +1,708 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, X, Loader2, Users, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { rsvpService } from "@/services/api/rsvpService";
 
-// ============================================
-// FLORAL DESIGNS - Each template has unique flowers
-// ============================================
+// ============================================================
+// MINIMAL BOTANICAL SPRIGS
+// The Etsy-minimal formula: clean paper, hairline frame, one or
+// two simple sprigs at the edges. Muted dusty colors, thin stems,
+// nothing busy.
+// ============================================================
 
-// Template 1: Classic Roses - Traditional romantic roses
-const RosesCorner = ({ className = "", flip = false }: { className?: string; flip?: boolean }) => (
-  <svg viewBox="0 0 200 200" className={className} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
-    {/* Main Rose */}
-    <g>
-      <circle cx="50" cy="55" r="18" fill="#c97b84" />
-      <circle cx="50" cy="55" r="14" fill="#d4919a" />
-      <circle cx="50" cy="55" r="9" fill="#e0a8af" />
-      <circle cx="50" cy="55" r="5" fill="#ebc4c9" />
-      <ellipse cx="35" cy="48" rx="10" ry="7" fill="#c97b84" opacity="0.8" transform="rotate(-25 35 48)" />
-      <ellipse cx="65" cy="48" rx="10" ry="7" fill="#c97b84" opacity="0.8" transform="rotate(25 65 48)" />
-      <ellipse cx="38" cy="68" rx="9" ry="6" fill="#c97b84" opacity="0.7" transform="rotate(15 38 68)" />
-      <ellipse cx="62" cy="68" rx="9" ry="6" fill="#c97b84" opacity="0.7" transform="rotate(-15 62 68)" />
-    </g>
-    {/* Small Rose Bud */}
-    <g>
-      <ellipse cx="95" cy="35" rx="8" ry="10" fill="#d4919a" transform="rotate(-10 95 35)" />
-      <ellipse cx="92" cy="32" rx="5" ry="7" fill="#e0a8af" transform="rotate(-15 92 32)" />
-    </g>
-    {/* Leaves and Stems */}
-    <g stroke="#4a6741" strokeWidth="2" fill="none">
-      <path d="M50 73 Q45 100, 35 140" />
-      <path d="M35 140 Q30 165, 40 190" />
-      <path d="M95 45 Q100 70, 90 100" />
-    </g>
-    <g fill="#5a7f4e">
-      <ellipse cx="28" cy="100" rx="15" ry="8" transform="rotate(-45 28 100)" opacity="0.8" />
-      <ellipse cx="55" cy="115" rx="12" ry="6" transform="rotate(30 55 115)" opacity="0.7" />
-      <ellipse cx="25" cy="155" rx="14" ry="7" transform="rotate(-30 25 155)" opacity="0.8" />
-    </g>
-    {/* Small accent flowers */}
-    <g fill="#f0c4c4">
-      <circle cx="80" cy="70" r="4" />
-      <circle cx="75" cy="68" r="3" opacity="0.7" />
-      <circle cx="85" cy="72" r="3" opacity="0.7" />
+// Watercolor PNG accent — transparent clipart placed at a corner/edge.
+// Swap the files in /public/florals/ to change artwork (e.g. with a
+// purchased watercolor clipart set) — no code changes needed.
+const PngAccent = ({ src, box, flip, flipY, rotate, opacity, anchor = "left top", size = "contain", blend }: {
+  src: string;
+  box: React.CSSProperties;
+  flip?: boolean;
+  flipY?: boolean;
+  rotate?: number;
+  opacity?: number;
+  anchor?: string;
+  /** backgroundSize — "contain" for isolated pieces, "100% 100%" for full frames */
+  size?: string;
+  /** multiply-blend, for artwork with a baked-in white background */
+  blend?: boolean;
+}) => {
+  const transforms = [
+    flip ? "scaleX(-1)" : "",
+    flipY ? "scaleY(-1)" : "",
+    rotate ? `rotate(${rotate}deg)` : "",
+  ].filter(Boolean).join(" ");
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        ...box,
+        backgroundImage: `url(${src})`,
+        backgroundPosition: anchor,
+        backgroundSize: size,
+        backgroundRepeat: "no-repeat",
+        mixBlendMode: blend ? "multiply" : undefined,
+        transform: transforms || undefined,
+        opacity: opacity ?? 1,
+      }}
+    />
+  );
+};
+
+// One-line rose — the hand-sketched continuous-line bloom
+const LineRose = ({ ink = "#a98a72" }: { ink?: string }) => (
+  <svg viewBox="0 0 120 110" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+    <g fill="none" stroke={ink} strokeWidth="1.5" strokeLinecap="round">
+      {/* spiral heart of the bloom */}
+      <path d="M 60,42 a 3,3 0 1,1 5,2 a 6.5,6 0 1,1 -10,-3 a 10.5,10 0 1,1 16,8 a 15,14.5 0 1,1 -23,-10" />
+      {/* outer petal sweeps */}
+      <path d="M 41,38 C 38,26 47,16 60,15 C 74,14 84,24 84,37" opacity="0.85" />
+      <path d="M 84,37 C 90,46 88,58 79,64" opacity="0.7" />
+      <path d="M 41,38 C 34,46 34,57 41,64" opacity="0.7" />
+      {/* stem */}
+      <path d="M 60,64 C 59,76 58,88 58,102" />
+      {/* leaves */}
+      <path d="M 58,78 C 48,72 40,74 35,82 C 42,88 52,86 58,80" opacity="0.85" />
+      <path d="M 58,90 C 67,84 76,86 81,93 C 74,99 64,98 58,92" opacity="0.85" />
     </g>
   </svg>
 );
 
-// Template 2: Peonies - Lush, full peony blooms
-const PeoniesCorner = ({ className = "", flip = false }: { className?: string; flip?: boolean }) => (
-  <svg viewBox="0 0 200 200" className={className} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
-    {/* Main Peony */}
-    <g>
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-        <ellipse
-          key={i}
-          cx="55"
-          cy="60"
-          rx="22"
-          ry="12"
-          fill={i % 2 === 0 ? "#f4b8c5" : "#f9d1db"}
-          transform={`rotate(${angle} 55 60)`}
-          opacity={0.9 - i * 0.05}
-        />
-      ))}
-      <circle cx="55" cy="60" r="12" fill="#fce4ec" />
-      <circle cx="55" cy="60" r="6" fill="#fff5f7" />
-    </g>
-    {/* Secondary Peony */}
-    <g>
-      {[0, 60, 120, 180, 240, 300].map((angle, i) => (
-        <ellipse
-          key={i}
-          cx="100"
-          cy="40"
-          rx="14"
-          ry="8"
-          fill={i % 2 === 0 ? "#f9d1db" : "#fce4ec"}
-          transform={`rotate(${angle} 100 40)`}
-          opacity={0.85}
-        />
-      ))}
-      <circle cx="100" cy="40" r="8" fill="#fff5f7" />
-    </g>
-    {/* Foliage */}
-    <g fill="#3d5c3a">
-      <ellipse cx="30" cy="110" rx="20" ry="10" transform="rotate(-50 30 110)" opacity="0.85" />
-      <ellipse cx="70" cy="100" rx="18" ry="9" transform="rotate(40 70 100)" opacity="0.8" />
-      <ellipse cx="25" cy="150" rx="22" ry="11" transform="rotate(-35 25 150)" opacity="0.85" />
-      <ellipse cx="55" cy="140" rx="16" ry="8" transform="rotate(25 55 140)" opacity="0.75" />
-    </g>
-    <g stroke="#3d5c3a" strokeWidth="1.5" fill="none">
-      <path d="M55 80 Q45 110, 35 150" />
-      <path d="M35 150 Q30 170, 45 190" />
-    </g>
+// Gold demi-laurel — two mirrored arcs of small pointed leaves
+const LaurelArc = ({ gold = ["#c2a36b", "#ad8d52"] }: { gold?: string[] }) => (
+  <svg viewBox="0 0 200 70" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+    {[false, true].map(flip => (
+      <g key={String(flip)} transform={flip ? "translate(200,0) scale(-1,1)" : undefined}>
+        <path d="M 100,58 C 70,56 38,44 20,16" fill="none" stroke={gold[1]} strokeWidth="1.2"
+          strokeLinecap="round" opacity="0.9" />
+        {[
+          { cx: 82, cy: 53, rot: -8 }, { cx: 66, cy: 49, rot: -16 },
+          { cx: 52, cy: 43, rot: -26 }, { cx: 40, cy: 35, rot: -38 },
+          { cx: 30, cy: 26, rot: -50 }, { cx: 23, cy: 16, rot: -62 },
+        ].map((l, i) => (
+          <ellipse key={i} cx={l.cx} cy={l.cy} rx="9.5" ry="3.1"
+            fill={gold[i % 2]} opacity="0.88"
+            transform={`rotate(${l.rot} ${l.cx} ${l.cy})`} />
+        ))}
+      </g>
+    ))}
   </svg>
 );
 
-// Template 3: Wildflowers - Meadow style with varied flowers
-const WildflowersCorner = ({ className = "", flip = false }: { className?: string; flip?: boolean }) => (
-  <svg viewBox="0 0 200 200" className={className} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
-    {/* Daisy */}
-    <g>
-      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => (
-        <ellipse key={i} cx="45" cy="50" rx="12" ry="5" fill="white" stroke="#e8e8e8" strokeWidth="0.5" transform={`rotate(${angle} 45 50)`} />
-      ))}
-      <circle cx="45" cy="50" r="8" fill="#ffd54f" />
-    </g>
-    {/* Lavender Sprigs */}
-    <g>
-      <line x1="85" y1="80" x2="95" y2="30" stroke="#7c9a6e" strokeWidth="1.5" />
-      {[30, 40, 50, 60, 70].map((y, i) => (
-        <ellipse key={i} cx="95" cy={y} rx="4" ry="6" fill="#9b7bb8" transform={`rotate(${i % 2 ? 15 : -15} 95 ${y})`} />
-      ))}
-    </g>
-    {/* Small Blue Flowers */}
-    <g fill="#7ba3c9">
-      {[0, 72, 144, 216, 288].map((angle, i) => (
-        <ellipse key={i} cx="70" cy="75" rx="6" ry="4" transform={`rotate(${angle} 70 75)`} />
-      ))}
-      <circle cx="70" cy="75" r="3" fill="#ffd54f" />
-    </g>
-    {/* Orange Poppy */}
-    <g>
-      {[0, 72, 144, 216, 288].map((angle, i) => (
-        <ellipse key={i} cx="30" cy="95" rx="10" ry="8" fill="#e8956d" opacity="0.9" transform={`rotate(${angle} 30 95)`} />
-      ))}
-      <circle cx="30" cy="95" r="5" fill="#3d3d3d" />
-    </g>
-    {/* Stems and grass */}
-    <g stroke="#7c9a6e" strokeWidth="1.5" fill="none">
-      <path d="M45 62 Q40 100, 35 150" />
-      <path d="M30 108 Q25 140, 30 180" />
-      <path d="M70 85 Q65 120, 55 160" />
-    </g>
-    <g stroke="#9cb88a" strokeWidth="1" fill="none" opacity="0.6">
-      <path d="M15 180 Q20 150, 15 120" />
-      <path d="M25 185 Q30 160, 22 130" />
-      <path d="M60 190 Q55 165, 60 140" />
-    </g>
-  </svg>
-);
+// ============================================================
+// TEMPLATES
+// ============================================================
 
-// Template 4: Tropical - Monstera and exotic flowers
-const TropicalCorner = ({ className = "", flip = false }: { className?: string; flip?: boolean }) => (
-  <svg viewBox="0 0 200 200" className={className} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
-    {/* Monstera Leaf */}
-    <g fill="#2d5a45">
-      <path d="M60 30 Q90 50, 85 100 Q70 90, 60 100 Q50 90, 35 100 Q30 50, 60 30" opacity="0.9" />
-      <path d="M60 30 Q60 60, 60 100" stroke="#1a3d2e" strokeWidth="2" fill="none" />
-      {/* Leaf holes */}
-      <ellipse cx="50" cy="60" rx="8" ry="12" fill="#faf8f5" />
-      <ellipse cx="70" cy="65" rx="7" ry="10" fill="#faf8f5" />
-    </g>
-    {/* Bird of Paradise */}
-    <g>
-      <path d="M110 50 Q130 30, 140 45 Q130 50, 110 50" fill="#ff7043" />
-      <path d="M110 50 Q125 40, 135 55 Q125 55, 110 50" fill="#ff8a65" />
-      <path d="M110 50 Q120 55, 130 65 Q118 58, 110 50" fill="#5c6bc0" />
-      <path d="M95 70 Q110 50, 110 50 Q105 65, 95 70" fill="#2d5a45" />
-    </g>
-    {/* Palm Frond */}
-    <g stroke="#3d6b4f" strokeWidth="1.5" fill="none">
-      <path d="M30 120 Q20 80, 40 40" />
-    </g>
-    <g fill="#4a7c59">
-      {[40, 50, 60, 70, 80, 90, 100].map((y, i) => (
-        <ellipse key={i} cx={25 + i * 2} cy={y} rx="15" ry="4" transform={`rotate(${-30 + i * 5} ${25 + i * 2} ${y})`} opacity="0.8" />
-      ))}
-    </g>
-    {/* Plumeria */}
-    <g>
-      {[0, 72, 144, 216, 288].map((angle, i) => (
-        <ellipse key={i} cx="50" cy="150" rx="12" ry="8" fill="white" transform={`rotate(${angle} 50 150)`} />
-      ))}
-      <circle cx="50" cy="150" r="6" fill="#fff59d" />
-    </g>
-  </svg>
-);
+export type CardAlign = "left" | "center" | "right";
 
-// Template 5: Minimalist Botanical - Simple line art
-const MinimalistCorner = ({ className = "", flip = false }: { className?: string; flip?: boolean }) => (
-  <svg viewBox="0 0 200 200" className={className} style={{ transform: flip ? "scaleX(-1)" : undefined }}>
-    <g stroke="#8b7355" strokeWidth="1.2" fill="none">
-      {/* Main branch */}
-      <path d="M30 180 Q40 140, 50 100 Q60 60, 80 30" />
-      {/* Leaves - simple lines */}
-      <path d="M42 130 Q30 120, 25 135 Q35 140, 42 130" />
-      <path d="M48 110 Q60 100, 65 115 Q55 120, 48 110" />
-      <path d="M55 85 Q42 75, 38 90 Q50 95, 55 85" />
-      <path d="M65 60 Q78 50, 82 65 Q70 70, 65 60" />
-      {/* Small circles/berries */}
-      <circle cx="75" cy="40" r="4" fill="#c9a96b" stroke="none" />
-      <circle cx="85" cy="35" r="3" fill="#c9a96b" stroke="none" />
-      <circle cx="80" cy="48" r="3" fill="#c9a96b" stroke="none" />
-      {/* Secondary branch */}
-      <path d="M50 100 Q70 110, 90 100" />
-      <path d="M70 105 Q75 95, 85 100 Q78 108, 70 105" />
-      {/* Eucalyptus-style leaves */}
-      <ellipse cx="100" cy="95" rx="8" ry="12" transform="rotate(20 100 95)" />
-      <ellipse cx="115" cy="90" rx="7" ry="10" transform="rotate(-15 115 90)" />
-    </g>
-    {/* Subtle dots */}
-    <g fill="#c9a96b" opacity="0.5">
-      <circle cx="20" cy="160" r="2" />
-      <circle cx="25" cy="170" r="1.5" />
-      <circle cx="15" cy="150" r="1.5" />
-    </g>
-  </svg>
-);
+export interface CardDesign {
+  align?: CardAlign;
+}
 
-// ============================================
-// TEMPLATE DEFINITIONS
-// ============================================
+export interface CardTemplate {
+  id: string;
+  name: string;
+  dark?: boolean;
+  /** front-side decoration, absolutely positioned sprigs */
+  Decor: () => JSX.Element;
+  paper: string;
+  ink: string;
+  inkSoft: string;
+  accent: string;
+  frame: string;
+  border: string;
+  accentBg: string;
+  headerFont: string;
+  nameFont: string;
+  scriptFont: string;
+  bodyFont: string;
+  headerTracking: string;
+  /** skip the hairline frame (for artwork that brings its own frame) */
+  noFrame?: boolean;
+  /** per-template text-block inset, for asymmetric edge layouts */
+  textStyle?: React.CSSProperties;
+}
 
-export const saveTheDateTemplates = [
+export const saveTheDateTemplates: CardTemplate[] = [
+  // ── Statement frames — artwork wraps the whole card ──
   {
-    id: "classic-roses",
-    name: "Classic Roses",
-    // Fonts
+    id: "dusty-blue-romance",
+    name: "Dusty Blue Romance",
+    noFrame: true,
+    Decor: () => (
+      <PngAccent src="/florals/dustyblue-frame.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#f3f0e9",
+    ink: "#566075",
+    inkSoft: "#8d94a5",
+    accent: "#c2788a",
+    frame: "#cfd3da",
+    border: "#dfe2e7",
+    accentBg: "#eef0f3",
     headerFont: "'Cinzel', serif",
     nameFont: "'Playfair Display', serif",
     scriptFont: "'Great Vibes', cursive",
     bodyFont: "'Cormorant Garamond', serif",
-    // Colors
-    accent: "#8b4557",
-    accentLight: "#c97b8a",
-    border: "#f0d4da",
-    background: "#fffbfc",
-    accentBg: "#fdf5f7",
-    // Floral component
-    FloralComponent: RosesCorner,
-    // Style variations
-    nameStyle: "uppercase",
     headerTracking: "0.4em",
   },
   {
-    id: "soft-peonies",
-    name: "Soft Peonies",
+    id: "rose-gold-frame",
+    name: "Rose Gold Frame",
+    noFrame: true,
+    Decor: () => (
+      <PngAccent src="/florals/rosegold-frame.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#fffdfb",
+    ink: "#7a5c52",
+    inkSoft: "#b39d92",
+    accent: "#c98da1",
+    frame: "#e6d2c8",
+    border: "#f0e3db",
+    accentBg: "#f9f0ec",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+  {
+    id: "chintz-roses",
+    name: "Chintz Roses",
+    noFrame: true,
+    textStyle: { paddingTop: "4%", paddingBottom: "10%" },
+    Decor: () => (
+      <PngAccent src="/florals/chintz-frame.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#fffdfd",
+    ink: "#6d3c50",
+    inkSoft: "#a8798c",
+    accent: "#cf6592",
+    frame: "#ecd4de",
+    border: "#f3e2e9",
+    accentBg: "#faedf2",
+    headerFont: "'Libre Baskerville', serif",
+    nameFont: "'Lora', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Libre Baskerville', serif",
+    headerTracking: "0.35em",
+  },
+  {
+    id: "hydrangea-frame",
+    name: "Hydrangea Frame",
+    noFrame: true,
+    Decor: () => (
+      <PngAccent src="/florals/hydrangea-frame.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#fffefc",
+    ink: "#5c5470",
+    inkSoft: "#938ba3",
+    accent: "#9d7bb0",
+    frame: "#ddd6e4",
+    border: "#e9e4ef",
+    accentBg: "#f4f0f7",
     headerFont: "'Libre Baskerville', serif",
     nameFont: "'Lora', serif",
     scriptFont: "'Dancing Script', cursive",
     bodyFont: "'Libre Baskerville', serif",
-    accent: "#6b4c5a",
-    accentLight: "#a07a8a",
-    border: "#e8d8e0",
-    background: "#fdf9fb",
-    accentBg: "#f8f0f4",
-    FloralComponent: PeoniesCorner,
-    nameStyle: "capitalize",
     headerTracking: "0.35em",
   },
   {
-    id: "wildflower-meadow",
-    name: "Wildflower Meadow",
+    id: "hydrangea-garden",
+    name: "Hydrangea Garden",
+    Decor: () => (
+      <PngAccent src="/florals/hydrangea-corners.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#fefcfd",
+    ink: "#74505e",
+    inkSoft: "#ab8a96",
+    accent: "#e08aa4",
+    frame: "#eed4dd",
+    border: "#f4e2e8",
+    accentBg: "#fbedf1",
     headerFont: "'Montserrat', sans-serif",
-    nameFont: "'Cormorant Garamond', serif",
+    nameFont: "'Lora', serif",
     scriptFont: "'Dancing Script', cursive",
     bodyFont: "'Montserrat', sans-serif",
-    accent: "#5a6b4a",
-    accentLight: "#8a9b7a",
-    border: "#d8e4d0",
-    background: "#fafdf8",
-    accentBg: "#f0f5ec",
-    FloralComponent: WildflowersCorner,
-    nameStyle: "uppercase",
-    headerTracking: "0.5em",
+    headerTracking: "0.48em",
   },
+
+  // ── Corner pieces — one or two sprays, generous paper ──
   {
-    id: "tropical-paradise",
-    name: "Tropical Paradise",
+    id: "ivory-garden",
+    name: "Ivory Garden",
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/ivory-corner.png" size="contain" anchor="right top"
+          box={{ top: "1%", right: "0%", width: "50%", aspectRatio: "1.07" }} />
+        <PngAccent src="/florals/ivory-corner.png" size="contain" anchor="left bottom" flip flipY
+          box={{ bottom: "1%", left: "0%", width: "50%", aspectRatio: "1.07" }} />
+      </>
+    ),
+    paper: "#fbfaf6",
+    ink: "#4e4a3f",
+    inkSoft: "#94907f",
+    accent: "#9aa274",
+    frame: "#dcd9c8",
+    border: "#e9e6d8",
+    accentBg: "#f3f1e7",
     headerFont: "'Cinzel', serif",
     nameFont: "'Playfair Display', serif",
-    scriptFont: "'Tangerine', cursive",
-    bodyFont: "'Lora', serif",
-    accent: "#2d5a45",
-    accentLight: "#4a7c59",
-    border: "#c8e0d8",
-    background: "#f8fcfa",
-    accentBg: "#e8f4f0",
-    FloralComponent: TropicalCorner,
-    nameStyle: "uppercase",
-    headerTracking: "0.45em",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
   },
   {
-    id: "minimalist-botanical",
-    name: "Minimalist Botanical",
+    id: "vintage-spray",
+    name: "Vintage Spray",
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/vintage-spray.png" anchor="right top"
+          box={{ top: "1%", right: "0%", width: "38%", height: "52%" }} />
+        <PngAccent src="/florals/vintage-spray.png" anchor="right top" rotate={172} opacity={0.8}
+          box={{ bottom: "1%", left: "0%", width: "28%", height: "40%" }} />
+      </>
+    ),
+    paper: "#fdf9f7",
+    ink: "#6e4a52",
+    inkSoft: "#aa8a91",
+    accent: "#d6718e",
+    frame: "#ead2d8",
+    border: "#f2e1e5",
+    accentBg: "#f9ecef",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Lora', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.5em",
+  },
+
+  // ── Edge garlands — asymmetric, text shifts off the artwork ──
+  {
+    id: "english-rose-border",
+    name: "English Rose Border",
+    textStyle: { paddingRight: "30%", paddingLeft: "9%" },
+    Decor: () => (
+      <PngAccent src="/florals/english-roses.png" size="auto 102%" anchor="right center"
+        box={{ top: "-1%", bottom: "-1%", right: 0, width: "40%" }} />
+    ),
+    paper: "#fcfaf5",
+    ink: "#5a4a3c",
+    inkSoft: "#a3937f",
+    accent: "#c97083",
+    frame: "#e0d4c2",
+    border: "#ebe2d3",
+    accentBg: "#f5efe4",
+    headerFont: "'Cormorant Garamond', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.35em",
+  },
+  {
+    id: "dusty-meadow",
+    name: "Dusty Meadow",
+    textStyle: { paddingLeft: "23%", paddingRight: "23%" },
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/dusty-vine.png" size="contain" anchor="left center"
+          box={{ top: "3%", bottom: "3%", left: "1%", width: "30%" }} />
+        <PngAccent src="/florals/dusty-vine.png" size="contain" anchor="right center" flip
+          box={{ top: "3%", bottom: "3%", right: "1%", width: "30%" }} />
+      </>
+    ),
+    paper: "#fbfaf8",
+    ink: "#5e5560",
+    inkSoft: "#9a909c",
+    accent: "#a48ba6",
+    frame: "#ded6df",
+    border: "#e9e3ea",
+    accentBg: "#f3eff4",
     headerFont: "'Montserrat', sans-serif",
     nameFont: "'Cormorant Garamond', serif",
     scriptFont: "'Cormorant Garamond', serif",
     bodyFont: "'Montserrat', sans-serif",
-    accent: "#5a4a3a",
-    accentLight: "#8b7355",
-    border: "#e8dfd5",
-    background: "#faf8f5",
-    accentBg: "#f5efe8",
-    FloralComponent: MinimalistCorner,
-    nameStyle: "uppercase",
-    headerTracking: "0.6em",
+    headerTracking: "0.55em",
+  },
+
+  // ── Greenery & minimal ──
+  {
+    id: "garden-greens",
+    name: "Garden Greens",
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/eucalyptus-branch.png" anchor="left top" rotate={-10}
+          box={{ top: "4%", left: "-4%", width: "34%", height: "70%" }} />
+        <PngAccent src="/florals/seeded-sprig.png" anchor="left top" rotate={158} opacity={0.9}
+          box={{ bottom: "0%", right: "-2%", width: "26%", height: "46%" }} />
+      </>
+    ),
+    paper: "#fbfcf9",
+    ink: "#45524a",
+    inkSoft: "#8b9a8e",
+    accent: "#7d9b84",
+    frame: "#d2dcd2",
+    border: "#e2e9e1",
+    accentBg: "#eef3ee",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.5em",
+  },
+  {
+    id: "laurel-rise",
+    name: "Laurel Rise",
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/laurel-branch.png" anchor="left bottom"
+          box={{ bottom: "3%", left: "3%", width: "23%", height: "56%" }} />
+        <PngAccent src="/florals/laurel-branch.png" anchor="left bottom" flip
+          box={{ bottom: "3%", right: "3%", width: "23%", height: "56%" }} />
+      </>
+    ),
+    paper: "#fbfdf9",
+    ink: "#4d5a48",
+    inkSoft: "#90a089",
+    accent: "#8aa57e",
+    frame: "#d5dfd0",
+    border: "#e3eade",
+    accentBg: "#eff4ec",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.45em",
+  },
+  {
+    id: "sweetheart-posy",
+    name: "Sweetheart Posy",
+    textStyle: { paddingTop: "22%" },
+    Decor: () => (
+      <PngAccent src="/florals/posy-hearts.png" size="contain" anchor="center top"
+        box={{ top: "5%", left: "14%", right: "14%", height: "20%" }} />
+    ),
+    paper: "#fdfcfb",
+    ink: "#555a5e",
+    inkSoft: "#9aa0a5",
+    accent: "#e294a8",
+    frame: "#dfe2e4",
+    border: "#eaeced",
+    accentBg: "#f6eef1",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.55em",
+  },
+  {
+    id: "peach-bouquet",
+    name: "Peach Bouquet",
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/peach-bouquet.png"
+          box={{ top: "1%", left: "0%", width: "44%", aspectRatio: "1" }} />
+        <PngAccent src="/florals/peach-bouquet.png" flip flipY opacity={0.92}
+          box={{ bottom: "1%", right: "0%", width: "38%", aspectRatio: "1" }} />
+      </>
+    ),
+    paper: "#fdfaf5",
+    ink: "#5c4a3d",
+    inkSoft: "#a8917e",
+    accent: "#cf8662",
+    frame: "#e3cdb8",
+    border: "#eedfcf",
+    accentBg: "#f8eee3",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.5em",
+  },
+  {
+    id: "line-rose",
+    name: "Line Rose",
+    Decor: () => (
+      <div className="absolute pointer-events-none" style={{ top: "5.5%", left: "50%", transform: "translateX(-50%)", width: "30%", height: "24%" }}>
+        <LineRose />
+      </div>
+    ),
+    paper: "#fcfaf6",
+    ink: "#5b5048",
+    inkSoft: "#a3968b",
+    accent: "#a98a72",
+    frame: "#ddd2c4",
+    border: "#eae2d6",
+    accentBg: "#f4eee6",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Cormorant Garamond', serif",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.55em",
+  },
+  {
+    id: "rose-ribbon",
+    name: "Rose Ribbon",
+    textStyle: { paddingRight: "6%" },
+    Decor: () => (
+      // unflipped so the cascade falls along the right edge, not across the text
+      <PngAccent src="/florals/rose-ribbon.png" anchor="right top"
+        box={{ top: "0%", right: "0%", width: "54%", aspectRatio: "1" }} />
+    ),
+    paper: "#fdf8f7",
+    ink: "#69464c",
+    inkSoft: "#b08e94",
+    accent: "#dd8296",
+    frame: "#ecccd3",
+    border: "#f3dde1",
+    accentBg: "#fae9ec",
+    headerFont: "'Libre Baskerville', serif",
+    nameFont: "'Lora', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Libre Baskerville', serif",
+    headerTracking: "0.35em",
+  },
+  {
+    id: "forget-me-not",
+    name: "Forget-Me-Not",
+    Decor: () => (
+      <>
+        <PngAccent src="/florals/forget-me-not.png"
+          box={{ top: "0%", left: "0%", width: "44%", aspectRatio: "1" }} />
+        <PngAccent src="/florals/forget-me-not.png" flip flipY opacity={0.9}
+          box={{ bottom: "0%", right: "0%", width: "38%", aspectRatio: "1" }} />
+      </>
+    ),
+    paper: "#f9fbfd",
+    ink: "#2f4858",
+    inkSoft: "#7e98a8",
+    accent: "#4a7fa5",
+    frame: "#c5d6e2",
+    border: "#dae6ee",
+    accentBg: "#eaf2f7",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.5em",
+  },
+  {
+    id: "gilded-laurel",
+    name: "Gilded Laurel",
+    dark: true,
+    Decor: () => (
+      <>
+        <div className="absolute pointer-events-none" style={{ top: "8%", left: "18%", right: "18%", height: "13%" }}>
+          <LaurelArc />
+        </div>
+        <div className="absolute pointer-events-none" style={{ bottom: "8%", left: "18%", right: "18%", height: "13%", transform: "rotate(180deg)" }}>
+          <LaurelArc />
+        </div>
+      </>
+    ),
+    paper: "#2c3530",
+    ink: "#f2efe6",
+    inkSoft: "#b8b2a0",
+    accent: "#c2a36b",
+    frame: "#5d6a5e",
+    border: "#3c463f",
+    accentBg: "#f2efe4",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+
+  // ── New designs ──
+  {
+    id: "dusty-rose",
+    name: "Dusty Rose",
+    Decor: () => (
+      <PngAccent src="/florals/dusty-rose-bouquet.png" size="contain" anchor="right bottom" flip flipY opacity={0.95}
+        box={{ bottom: "1%", right: "1%", width: "38%", aspectRatio: "0.79" }} />
+    ),
+    paper: "#fbf8f7",
+    ink: "#5d4750",
+    inkSoft: "#a68d96",
+    accent: "#bf8298",
+    frame: "#e4d2d9",
+    border: "#efe2e7",
+    accentBg: "#f8edf1",
+    headerFont: "'Cormorant Garamond', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.4em",
+  },
+  {
+    id: "falling-petals",
+    name: "Falling Petals",
+    textStyle: { paddingBottom: "16%" },
+    Decor: () => (
+      // 100% auto keeps the rose bed spanning the full card width at any size
+      <PngAccent src="/florals/rose-petals.png" size="100% auto" anchor="center bottom"
+        box={{ left: 0, right: 0, bottom: 0, top: "46%" }} />
+    ),
+    paper: "#fdf9f8",
+    ink: "#6b4a52",
+    inkSoft: "#b09098",
+    accent: "#dd8b9c",
+    frame: "#eccfd5",
+    border: "#f4dfe3",
+    accentBg: "#fbecef",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+  {
+    id: "bluebell",
+    name: "Bluebell",
+    Decor: () => (
+      <PngAccent src="/florals/bluebell-corners.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#f7fbfc",
+    ink: "#2f5566",
+    inkSoft: "#7ba0ad",
+    accent: "#3d97ad",
+    frame: "#c4dee4",
+    border: "#daebef",
+    accentBg: "#e9f4f6",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Lora', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.48em",
+  },
+  {
+    id: "lavender-haze",
+    name: "Lavender Haze",
+    Decor: () => (
+      <PngAccent src="/florals/lavender-haze.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#fbfafd",
+    ink: "#574b66",
+    inkSoft: "#9d92ad",
+    accent: "#9277b8",
+    frame: "#ddd4ea",
+    border: "#e9e3f1",
+    accentBg: "#f3eef9",
+    headerFont: "'Libre Baskerville', serif",
+    nameFont: "'Lora', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Libre Baskerville', serif",
+    headerTracking: "0.35em",
+  },
+  {
+    id: "wild-greenery",
+    name: "Wild Greenery",
+    noFrame: true,
+    Decor: () => (
+      <PngAccent src="/florals/wild-greenery.png" size="100% 100%"
+        box={{ inset: 0 }} />
+    ),
+    paper: "#fbfdf9",
+    ink: "#42554a",
+    inkSoft: "#8a9c8e",
+    accent: "#6f9a7e",
+    frame: "#cfdcd0",
+    border: "#e0e9e0",
+    accentBg: "#edf3ed",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.5em",
+  },
+  {
+    id: "spring-meadow",
+    name: "Spring Meadow",
+    textStyle: { paddingBottom: "30%" },
+    Decor: () => (
+      <PngAccent src="/florals/meadow-blush.png" size="contain" anchor="right bottom"
+        box={{ right: "2%", bottom: "0%", width: "56%", top: "58%" }} />
+    ),
+    paper: "#fdfafb",
+    ink: "#6a5057",
+    inkSoft: "#ab9097",
+    accent: "#e58aa6",
+    frame: "#edd5dc",
+    border: "#f5e4e9",
+    accentBg: "#fbeef2",
+    headerFont: "'Montserrat', sans-serif",
+    nameFont: "'Cormorant Garamond', serif",
+    scriptFont: "'Dancing Script', cursive",
+    bodyFont: "'Montserrat', sans-serif",
+    headerTracking: "0.55em",
+  },
+  {
+    id: "sweet-pea",
+    name: "Sweet Pea",
+    textStyle: { paddingLeft: "8%" },
+    Decor: () => (
+      <PngAccent src="/florals/sweet-pea.png" size="contain" anchor="left bottom"
+        box={{ bottom: "1%", left: "0%", width: "48%", aspectRatio: "0.81" }} />
+    ),
+    paper: "#fbfafc",
+    ink: "#4f4564",
+    inkSoft: "#968cab",
+    accent: "#8a72b5",
+    frame: "#d9d1e8",
+    border: "#e7e1f0",
+    accentBg: "#f1edf8",
+    headerFont: "'Cormorant Garamond', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.4em",
   },
 ];
 
-// ============================================
-// DECORATIVE ELEMENTS
-// ============================================
+// Old template ids (previous designs) → closest current template
+const legacyIdMap: Record<string, string> = {
+  "camellia-vine": "english-rose-border",
+  "jasmine-cascade": "garden-greens",
+  "classic-roses": "rose-ribbon",
+  "soft-peonies": "peach-bouquet",
+  "wildflower-meadow": "forget-me-not",
+  "tropical-paradise": "garden-greens",
+  "minimalist-botanical": "line-rose",
+  "vintage-blush": "rose-ribbon",
+  "crimson-rose": "english-rose-border",
+  "vintage-rose": "vintage-spray",
+  "blush-peony": "peach-bouquet",
+  "painted-anemones": "forget-me-not",
+  "midnight-bouquet": "gilded-laurel",
+  "garden-dahlias": "gilded-laurel",
+  "olive-branch": "garden-greens",
+  "blush-bloom": "peach-bouquet",
+  "delicate-fern": "garden-greens",
+  "sage-eucalyptus": "garden-greens",
+};
 
-const Butterfly = ({ color = "#c97b84" }: { color?: string }) => (
-  <svg viewBox="0 0 40 30" className="w-8 h-6 md:w-10 md:h-8">
-    <g fill="none" stroke={color} strokeWidth="0.5">
-      <ellipse cx="12" cy="15" rx="10" ry="8" fill={color} opacity="0.3" transform="rotate(-20 12 15)" />
-      <ellipse cx="28" cy="15" rx="10" ry="8" fill={color} opacity="0.3" transform="rotate(20 28 15)" />
-      <ellipse cx="14" cy="18" rx="6" ry="5" fill={color} opacity="0.2" transform="rotate(-15 14 18)" />
-      <ellipse cx="26" cy="18" rx="6" ry="5" fill={color} opacity="0.2" transform="rotate(15 26 18)" />
-      <line x1="20" y1="8" x2="20" y2="24" stroke={color} strokeWidth="1.5" />
-      <path d="M20 8 Q18 4, 15 2" stroke={color} />
-      <path d="M20 8 Q22 4, 25 2" stroke={color} />
-    </g>
-  </svg>
-);
+export const resolveTemplate = (templateId: string): CardTemplate => {
+  const id = legacyIdMap[templateId] || templateId;
+  return saveTheDateTemplates.find(t => t.id === id) ?? saveTheDateTemplates[0];
+};
 
-// ============================================
+// ============================================================
 // MAIN COMPONENT
-// ============================================
+// ============================================================
 
 interface SaveTheDateCardProps {
   templateId: string;
   names: { partner1: string; partner2: string };
   date: string;
   venue: string;
+  design?: CardDesign;
   isEditable?: boolean;
   isFlipped?: boolean;
   onFlip?: () => void;
@@ -339,14 +711,8 @@ interface SaveTheDateCardProps {
 }
 
 const SaveTheDateCard = ({
-  templateId,
-  names,
-  date,
-  venue,
-  isFlipped: controlledIsFlipped,
-  onFlip,
-  rsvpCode,
-  storySlug,
+  templateId, names, date, venue, design,
+  isFlipped: controlledIsFlipped, onFlip, rsvpCode, storySlug,
 }: SaveTheDateCardProps) => {
   const navigate = useNavigate();
   const [internalIsFlipped, setInternalIsFlipped] = useState(false);
@@ -354,8 +720,13 @@ const SaveTheDateCard = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [guestName, setGuestName] = useState("");
   const [guestCount, setGuestCount] = useState("1");
-  const [dietaryNotes, setDietaryNotes] = useState("");
-
+  // One response per guest per invitation — remembered on this device.
+  // A guest may only flip their answer afterwards (also enforced server-side).
+  const rsvpStorageKey = rsvpCode ? `rsvp-response:${rsvpCode}` : null;
+  const [priorResponse, setPriorResponse] = useState<{ name: string; status: "confirmed" | "declined" } | null>(() => {
+    if (!rsvpStorageKey) return null;
+    try { return JSON.parse(localStorage.getItem(rsvpStorageKey) || "null"); } catch { return null; }
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragRotation, setDragRotation] = useState(0);
   const startX = useRef<number>(0);
@@ -363,392 +734,429 @@ const SaveTheDateCard = ({
 
   const isFlipped = controlledIsFlipped !== undefined ? controlledIsFlipped : internalIsFlipped;
   const baseRotation = isFlipped ? 180 : 0;
+  const align: CardAlign = design?.align || "center";
 
   const handleFlip = useCallback(() => {
-    if (onFlip) {
-      onFlip();
-    } else {
-      setInternalIsFlipped(!internalIsFlipped);
-    }
+    if (onFlip) onFlip(); else setInternalIsFlipped(f => !f);
   }, [onFlip, internalIsFlipped]);
 
-  const calculateRotation = (deltaX: number) => {
-    const cardWidth = cardRef.current?.offsetWidth || 300;
-    const rotation = (deltaX / cardWidth) * 180;
-    return isFlipped
-      ? Math.max(-180, Math.min(0, rotation))
-      : Math.max(0, Math.min(180, -rotation));
+  const calcRot = (dx: number) => {
+    const w = cardRef.current?.offsetWidth || 300;
+    const r = (dx / w) * 180;
+    return isFlipped ? Math.max(-180, Math.min(0, r)) : Math.max(0, Math.min(180, -r));
   };
 
-  const isInteractiveElement = (target: EventTarget | null): boolean => {
-    if (!target || !(target instanceof HTMLElement)) return false;
-    return !!(target.closest('input, textarea, select, button, [role="button"], label'));
-  };
+  const isInteractive = (t: EventTarget | null) =>
+    !!(t instanceof HTMLElement && t.closest('input,textarea,select,button,[role="button"],label'));
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isInteractiveElement(e.target)) return;
-    startX.current = e.touches[0].clientX;
-    setIsDragging(true);
-    setDragRotation(0);
+    if (isInteractive(e.target)) return;
+    startX.current = e.touches[0].clientX; setIsDragging(true); setDragRotation(0);
   };
-
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    setDragRotation(calculateRotation(e.touches[0].clientX - startX.current));
+    setDragRotation(calcRot(e.touches[0].clientX - startX.current));
   };
-
   const handleTouchEnd = () => {
     if (!isDragging) return;
     if (Math.abs(dragRotation) > 45) handleFlip();
-    setIsDragging(false);
-    setDragRotation(0);
+    setIsDragging(false); setDragRotation(0);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isInteractiveElement(e.target)) return;
-    e.preventDefault();
-    startX.current = e.clientX;
-    setIsDragging(true);
-    setDragRotation(0);
-    document.addEventListener('mousemove', handleGlobalMouseMove);
-    document.addEventListener('mouseup', handleGlobalMouseUp);
-  };
-
-  const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
-    setDragRotation(calculateRotation(e.clientX - startX.current));
+  const gMouseMove = useCallback((e: MouseEvent) => {
+    setDragRotation(calcRot(e.clientX - startX.current));
   }, [isFlipped]);
 
-  const handleGlobalMouseUp = useCallback(() => {
-    setDragRotation(prev => {
-      if (Math.abs(prev) > 45) setTimeout(() => handleFlip(), 0);
-      return 0;
-    });
+  const gMouseUp = useCallback(() => {
+    setDragRotation(prev => { if (Math.abs(prev) > 45) setTimeout(() => handleFlip(), 0); return 0; });
     setIsDragging(false);
-    document.removeEventListener('mousemove', handleGlobalMouseMove);
-    document.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [handleFlip, handleGlobalMouseMove]);
+    document.removeEventListener('mousemove', gMouseMove);
+    document.removeEventListener('mouseup', gMouseUp);
+  }, [handleFlip, gMouseMove]);
 
-  const template = saveTheDateTemplates.find((t) => t.id === templateId) || saveTheDateTemplates[0];
-  const FloralComponent = template.FloralComponent;
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isInteractive(e.target)) return;
+    e.preventDefault();
+    startX.current = e.clientX; setIsDragging(true); setDragRotation(0);
+    document.addEventListener('mousemove', gMouseMove);
+    document.addEventListener('mouseup', gMouseUp);
+  };
+
+  const template = resolveTemplate(templateId);
+  const { Decor } = template;
 
   const handleRsvpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim()) { toast.error("Please enter your name"); return; }
     if (!rsvpStatus) { toast.error("Please select if you're attending"); return; }
-    const count = parseInt(guestCount, 10);
-    if (count > 2) { toast.error("Party size cannot exceed 2 people"); return; }
-
     setIsSubmitting(true);
-
     try {
       if (rsvpCode) {
-        // Submit to backend
-        const response = await rsvpService.submitRsvp({
-          rsvpCode,
-          name: guestName.trim(),
-          status: rsvpStatus === "attending" ? "confirmed" : "declined",
+        const status = rsvpStatus === "attending" ? "confirmed" : "declined";
+        const res = await rsvpService.submitRsvp({
+          rsvpCode, name: guestName.trim(),
+          status,
           guestCount: parseInt(guestCount, 10),
-          dietaryNotes: dietaryNotes.trim() || undefined,
         });
-        toast.success(response.message);
-        setGuestName(""); setGuestCount("1"); setDietaryNotes(""); setRsvpStatus(null);
-        // Redirect to the couple's story website if published
-        if (storySlug) {
-          setTimeout(() => navigate(`/s/${storySlug}`), 1200);
+        toast.success(res.message);
+        if (rsvpStorageKey) {
+          const stored = { name: guestName.trim(), status } as const;
+          localStorage.setItem(rsvpStorageKey, JSON.stringify(stored));
+          setPriorResponse(stored);
         }
+        setGuestName(""); setGuestCount("1"); setRsvpStatus(null);
+        // Straight to the couple's website; the site acknowledges the response
+        // from the query param, so there's no need to linger here first.
+        if (storySlug) navigate(`/s/${storySlug}?rsvp=${status}`, { replace: true });
       } else {
-        // Fallback for preview mode (no rsvpCode)
         toast.success(rsvpStatus === "attending"
           ? "Thank you! We can't wait to celebrate with you!"
           : "Thank you for letting us know. We'll miss you!");
-        setGuestName(""); setGuestCount("1"); setDietaryNotes(""); setRsvpStatus(null);
+        setGuestName(""); setGuestCount("1"); setRsvpStatus(null);
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to submit RSVP");
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit RSVP");
+    } finally { setIsSubmitting(false); }
   };
 
-  const handleFormInteraction = (e: React.MouseEvent | React.TouchEvent) => e.stopPropagation();
-
-  const formatDateElegant = (dateStr: string) => {
+  // Flip a previous answer to the opposite one (the only allowed change)
+  const handleChangeResponse = async () => {
+    if (!priorResponse || !rsvpCode || !rsvpStorageKey) return;
+    const newStatus = priorResponse.status === "confirmed" ? "declined" : "confirmed";
+    setIsSubmitting(true);
     try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return { month: "", day: "", year: "", full: dateStr };
-      return {
-        month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
-        day: d.getDate().toString(),
-        year: d.getFullYear().toString(),
-        full: dateStr,
-      };
-    } catch { return { month: "", day: "", year: "", full: dateStr }; }
+      const res = await rsvpService.submitRsvp({
+        rsvpCode,
+        name: priorResponse.name,
+        status: newStatus,
+        guestCount: newStatus === "confirmed" ? parseInt(guestCount, 10) : undefined,
+      });
+      toast.success(res.message);
+      const stored = { name: priorResponse.name, status: newStatus } as const;
+      localStorage.setItem(rsvpStorageKey, JSON.stringify(stored));
+      setPriorResponse(stored);
+      if (storySlug) navigate(`/s/${storySlug}?rsvp=${newStatus}`, { replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update RSVP");
+    } finally { setIsSubmitting(false); }
   };
 
-  const dateFormatted = formatDateElegant(date);
+  const stopProp = (e: React.MouseEvent | React.TouchEvent) => e.stopPropagation();
+
+  const formatDate = (s: string) => {
+    try {
+      const d = new Date(s);
+      if (isNaN(d.getTime())) return s;
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } catch { return s; }
+  };
+
+  const formatName = (n: string) =>
+    n.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+
   const currentRotation = baseRotation + dragRotation;
 
-  const formatName = (name: string) => {
-    if (template.nameStyle === "uppercase") return name.toUpperCase();
-    if (template.nameStyle === "capitalize") return name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-    return name;
-  };
+  const alignClasses =
+    align === "left" ? "items-start text-left"
+    : align === "right" ? "items-end text-right"
+    : "items-center text-center";
+
+  // Double hairline frame — the printed-stationery signature detail
+  const Frame = () => (
+    <>
+      <div className="absolute pointer-events-none rounded-[10px] z-10"
+        style={{ inset: "9px", border: `1px solid ${template.frame}`, opacity: 0.9 }} />
+      <div className="absolute pointer-events-none rounded-[8px] z-10"
+        style={{ inset: "13px", border: `1px solid ${template.frame}`, opacity: 0.4 }} />
+    </>
+  );
+
+  const Rule = () => (
+    <div className="flex items-center gap-2 my-2 sm:my-2.5" style={{ width: "42%" }}>
+      <div className="flex-1 h-px" style={{ backgroundColor: template.accent, opacity: 0.5 }} />
+      <div className="w-1 h-1 rotate-45" style={{ backgroundColor: template.accent, opacity: 0.75 }} />
+      <div className="flex-1 h-px" style={{ backgroundColor: template.accent, opacity: 0.5 }} />
+    </div>
+  );
 
   return (
     <div
       ref={cardRef}
       className="w-full h-full min-h-[360px] sm:min-h-[450px] md:min-h-[500px]"
       style={{ perspective: "1200px" }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
     >
       <div
-        className={`relative w-full h-full ${isDragging ? '' : 'transition-transform duration-500 ease-out'}`}
+        className={`relative w-full h-full ${isDragging ? "" : "transition-transform duration-500 ease-out"}`}
         style={{
           transformStyle: "preserve-3d",
+          // @ts-ignore
+          WebkitTransformStyle: "preserve-3d",
           transform: `rotateY(${currentRotation}deg)`,
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: isDragging ? "grabbing" : "grab",
+          willChange: "transform",
         }}
       >
-        {/* ============ FRONT ============ */}
+        {/* ── FRONT ── */}
         <div
-          className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-2xl"
+          className="absolute inset-0 w-full h-full rounded-xl overflow-hidden shadow-2xl"
           style={{
-            backgroundColor: template.background,
-            borderColor: template.border,
-            borderWidth: "1px",
-            borderStyle: "solid",
+            backgroundColor: template.paper,
+            border: `1px solid ${template.border}`,
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
+            // @ts-ignore
+            WebkitTransform: "rotateY(0deg)",
+            willChange: "transform",
             pointerEvents: isFlipped ? "none" : "auto",
           }}
         >
-          {/* Floral Corners */}
-          <FloralComponent className="absolute top-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36" />
-          <FloralComponent className="absolute top-0 right-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36" flip />
-          <FloralComponent className="absolute bottom-0 left-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rotate-180" flip />
-          <FloralComponent className="absolute bottom-0 right-0 w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rotate-180" />
+          <Decor />
+          {!template.noFrame && <Frame />}
 
-          {/* Butterfly */}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2">
-            <Butterfly color={template.accentLight} />
-          </div>
+          {/* Text — generous whitespace */}
+          <div
+            className={`relative z-20 flex flex-col justify-center h-full px-8 sm:px-10 ${alignClasses}`}
+            style={template.textStyle}
+          >
+            <p className="uppercase text-[9px] sm:text-[11px]"
+              style={{ fontFamily: template.headerFont, letterSpacing: template.headerTracking, color: template.inkSoft }}>
+              Save the Date
+            </p>
+            <p className="text-base sm:text-xl mt-1"
+              style={{ fontFamily: template.scriptFont, color: template.accent }}>
+              for the wedding of
+            </p>
 
-          {/* Content */}
-          <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4 py-6 sm:px-6 sm:py-10">
-            {/* Header */}
-            <div className="mb-1">
-              <p
-                style={{
-                  fontFamily: template.headerFont,
-                  letterSpacing: template.headerTracking,
-                  color: template.accentLight,
-                }}
-                className="text-[10px] md:text-xs uppercase"
-              >
-                Save the Date
-              </p>
-              <p
-                style={{ fontFamily: template.scriptFont, color: template.accentLight }}
-                className="text-base md:text-lg mt-0.5"
-              >
-                for the wedding of
-              </p>
-            </div>
+            <Rule />
 
-            {/* Names */}
-            <div className="my-2 sm:my-4 md:my-6">
-              <h2
-                style={{ fontFamily: template.nameFont, color: template.accent }}
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl tracking-wide leading-relaxed"
-              >
-                {formatName(names.partner1 || "Partner One")}
-              </h2>
-              <p
-                style={{ fontFamily: template.scriptFont, color: template.accentLight }}
-                className="text-xl sm:text-2xl md:text-3xl my-0.5"
-              >
-                &amp;
-              </p>
-              <h2
-                style={{ fontFamily: template.nameFont, color: template.accent }}
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl tracking-wide leading-relaxed"
-              >
-                {formatName(names.partner2 || "Partner Two")}
-              </h2>
-            </div>
+            <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
+              style={{ fontFamily: template.nameFont, color: template.ink }}>
+              {formatName(names.partner1 || "Partner One")}
+            </h2>
+            <p className="text-xl sm:text-3xl leading-snug my-0.5"
+              style={{ fontFamily: template.scriptFont, color: template.accent }}>
+              &amp;
+            </p>
+            <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
+              style={{ fontFamily: template.nameFont, color: template.ink }}>
+              {formatName(names.partner2 || "Partner Two")}
+            </h2>
 
-            {/* Date */}
-            <div className="my-2 sm:my-3">
-              {dateFormatted.day ? (
-                <p
-                  style={{ fontFamily: template.bodyFont, color: template.accent }}
-                  className="text-xs md:text-sm tracking-[0.25em]"
-                >
-                  {dateFormatted.month} • {dateFormatted.day} • {dateFormatted.year}
-                </p>
-              ) : (
-                <p style={{ fontFamily: template.bodyFont, color: template.accent }} className="text-xs md:text-sm">
-                  {date}
-                </p>
-              )}
-              <p
-                style={{ fontFamily: template.scriptFont, color: template.accentLight }}
-                className="text-sm md:text-base mt-0.5"
-              >
-                {venue || "Venue TBD"}
-              </p>
-            </div>
+            <Rule />
 
-            {/* Invitation to Follow */}
-            <div className="mt-2 sm:mt-4 md:mt-6">
-              <p
-                style={{ fontFamily: template.headerFont, letterSpacing: "0.25em", color: template.accentLight }}
-                className="text-[9px] md:text-[10px] uppercase"
-              >
-                Invitation to Follow
-              </p>
-            </div>
+            <p className="tracking-[0.2em] uppercase text-[10px] sm:text-xs"
+              style={{ fontFamily: template.bodyFont, color: template.ink }}>
+              {formatDate(date)}
+            </p>
+            <p className="text-base sm:text-lg mt-1"
+              style={{ fontFamily: template.scriptFont, color: template.inkSoft }}>
+              {venue || "Venue TBD"}
+            </p>
 
-            {/* Swipe hint */}
-            <p
-              style={{ color: template.accentLight }}
-              className="absolute bottom-2 sm:bottom-3 text-[8px] sm:text-[9px] opacity-50"
-            >
-              ← Swipe to RSVP →
+            <p className="uppercase mt-4 sm:mt-6 text-[7px] sm:text-[8px]"
+              style={{ fontFamily: template.headerFont, letterSpacing: "0.3em", color: template.inkSoft, opacity: 0.75 }}>
+              Invitation to Follow
             </p>
           </div>
+
+          <p className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 text-[7px] sm:text-[8px] whitespace-nowrap"
+            style={{ color: template.inkSoft, opacity: 0.5 }}>
+            ← swipe to RSVP →
+          </p>
         </div>
 
-        {/* ============ BACK - RSVP ============ */}
+        {/* ── BACK – RSVP ── */}
         <div
-          className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+          className="absolute inset-0 w-full h-full rounded-xl overflow-hidden shadow-2xl flex flex-col"
           style={{
-            backgroundColor: template.background,
-            borderColor: template.border,
-            borderWidth: "1px",
-            borderStyle: "solid",
+            backgroundColor: template.dark ? "#faf8f2" : template.paper,
+            border: `1px solid ${template.border}`,
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
+            // @ts-ignore
+            WebkitTransform: "rotateY(180deg)",
+            willChange: "transform",
             pointerEvents: isFlipped ? "auto" : "none",
           }}
         >
-          {/* Subtle florals */}
-          <FloralComponent className="absolute top-0 left-0 w-12 h-12 sm:w-16 sm:h-16 opacity-30" />
-          <FloralComponent className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 opacity-30" flip />
-
           {/* Header */}
-          <div className="px-3 py-2 sm:px-5 sm:py-4 shrink-0" style={{ borderBottomColor: template.border, borderBottomWidth: "1px" }}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: template.accentBg }}>
-                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4" style={{ color: template.accent }} />
-              </div>
-              <div>
-                <h3 style={{ fontFamily: template.nameFont, color: template.accent }} className="text-sm sm:text-base">RSVP</h3>
-                <p style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px]">Kindly respond</p>
-              </div>
+          <div className="shrink-0 pt-4 pb-2 text-center">
+            <p className="uppercase text-[8px] sm:text-[9px]"
+              style={{ fontFamily: template.headerFont, letterSpacing: template.headerTracking, color: template.inkSoft }}>
+              kindly reply
+            </p>
+            <p className="mt-0.5 text-xl sm:text-2xl"
+              style={{ fontFamily: template.scriptFont, color: template.accent }}>
+              RSVP
+            </p>
+            <div className="flex items-center justify-center gap-2 mt-1 px-14">
+              <div className="flex-1 h-px" style={{ backgroundColor: template.frame }} />
+              <div className="w-1 h-1 rotate-45" style={{ backgroundColor: template.accent, opacity: 0.6 }} />
+              <div className="flex-1 h-px" style={{ backgroundColor: template.frame }} />
             </div>
           </div>
 
-          {/* Form */}
-          <div className="p-3 sm:p-4 overflow-y-auto flex-1" onMouseDown={handleFormInteraction} onTouchStart={handleFormInteraction}>
-            <form onSubmit={handleRsvpSubmit} className="space-y-2 sm:space-y-3">
-              <div className="space-y-1">
-                <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider flex items-center gap-1">
-                  <Users className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Your Name
-                </label>
-                <Input
-                  placeholder="Enter your full name"
-                  className="h-8 sm:h-9 text-xs sm:text-sm"
-                  style={{ borderColor: template.border, backgroundColor: "rgba(255,255,255,0.8)" }}
+          {/* Form — stationery-style: bottom-border fields, no box look */}
+          <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-1" onMouseDown={stopProp} onTouchStart={stopProp}>
+            {priorResponse ? (
+              /* Already responded — only a change of heart is allowed */
+              <div className="h-full flex flex-col items-center justify-center text-center px-2 pb-4">
+                <p className="text-2xl sm:text-3xl"
+                  style={{ fontFamily: template.scriptFont, color: template.accent }}>
+                  Thank you
+                </p>
+                <p className="mt-1 text-sm sm:text-base"
+                  style={{ fontFamily: template.nameFont, color: template.dark ? "#4d4a43" : template.ink }}>
+                  {priorResponse.name}
+                </p>
+                <p className="mt-2 text-[10px] sm:text-xs"
+                  style={{ fontFamily: template.bodyFont, color: template.inkSoft }}>
+                  {priorResponse.status === "confirmed"
+                    ? "You've accepted — we can't wait to see you!"
+                    : "You've declined this invitation."}
+                </p>
+
+                <div className="flex items-center gap-2 my-4 w-2/3">
+                  <div className="flex-1 h-px" style={{ backgroundColor: template.frame }} />
+                  <div className="w-1 h-1 rotate-45" style={{ backgroundColor: template.accent, opacity: 0.6 }} />
+                  <div className="flex-1 h-px" style={{ backgroundColor: template.frame }} />
+                </div>
+
+                <p className="text-[9px] uppercase tracking-widest mb-2"
+                  style={{ fontFamily: template.bodyFont, color: template.inkSoft }}>
+                  Changed your mind?
+                </p>
+
+                {priorResponse.status === "declined" && (
+                  <select
+                    value={guestCount}
+                    onChange={e => setGuestCount(e.target.value)}
+                    className="w-2/3 bg-transparent text-xs sm:text-sm outline-none pb-0.5 mb-3 text-center appearance-none"
+                    style={{
+                      fontFamily: template.bodyFont,
+                      color: template.dark ? "#4d4a43" : template.ink,
+                      borderBottom: `1px solid ${template.frame}`,
+                    }}>
+                    <option value={1}>Just me</option>
+                    <option value={2}>Me + 1 guest</option>
+                  </select>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleChangeResponse}
+                  disabled={isSubmitting}
+                  className="w-2/3 py-2 text-[9px] sm:text-[10px] uppercase tracking-[0.25em]"
+                  style={{
+                    fontFamily: template.bodyFont,
+                    border: `1px solid ${template.accent}`,
+                    backgroundColor: "transparent",
+                    color: template.accent,
+                    borderRadius: "4px",
+                  }}>
+                  {isSubmitting
+                    ? <Loader2 className="w-3 h-3 animate-spin mx-auto" />
+                    : priorResponse.status === "confirmed" ? "Decline instead" : "Accept instead"}
+                </button>
+              </div>
+            ) : (
+            <form onSubmit={handleRsvpSubmit} className="space-y-3 sm:space-y-3.5">
+
+              {/* Name */}
+              <div>
+                <p className="text-[8px] uppercase tracking-widest mb-0.5"
+                  style={{ fontFamily: template.bodyFont, color: template.inkSoft }}>
+                  Your name
+                </p>
+                <input
+                  placeholder="Full name"
                   value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
+                  onChange={e => setGuestName(e.target.value)}
                   required
+                  className="w-full bg-transparent text-xs sm:text-sm outline-none pb-0.5"
+                  style={{
+                    fontFamily: template.bodyFont,
+                    color: template.dark ? "#4d4a43" : template.ink,
+                    borderBottom: `1px solid ${template.frame}`,
+                    caretColor: template.accent,
+                  }}
                 />
               </div>
 
-              <div className="space-y-1">
-                <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
-                  Will you be attending?
-                </label>
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                  {(["attending", "declined"] as const).map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setRsvpStatus(status)}
-                      className="flex flex-col items-center p-2 sm:p-2.5 rounded-lg border-2 transition-all"
-                      style={{
-                        borderColor: rsvpStatus === status ? template.accent : template.border,
-                        backgroundColor: rsvpStatus === status ? template.accentBg : "rgba(255,255,255,0.8)",
-                        color: rsvpStatus === status ? template.accent : template.accentLight,
-                      }}
-                    >
-                      <div
-                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mb-0.5 sm:mb-1"
-                        style={{ backgroundColor: rsvpStatus === status ? template.border : template.accentBg }}
-                      >
-                        {status === "attending" ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
-                      </div>
-                      <span style={{ fontFamily: template.bodyFont }} className="text-[9px] sm:text-[10px]">
-                        {status === "attending" ? "Joyfully Accept" : "Regretfully Decline"}
-                      </span>
-                    </button>
-                  ))}
+              {/* Attend / Decline */}
+              <div>
+                <p className="text-[8px] uppercase tracking-widest mb-1.5"
+                  style={{ fontFamily: template.bodyFont, color: template.inkSoft }}>
+                  Will you join us?
+                </p>
+                <div className="flex gap-2">
+                  {(["attending", "declined"] as const).map(s => {
+                    const selected = rsvpStatus === s;
+                    return (
+                      <button key={s} type="button" onClick={() => setRsvpStatus(s)}
+                        className="flex-1 py-1.5 sm:py-2 text-[9px] sm:text-[10px] uppercase tracking-wider transition-all"
+                        style={{
+                          fontFamily: template.bodyFont,
+                          border: `1px solid ${selected ? template.accent : template.frame}`,
+                          backgroundColor: selected ? template.accentBg : "transparent",
+                          color: selected ? template.accent : template.inkSoft,
+                          borderRadius: "4px",
+                        }}>
+                        {s === "attending" ? "Joyfully accept" : "Regretfully decline"}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {rsvpStatus === "attending" && (
-                <>
-                  <div className="space-y-1">
-                    <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
-                      Party Size (max 2)
-                    </label>
-                    <select
-                      className="w-full h-8 sm:h-9 rounded-md px-2 text-xs sm:text-sm"
-                      style={{ borderColor: template.border, backgroundColor: "rgba(255,255,255,0.8)" }}
-                      value={guestCount}
-                      onChange={(e) => setGuestCount(e.target.value)}
-                    >
-                      <option value={1}>Just me</option>
-                      <option value={2}>Me + 1 guest</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label style={{ fontFamily: template.bodyFont, color: template.accentLight }} className="text-[9px] sm:text-[10px] uppercase tracking-wider">
-                      Dietary Notes / Message
-                    </label>
-                    <Textarea
-                      placeholder="Any dietary requirements?"
-                      className="h-12 sm:h-14 text-xs sm:text-sm resize-none"
-                      style={{ borderColor: template.border, backgroundColor: "rgba(255,255,255,0.8)" }}
-                      value={dietaryNotes}
-                      onChange={(e) => setDietaryNotes(e.target.value)}
-                    />
-                  </div>
-                </>
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest mb-0.5"
+                    style={{ fontFamily: template.bodyFont, color: template.inkSoft }}>
+                    Number of guests
+                  </p>
+                  <select
+                    value={guestCount}
+                    onChange={e => setGuestCount(e.target.value)}
+                    className="w-full bg-transparent text-xs sm:text-sm outline-none pb-0.5 appearance-none"
+                    style={{
+                      fontFamily: template.bodyFont,
+                      color: template.dark ? "#4d4a43" : template.ink,
+                      borderBottom: `1px solid ${template.frame}`,
+                    }}>
+                    <option value={1}>Just me</option>
+                    <option value={2}>Me + 1 guest</option>
+                  </select>
+                </div>
               )}
 
-              <Button
+              {/* Submit */}
+              <button
                 type="submit"
-                className="w-full h-8 sm:h-10 text-xs sm:text-sm font-medium"
-                style={{
-                  backgroundColor: rsvpStatus ? template.accent : template.border,
-                  color: rsvpStatus ? "white" : template.accentLight,
-                }}
                 disabled={!rsvpStatus || !guestName.trim() || isSubmitting}
-              >
-                {isSubmitting ? <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> : "Send Response"}
-              </Button>
+                className="w-full py-2 sm:py-2.5 text-[9px] sm:text-[10px] uppercase tracking-[0.25em] transition-opacity"
+                style={{
+                  fontFamily: template.bodyFont,
+                  backgroundColor: rsvpStatus && guestName.trim() ? template.accent : template.frame,
+                  color: "white",
+                  borderRadius: "4px",
+                  opacity: rsvpStatus && guestName.trim() ? 1 : 0.55,
+                }}>
+                {isSubmitting
+                  ? <Loader2 className="w-3 h-3 animate-spin mx-auto" />
+                  : "Send Response"}
+              </button>
             </form>
+            )}
           </div>
 
-          <div className="px-3 py-1.5 sm:px-4 sm:py-2 shrink-0" style={{ borderTopColor: template.border, borderTopWidth: "1px" }}>
-            <p style={{ color: template.accentLight }} className="text-center text-[8px] sm:text-[9px]">← Swipe to flip back →</p>
-          </div>
+          <p className="shrink-0 text-center text-[7px] sm:text-[8px] py-1.5"
+            style={{ color: template.inkSoft, opacity: 0.5, borderTop: `1px solid ${template.border}` }}>
+            ← swipe to flip back →
+          </p>
         </div>
       </div>
     </div>

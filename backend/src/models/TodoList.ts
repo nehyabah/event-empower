@@ -7,6 +7,7 @@ export interface TodoItem {
   completed: boolean;
   status: 'todo' | 'in_progress' | 'done';
   sort_order: number;
+  due_date: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -43,6 +44,7 @@ export interface CreateTodoItemInput {
   completed?: boolean;
   status?: 'todo' | 'in_progress' | 'done';
   sort_order?: number;
+  due_date?: string | null;
 }
 
 export interface UpdateTodoItemInput {
@@ -50,6 +52,7 @@ export interface UpdateTodoItemInput {
   completed?: boolean;
   status?: 'todo' | 'in_progress' | 'done';
   sort_order?: number;
+  due_date?: string | null;
 }
 
 export const TodoListModel = {
@@ -114,9 +117,11 @@ export const TodoListModel = {
     }));
   },
 
+  // Only lists the owner has explicitly shared. Planners read a client's todos
+  // through this, so the is_shared filter is what keeps private lists private.
   async findSharedByUserId(userId: string): Promise<TodoList[]> {
     const lists = await query<TodoList>(
-      'SELECT * FROM todo_lists WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT * FROM todo_lists WHERE user_id = $1 AND is_shared = TRUE ORDER BY created_at DESC',
       [userId]
     );
 
@@ -240,8 +245,8 @@ export const TodoItemModel = {
     const completed = input.completed ?? status === 'done';
 
     const result = await queryOne<TodoItem>(
-      `INSERT INTO todo_items (list_id, text, completed, status, sort_order)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO todo_items (list_id, text, completed, status, sort_order, due_date)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         input.list_id,
@@ -249,6 +254,7 @@ export const TodoItemModel = {
         completed,
         status,
         input.sort_order ?? (maxOrder?.max_order ?? -1) + 1,
+        input.due_date ?? null,
       ]
     );
 
@@ -279,6 +285,10 @@ export const TodoItemModel = {
     if (input.sort_order !== undefined) {
       fields.push(`sort_order = $${paramIndex++}`);
       values.push(input.sort_order);
+    }
+    if (input.due_date !== undefined) {
+      fields.push(`due_date = $${paramIndex++}`);
+      values.push(input.due_date ?? null);
     }
 
     if (fields.length === 0) {

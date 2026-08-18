@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/home/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -185,7 +184,6 @@ const MyInquiries = () => {
           )}
         </div>
       </main>
-      <Footer />
 
       <InquiryDetailModal
         open={isModalOpen}

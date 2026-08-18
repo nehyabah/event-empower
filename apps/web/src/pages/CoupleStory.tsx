@@ -21,6 +21,7 @@ import {
   Pin,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import Navbar from "@/components/layout/Navbar";
 import { useWishlist } from "@/context/useWishlist";
 import StoryEditor, { StoryImage } from "@/components/couple-story/StoryEditor";
 import { Comment } from "@/components/couple-story/CommentsSection";
@@ -38,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import storyService from "@/services/api/storyService";
 import type { TimelineEvent, WeddingPartyMember, TravelInfoItem, FaqItem } from "@/services/api/storyService";
 import { getTheme, isDarkTheme, DEFAULT_SECTION_ORDER } from "@/lib/siteThemes";
+import { getSiteFlorals, FloralGroup, Sprig } from "@/components/couple-story/FloralDecor";
 import {
   Dialog,
   DialogContent,
@@ -281,6 +283,7 @@ const CoupleStory = () => {
   const activeTheme = getTheme(selectedTemplate);
   const s = activeTheme.styles;
   const isDark = isDarkTheme(selectedTemplate);
+  const florals = getSiteFlorals(selectedTemplate);
   const weddingDateObj = new Date(coupleStory.weddingDate);
   const formattedDate = !Number.isNaN(weddingDateObj.getTime())
     ? weddingDateObj.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
@@ -297,11 +300,19 @@ const CoupleStory = () => {
       case "hero": return null; // Hero is always rendered outside the loop
       case "quote":
         return (
-          <section key="quote" className={`${s.sectionPadding} container mx-auto px-4 text-center`}>
-            <Quote className={`w-10 h-10 mx-auto mb-8 opacity-20 ${s.text}`} />
-            <h2 className={`text-3xl md:text-5xl lg:text-6xl ${s.fontHeading} max-w-4xl mx-auto leading-tight italic`}>
-              "{coupleStory.loveQuote}"
-            </h2>
+          <section key="quote" className={`${s.sectionPadding} text-center relative overflow-hidden`}>
+            <div className="container mx-auto px-4 relative z-10">
+              {florals?.sprig ? (
+                <div className="mb-8">
+                  <Sprig src={florals.sprig} className={florals.sprigClass ?? "h-16 w-36"} />
+                </div>
+              ) : (
+                <Quote className={`w-10 h-10 mx-auto mb-8 opacity-20 ${s.text}`} />
+              )}
+              <h2 className={`text-3xl md:text-5xl lg:text-6xl ${s.fontHeading} max-w-4xl mx-auto leading-tight italic`}>
+                "{coupleStory.loveQuote}"
+              </h2>
+            </div>
             {s.sectionDivider !== "hidden" && (
               <div className="mt-16">
                 {s.sectionDivider.includes("[&>span]") ? (
@@ -404,8 +415,9 @@ const CoupleStory = () => {
         return <TravelSection key="travel" travelInfo={travelInfo} styles={s} isDark={isDark} />;
       case "wishes":
         return (
-          <section key="wishes" className={`${s.sectionPadding} ${s.sectionBgAlt}`}>
-            <div className="container mx-auto px-4">
+          <section key="wishes" className={`${s.sectionPadding} ${s.sectionBgAlt} relative overflow-hidden`}>
+            <FloralGroup items={florals?.wishes} />
+            <div className="container mx-auto px-4 relative z-10">
               <div className="flex flex-col items-center text-center mb-16">
                 <div className={`p-3 rounded-full bg-current/5 mb-4 ${s.accent}`}><MessageSquare className="w-6 h-6" /></div>
                 <h3 className={`text-4xl md:text-5xl ${s.fontHeading} ${s.text}`}>Well Wishes</h3>
@@ -518,8 +530,11 @@ const CoupleStory = () => {
 
   return (
     <div className={`min-h-screen transition-all duration-700 ease-in-out ${s.bg} ${s.text} ${s.fontBody}`} style={accentStyle}>
-      {/* Floating Action Menu */}
-      <div className="fixed top-6 right-6 z-50 flex flex-wrap gap-2 justify-end">
+      {/* App menu bar — only on the couple's own editing view, never on the shared site */}
+      <Navbar />
+
+      {/* Floating Action Menu — below the navbar */}
+      <div className="fixed top-24 right-6 z-40 flex flex-wrap gap-2 justify-end">
         <Button
           size="icon"
           variant="outline"
@@ -607,9 +622,15 @@ const CoupleStory = () => {
       <div className={`relative z-20 transition-colors duration-700 ${s.bg}`}>
         {visibleSections.filter((id) => id !== "hero").map(renderSection)}
 
-        <footer className={`py-12 text-center opacity-60 text-sm ${s.subtext}`}>
-          <p className="font-serif italic text-lg mb-2">{coupleStory.hashtag ? `#${coupleStory.hashtag}` : "Forever & Always"}</p>
-          <p>Created with àjọyọ̀</p>
+        <footer className={`py-16 text-center text-sm relative overflow-hidden ${s.subtext}`}>
+          <FloralGroup items={florals?.footer} />
+          <div className="relative z-10">
+            {florals?.sprig && (
+              <Sprig src={florals.sprig} className={`${florals.sprigClass ?? "h-16 w-36"} mb-5`} opacity={0.75} />
+            )}
+            <p className="font-serif italic text-lg mb-2 opacity-80">{coupleStory.hashtag ? `#${coupleStory.hashtag}` : "Forever & Always"}</p>
+            <p className="opacity-60">Created with àjọyọ̀</p>
+          </div>
         </footer>
       </div>
     </div>

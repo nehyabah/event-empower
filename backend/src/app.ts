@@ -14,8 +14,12 @@ import sharedStoryRoutes from './routes/sharedStoryRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import visionBoardRoutes from './routes/visionBoardRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
+import mediaRoutes from './routes/mediaRoutes.js';
+import { scheduler } from './services/scheduler.js';
 import { vendorController } from './controllers/vendorController.js';
 import { userController } from './controllers/userController.js';
+import { optionalAuth } from './middleware/auth.js';
 
 const app = express();
 
@@ -48,9 +52,12 @@ app.use('/api/shared-story', sharedStoryRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/vision-board', visionBoardRoutes);
+app.use('/api/calendar', calendarRoutes);
+// Re-signing proxy for stored images; see storageService for why URLs point here.
+app.use('/api/media', mediaRoutes);
 
-// Public inquiries (client -> vendor)
-app.post('/api/inquiries', vendorController.createInquiry);
+// Public inquiries (client -> vendor) — optionalAuth sets sender_id when logged in
+app.post('/api/inquiries', optionalAuth, vendorController.createInquiry);
 
 // Public RSVP endpoints (no auth required)
 app.get('/api/rsvp/:code', userController.getEventInfo);
@@ -65,6 +72,9 @@ const port = parseInt(env.PORT, 10);
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Environment: ${env.NODE_ENV}`);
+
+  // Guest RSVP reminders run on an hourly tick inside the API process.
+  scheduler.start();
 });
 
 export default app;

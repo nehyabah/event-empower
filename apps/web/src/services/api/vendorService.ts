@@ -49,10 +49,20 @@ export interface VendorProfile {
   updated_at: string;
 }
 
+export interface VendorReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  created_at: string;
+  reviewer_name?: string | null;
+}
+
 export interface VendorDetails {
   profile: VendorProfile;
   services: VendorService[];
   images: VendorImage[];
+  reviews?: VendorReview[];
 }
 
 export interface VendorDashboard {
@@ -66,13 +76,20 @@ export interface VendorDashboard {
   upcoming_events: Array<{
     id: string;
     client_name: string;
+    title: string | null;
     event_date: string;
+    start_time: string | null;
+    end_time: string | null;
+    location: string | null;
     event_type: string | null;
+    booking_kind: VendorBookingKind;
     status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   }>;
   inquiries: Array<{
     id: string;
     sender_name: string;
+    sender_email: string | null;
+    event_date: string | null;
     message: string;
     status: 'new' | 'replied' | 'archived';
     created_at: string;
@@ -131,23 +148,80 @@ export interface UpdateInquiryInput {
   notes?: string;
 }
 
+export type VendorBookingKind = 'booking' | 'meeting' | 'consultation' | 'site_visit' | 'setup' | 'other';
+export type VendorBookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
+export interface VendorBooking {
+  id: string;
+  vendor_id: string;
+  client_id: string | null;
+  client_name: string;
+  title: string | null;
+  event_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
+  event_type: string | null;
+  booking_kind: VendorBookingKind;
+  status: VendorBookingStatus;
+  notes: string | null;
+  total_amount: number | string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A couple on the vendor's roster that a booking can be attached to. */
+export interface BookableClient {
+  event_id: string;
+  /** The couple's user id — what a linked booking stores as client_id. */
+  client_user_id: string;
+  client_name: string;
+  event_date: string | null;
+  status: string;
+}
+
 export interface CreateVendorBookingInput {
-  clientName: string;
+  /** Optional when eventId is supplied — the couple's names are used. */
+  clientName?: string;
+  /** Links the booking to a roster couple so it syncs to them and their planner. */
+  eventId?: string;
+  title?: string | null;
   eventDate: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  location?: string | null;
   eventType?: string;
-  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  bookingKind?: VendorBookingKind;
+  status?: VendorBookingStatus;
   notes?: string;
   totalAmount?: string;
 }
 
 export interface UpdateVendorBookingInput {
   clientName?: string;
+  /** null unlinks the booking from the couple. */
+  eventId?: string | null;
+  title?: string | null;
   eventDate?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  location?: string | null;
   eventType?: string;
-  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  bookingKind?: VendorBookingKind;
+  status?: VendorBookingStatus;
   notes?: string;
   totalAmount?: string;
 }
+
+/** Human labels for the booking kinds a vendor can schedule. */
+export const VENDOR_BOOKING_KINDS: Array<{ value: VendorBookingKind; label: string }> = [
+  { value: 'booking', label: 'Booking' },
+  { value: 'meeting', label: 'Meeting' },
+  { value: 'consultation', label: 'Consultation' },
+  { value: 'site_visit', label: 'Site visit' },
+  { value: 'setup', label: 'Setup' },
+  { value: 'other', label: 'Other' },
+];
 
 export interface VendorProfileInput {
   businessName: string;
@@ -239,20 +313,45 @@ export const vendorService = {
     return response.data;
   },
 
-  async createVendorBooking(input: CreateVendorBookingInput) {
-    const response = await apiClient.post("/vendors/bookings", input);
+  /** Couples this vendor can attach a booking to (their roster). */
+  async getBookableClients(): Promise<BookableClient[]> {
+    const response = await apiClient.get<BookableClient[]>("/vendors/bookable-clients");
     if (response.error) {
       throw new Error(response.error);
+    }
+    return response.data || [];
+  },
+
+  /** Every booking and meeting, for the vendor calendar. */
+  async listVendorBookings(): Promise<VendorBooking[]> {
+    const response = await apiClient.get<VendorBooking[]>("/vendors/bookings");
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    return response.data || [];
+  },
+
+  async createVendorBooking(input: CreateVendorBookingInput): Promise<VendorBooking> {
+    const response = await apiClient.post<VendorBooking>("/vendors/bookings", input);
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Failed to create booking");
     }
     return response.data;
   },
 
-  async updateVendorBooking(id: string, input: UpdateVendorBookingInput) {
-    const response = await apiClient.patch(`/vendors/bookings/${id}`, input);
+  async updateVendorBooking(id: string, input: UpdateVendorBookingInput): Promise<VendorBooking> {
+    const response = await apiClient.patch<VendorBooking>(`/vendors/bookings/${id}`, input);
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Failed to update booking");
+    }
+    return response.data;
+  },
+
+  async deleteVendorBooking(id: string): Promise<void> {
+    const response = await apiClient.delete(`/vendors/bookings/${id}`);
     if (response.error) {
       throw new Error(response.error);
     }
-    return response.data;
   },
 
   async listVendorInquiries(): Promise<VendorInquiry[]> {
@@ -357,7 +456,7 @@ export const vendorService = {
   // ========== CLIENT INQUIRIES ==========
 
   async listMyInquiries(): Promise<ClientInquiry[]> {
-    const response = await apiClient.get<ClientInquiry[]>("/users/me/inquiries");
+    const response = await apiClient.get<ClientInquiry[]>("/users/inquiries");
     if (response.error) {
       throw new Error(response.error);
     }
@@ -365,7 +464,7 @@ export const vendorService = {
   },
 
   async getMyInquiry(inquiryId: string): Promise<ClientInquiryWithMessages> {
-    const response = await apiClient.get<ClientInquiryWithMessages>(`/users/me/inquiries/${inquiryId}`);
+    const response = await apiClient.get<ClientInquiryWithMessages>(`/users/inquiries/${inquiryId}`);
     if (response.error) {
       throw new Error(response.error);
     }
@@ -376,7 +475,7 @@ export const vendorService = {
   },
 
   async sendMyInquiryMessage(inquiryId: string, message: string): Promise<InquiryMessage> {
-    const response = await apiClient.post<InquiryMessage>(`/users/me/inquiries/${inquiryId}/messages`, { message });
+    const response = await apiClient.post<InquiryMessage>(`/users/inquiries/${inquiryId}/messages`, { message });
     if (response.error) {
       throw new Error(response.error);
     }

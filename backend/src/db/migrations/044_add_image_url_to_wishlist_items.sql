@@ -1,1 +1,1 @@
-ALTER TABLE wishlist_items ADD COLUMN image_url TEXT;
+ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS image_url TEXT;

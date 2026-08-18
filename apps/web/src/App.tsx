@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import UserHomepage from "./pages/UserHomepage";
 import VendorHomepage from "./pages/VendorHomepage";
 import VendorAnalytics from "./pages/VendorAnalytics";
+import VendorCalendar from "./pages/VendorCalendar";
+import RsvpPage from "./pages/RsvpPage";
 import PlannerHomepage from "./pages/PlannerHomepage";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
@@ -23,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import PlannerTasks from "./pages/PlannerTasks";
 import PlannerCalendar from "./pages/PlannerCalendar";
 import PlannerClients from "./pages/PlannerClients";
+import PlannerProfilePage from "./pages/PlannerProfile";
 import PlannerClientWorkspace from "./pages/PlannerClientWorkspace";
 import Workspace from "./pages/Workspace";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -47,6 +50,7 @@ import AdminModeration from "./pages/AdminModeration";
 import AdminBroadcasts from "./pages/AdminBroadcasts";
 import AdminSubscribers from "./pages/AdminSubscribers";
 import AdminAudit from "./pages/AdminAudit";
+import AdminApprovals from "./pages/AdminApprovals";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +130,8 @@ const AppRoutes = () => {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/invitation" element={<InvitationPage />} />
       <Route path="/invitation/:code" element={<InvitationPage />} />
+      {/* Public RSVP — guests reach this from the invite link or the wedding site */}
+      <Route path="/rsvp/:code" element={<RsvpPage />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/shared-story" element={<SharedStoryPage />} />
       <Route path="/s/:slug" element={<SharedStoryPage />} />
@@ -186,6 +192,11 @@ const AppRoutes = () => {
           <VendorAnalytics />
         </RequireAuth>
       } />
+      <Route path="/vendor-calendar" element={
+        <RequireAuth allowedTypes={["vendor"]}>
+          <VendorCalendar />
+        </RequireAuth>
+      } />
 
       {/* Planner routes */}
       <Route path="/planner-home" element={
@@ -201,6 +212,11 @@ const AppRoutes = () => {
       <Route path="/planner-calendar" element={
         <RequireAuth allowedTypes={["planner"]}>
           <PlannerCalendar />
+        </RequireAuth>
+      } />
+      <Route path="/planner-profile" element={
+        <RequireAuth allowedTypes={["planner"]}>
+          <PlannerProfilePage />
         </RequireAuth>
       } />
       <Route path="/clients" element={
@@ -298,6 +314,11 @@ const AppRoutes = () => {
       <Route path="/admin/inquiries/:id" element={
         <RequireAuth allowedTypes={["admin"]}>
           <AdminInquiryDetail />
+        </RequireAuth>
+      } />
+      <Route path="/admin/approvals" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminApprovals />
         </RequireAuth>
       } />
 

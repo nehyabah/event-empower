@@ -29,6 +29,10 @@ export interface UserEvent {
   total_budget: number;
   guest_count_estimate: number;
   notes: string | null;
+  rsvp_code: string;
+  rsvp_deadline: string | null;
+  rsvp_message: string | null;
+  rsvp_closed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +45,9 @@ export interface UpdateUserEventInput {
   totalBudget?: number;
   guestCountEstimate?: number;
   notes?: string | null;
+  rsvpDeadline?: string | null;
+  rsvpMessage?: string | null;
+  rsvpClosed?: boolean;
 }
 
 export interface Guest {
@@ -96,6 +103,7 @@ export interface Expense {
   amount_paid: number;
   category: ExpenseCategory;
   expense_date: string | null;
+  due_date: string | null;
   paid: boolean;
   notes: string | null;
   vendor_id: string | null;
@@ -109,6 +117,7 @@ export interface CreateExpenseInput {
   amountPaid?: number;
   category: ExpenseCategory;
   date?: string;
+  dueDate?: string | null;
   paid?: boolean;
   notes?: string;
   vendorId?: string;
@@ -120,6 +129,7 @@ export interface UpdateExpenseInput {
   amountPaid?: number;
   category?: ExpenseCategory;
   date?: string | null;
+  dueDate?: string | null;
   paid?: boolean;
   notes?: string | null;
   vendorId?: string | null;
@@ -128,10 +138,76 @@ export interface UpdateExpenseInput {
 export interface ExpenseSummary {
   total_spent: number;
   total_paid: number;
+  /** Outstanding balance across all expenses (amount - amount_paid). */
   total_unpaid: number;
+  total_committed: number;
+  overdue_total: number;
+  overdue_count: number;
+  due_soon_total: number;
+  next_due: { id: string; name: string; due_date: string; balance: number } | null;
   total_budget: number;
   remaining_budget: number;
   by_category: Record<string, number>;
+}
+
+/** Zeroed summary used as the initial value and as an empty-response fallback. */
+export const EMPTY_EXPENSE_SUMMARY: ExpenseSummary = {
+  total_spent: 0,
+  total_paid: 0,
+  total_unpaid: 0,
+  total_committed: 0,
+  overdue_total: 0,
+  overdue_count: 0,
+  due_soon_total: 0,
+  next_due: null,
+  total_budget: 0,
+  remaining_budget: 0,
+  by_category: {},
+};
+
+// ── Guest RSVP reminders ─────────────────────────────────────────────────────
+
+export type ReminderFrequency = 'daily' | 'every_3_days' | 'weekly' | 'biweekly' | 'monthly';
+export type ReminderChannel = 'email' | 'sms' | 'both';
+
+export interface GuestReminderSettings {
+  id: string;
+  user_id: string;
+  enabled: boolean;
+  frequency: ReminderFrequency;
+  channel: ReminderChannel;
+  target_statuses: GuestStatus[];
+  custom_message: string | null;
+  stop_days_before: number;
+  last_sent_at: string | null;
+  next_send_at: string | null;
+}
+
+export interface GuestReminderLogEntry {
+  id: string;
+  guest_id: string | null;
+  channel: string;
+  destination: string | null;
+  status: 'sent' | 'failed' | 'skipped';
+  error: string | null;
+  trigger: 'scheduled' | 'manual';
+  sent_at: string;
+}
+
+export interface UpdateReminderSettingsInput {
+  enabled?: boolean;
+  frequency?: ReminderFrequency;
+  channel?: ReminderChannel;
+  targetStatuses?: GuestStatus[];
+  customMessage?: string | null;
+  stopDaysBefore?: number;
+}
+
+export interface ReminderRunResult {
+  sent: number;
+  skipped: number;
+  failed: number;
+  reason?: string;
 }
 
 export interface TodoItem {
@@ -141,6 +217,7 @@ export interface TodoItem {
   completed: boolean;
   status: 'todo' | 'in_progress' | 'done';
   sort_order: number;
+  due_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -181,6 +258,7 @@ export interface UpdateTodoItemInput {
   completed?: boolean;
   status?: 'todo' | 'in_progress' | 'done';
   sortOrder?: number;
+  dueDate?: string | null;
 }
 
 export interface DashboardData {
@@ -202,6 +280,26 @@ export interface PlannerLink {
 }
 
 // ========== SERVICE ==========
+
+export interface VendorReview {
+  id: string;
+  vendor_profile_id: string;
+  reviewer_user_id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  reviewer_name?: string | null;
+}
+
+export interface ReviewableVendor {
+  vendor_profile_id: string;
+  business_name: string;
+  category: string | null;
+  status: string;
+  review: VendorReview | null;
+}
 
 export const userService = {
   // ========== USER EVENT ==========
@@ -298,14 +396,7 @@ export const userService = {
     if (response.error) {
       throw new Error(response.error);
     }
-    return response.data || {
-      total_spent: 0,
-      total_paid: 0,
-      total_unpaid: 0,
-      total_budget: 0,
-      remaining_budget: 0,
-      by_category: {},
-    };
+    return response.data || EMPTY_EXPENSE_SUMMARY;
   },
 
   async getExpense(id: string): Promise<Expense> {
@@ -459,6 +550,72 @@ export const userService = {
       throw new Error(response.error);
     }
     return response.data || null;
+  },
+
+  // ========== VENDOR REVIEWS ==========
+
+  async getReviewableVendors(): Promise<ReviewableVendor[]> {
+    const response = await apiClient.get<ReviewableVendor[]>('/users/reviewable-vendors');
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    return response.data || [];
+  },
+
+  async submitVendorReview(
+    vendorProfileId: string,
+    input: { rating: number; title?: string | null; comment?: string | null }
+  ): Promise<VendorReview> {
+    const response = await apiClient.put<VendorReview>(
+      `/users/vendors/${vendorProfileId}/review`,
+      input
+    );
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (!response.data) {
+      throw new Error('Failed to submit review');
+    }
+    return response.data;
+  },
+
+  async deleteVendorReview(vendorProfileId: string): Promise<void> {
+    const response = await apiClient.delete(`/users/vendors/${vendorProfileId}/review`);
+    if (response.error) {
+      throw new Error(response.error);
+    }
+  },
+
+  // ========== GUEST REMINDERS ==========
+
+  async getReminderSettings(): Promise<{
+    settings: GuestReminderSettings;
+    recentLog: GuestReminderLogEntry[];
+  }> {
+    const response = await apiClient.get<{
+      settings: GuestReminderSettings;
+      recentLog: GuestReminderLogEntry[];
+    }>('/users/guest-reminders');
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to load reminder settings');
+    }
+    return response.data;
+  },
+
+  async updateReminderSettings(input: UpdateReminderSettingsInput): Promise<GuestReminderSettings> {
+    const response = await apiClient.patch<GuestReminderSettings>('/users/guest-reminders', input);
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to update reminder settings');
+    }
+    return response.data;
+  },
+
+  async sendRemindersNow(): Promise<ReminderRunResult> {
+    const response = await apiClient.post<ReminderRunResult>('/users/guest-reminders/send', {});
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to send reminders');
+    }
+    return response.data;
   },
 };
 

@@ -40,10 +40,26 @@ const vendorProfileSchema = z.object({
   ).optional(),
 });
 
+const bookingKinds = ['booking', 'meeting', 'consultation', 'site_visit', 'setup', 'other'] as const;
+// HH:MM or HH:MM:SS from an <input type="time">. Range-checked, not just
+// shape-checked: "25:99" is the right shape but Postgres rejects it, which
+// would surface as a 500 rather than a validation error.
+const timeString = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, 'Time must be a valid HH:MM');
+
 const vendorBookingSchema = z.object({
-  clientName: z.string().min(1, 'Client name is required'),
+  // Optional when eventId is given — the couple's names are used instead.
+  clientName: z.string().min(1).optional(),
+  /** Roster event to attach this booking to, so it syncs to the couple. */
+  eventId: z.string().uuid().optional(),
+  title: z.string().max(255).nullable().optional(),
   eventDate: z.string().min(1, 'Event date is required'),
+  startTime: timeString.nullable().optional(),
+  endTime: timeString.nullable().optional(),
+  location: z.string().max(255).nullable().optional(),
   eventType: z.string().optional(),
+  bookingKind: z.enum(bookingKinds).optional(),
   status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']).optional(),
   notes: z.string().optional(),
   totalAmount: z.union([z.number(), z.string()]).optional(),
@@ -51,8 +67,15 @@ const vendorBookingSchema = z.object({
 
 const updateVendorBookingSchema = z.object({
   clientName: z.string().min(1).optional(),
+  /** null unlinks the booking from the couple. */
+  eventId: z.string().uuid().nullable().optional(),
+  title: z.string().max(255).nullable().optional(),
   eventDate: z.string().min(1).optional(),
+  startTime: timeString.nullable().optional(),
+  endTime: timeString.nullable().optional(),
+  location: z.string().max(255).nullable().optional(),
   eventType: z.string().optional(),
+  bookingKind: z.enum(bookingKinds).optional(),
   status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']).optional(),
   notes: z.string().optional(),
   totalAmount: z.union([z.number(), z.string()]).optional(),
@@ -133,6 +156,7 @@ const mapVendorDetails = async (vendor: Awaited<ReturnType<typeof vendorService.
     },
     services: vendor.services,
     images,
+    reviews: vendor.reviews,
   };
 };
 
@@ -212,14 +236,33 @@ export const vendorController = {
 
       const booking = await vendorService.createVendorBooking(req.user!.userId, {
         client_name: data.clientName,
+        event_id: data.eventId,
+        title: data.title,
         event_date: data.eventDate,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        location: data.location,
         event_type: data.eventType,
+        booking_kind: data.bookingKind,
         status: data.status,
         notes: data.notes,
         total_amount: Number.isFinite(totalAmount) ? totalAmount : undefined,
       });
 
       res.status(201).json(booking);
+    } catch (error) {
+      if (error instanceof Error && /roster|Client name is required/.test(error.message)) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  /** Couples the vendor may attach a booking to. */
+  async listBookableClients(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json(await vendorService.getBookableClients(req.user!.userId));
     } catch (error) {
       next(error);
     }
@@ -239,8 +282,14 @@ export const vendorController = {
 
       const booking = await vendorService.updateVendorBooking(req.user!.userId, req.params.id, {
         client_name: data.clientName,
+        event_id: data.eventId,
+        title: data.title,
         event_date: data.eventDate,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        location: data.location,
         event_type: data.eventType,
+        booking_kind: data.bookingKind,
         status: data.status,
         notes: data.notes,
         total_amount: Number.isFinite(totalAmount) ? totalAmount : undefined,
@@ -252,6 +301,33 @@ export const vendorController = {
       }
 
       res.json(booking);
+    } catch (error) {
+      if (error instanceof Error && /roster/.test(error.message)) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async deleteVendorBooking(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await vendorService.deleteVendorBooking(req.user!.userId, req.params.id);
+      if (!deleted) {
+        res.status(404).json({ error: 'Booking not found' });
+        return;
+      }
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** All bookings and meetings for the vendor's calendar view. */
+  async listVendorBookings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const bookings = await vendorService.listVendorBookings(req.user!.userId);
+      res.json(bookings);
     } catch (error) {
       next(error);
     }

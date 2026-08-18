@@ -52,6 +52,9 @@ const MobileNav = ({ isAuthenticated, isOpen, onClose }: MobileNavProps) => {
               <NavLink to="/vendor-home" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Home className="w-5 h-5" />}>
                 Home
               </NavLink>
+              <NavLink to="/vendor-calendar" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Calendar className="w-5 h-5" />}>
+                Calendar
+              </NavLink>
               <NavLink to="/vendor-analytics" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Briefcase className="w-5 h-5" />}>
                 Analytics
               </NavLink>
@@ -78,6 +81,9 @@ const MobileNav = ({ isAuthenticated, isOpen, onClose }: MobileNavProps) => {
               </NavLink>
               <NavLink to="/planner-calendar" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Calendar className="w-5 h-5" />}>
                 Calendar
+              </NavLink>
+              <NavLink to="/planner-profile" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<Users className="w-5 h-5" />}>
+                My Profile
               </NavLink>
             </>
           ) : (

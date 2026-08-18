@@ -1,5 +1,12 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import { env } from './env.js';
+
+// A SQL DATE carries no time and no timezone, but node-postgres parses it into
+// a JS Date at *local* midnight. Serialised to JSON that becomes the previous
+// day for anyone east of UTC — a wedding on the 1st reads as the 30th. Hand
+// DATE columns back as plain 'YYYY-MM-DD' strings instead.
+// 1082 = DATE. TIMESTAMP/TIMESTAMPTZ keep their normal Date parsing.
+types.setTypeParser(1082, (value: string) => value);
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,

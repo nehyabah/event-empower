@@ -1,8 +1,10 @@
 import { apiClient } from './client';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 // ========== TYPES ==========
 
-export type ClientStatus = 'active' | 'completed' | 'upcoming';
+export type ClientStatus = 'active' | 'completed' | 'upcoming' | 'archived';
 export type TaskStatus = 'pending' | 'in-progress' | 'completed';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type EventType = 'meeting' | 'visit' | 'rehearsal' | 'wedding' | 'consultation' | 'other';
@@ -101,9 +103,31 @@ export interface PlannerEvent {
   end_time: string | null;
   event_type: EventType;
   location: string | null;
+  /** When true the linked client sees this entry on their own calendar. */
+  visible_to_client: boolean;
   created_at: string;
   updated_at: string;
   client_name?: string;
+}
+
+export interface CalendarWeddingDate {
+  client_id: string;
+  client_name: string;
+  event_date: string;
+}
+
+export interface CalendarTodoDueDate {
+  client_id: string;
+  client_name: string;
+  list_title: string;
+  item_text: string;
+  due_date: string;
+}
+
+export interface CalendarData {
+  events: PlannerEvent[];
+  weddingDates: CalendarWeddingDate[];
+  todoDueDates: CalendarTodoDueDate[];
 }
 
 export interface CreateEventInput {
@@ -115,6 +139,7 @@ export interface CreateEventInput {
   endTime?: string;
   eventType?: EventType;
   location?: string;
+  visibleToClient?: boolean;
 }
 
 export interface UpdateEventInput {
@@ -126,6 +151,7 @@ export interface UpdateEventInput {
   endTime?: string | null;
   eventType?: EventType;
   location?: string | null;
+  visibleToClient?: boolean;
 }
 
 export interface ClientTodoItem {
@@ -227,6 +253,48 @@ export interface DashboardStats {
   }[];
 }
 
+// ========== PLANNER PROFILE TYPES ==========
+
+export interface PlannerProfileData {
+  id: string;
+  user_id: string;
+  bio: string | null;
+  tagline: string | null;
+  location: string | null;
+  website: string | null;
+  years_of_experience: number | null;
+  specializations: string[];
+  profile_image_url: string | null;
+  cover_image_url: string | null;
+  phone: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  twitter: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlannerProfileResponse {
+  profile: PlannerProfileData | null;
+  user: { id: string; name: string | null; email: string | null };
+}
+
+export interface UpdatePlannerProfileInput {
+  name?: string;
+  bio?: string | null;
+  tagline?: string | null;
+  location?: string | null;
+  website?: string | null;
+  years_of_experience?: number | null;
+  specializations?: string[];
+  profile_image_url?: string | null;
+  cover_image_url?: string | null;
+  phone?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+  twitter?: string | null;
+}
+
 // ========== SERVICE ==========
 
 export const plannerService = {
@@ -275,9 +343,21 @@ export const plannerService = {
 
   async deleteClient(id: string): Promise<void> {
     const response = await apiClient.delete(`/planner/clients/${id}`);
-    if (response.error) {
-      throw new Error(response.error);
-    }
+    if (response.error) throw new Error(response.error);
+  },
+
+  async archiveClient(id: string): Promise<PlannerClient> {
+    const response = await apiClient.post<PlannerClient>(`/planner/clients/${id}/archive`);
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('Failed to archive client');
+    return response.data;
+  },
+
+  async unarchiveClient(id: string): Promise<PlannerClient> {
+    const response = await apiClient.post<PlannerClient>(`/planner/clients/${id}/unarchive`);
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('Failed to unarchive client');
+    return response.data;
   },
 
   async createClientInvite(id: string): Promise<{ inviteCode: string; inviteStatus: string; inviteSentAt: string }> {
@@ -340,6 +420,14 @@ export const plannerService = {
     if (response.error) {
       throw new Error(response.error);
     }
+  },
+
+  // ========== CALENDAR ==========
+
+  async getCalendarData(): Promise<CalendarData> {
+    const response = await apiClient.get<CalendarData>('/planner/calendar');
+    if (response.error) throw new Error(response.error);
+    return response.data || { events: [], weddingDates: [], todoDueDates: [] };
   },
 
   // ========== EVENTS ==========
@@ -455,6 +543,25 @@ export const plannerService = {
     await apiClient.delete(`/planner/clients/${clientId}/vision-board/${itemId}`);
   },
 
+  /** Upload an image onto a client's mood board and return its stored URL. */
+  async uploadClientVisionBoardImage(clientId: string, file: File): Promise<string> {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const token = apiClient.getAccessToken();
+    const form = new FormData();
+    form.append('file', file);
+
+    const res = await fetch(`${API_URL}/planner/clients/${clientId}/vision-board/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
+      body: form,
+    });
+
+    if (!res.ok) throw new Error('Upload failed');
+    const { url } = await res.json();
+    return url as string;
+  },
+
   // ========== CLIENT WORKSPACE ==========
 
   async getClientWorkspace(clientId: string): Promise<WorkspaceData | null> {
@@ -474,6 +581,37 @@ export const plannerService = {
       throw new Error('Failed to fetch dashboard stats');
     }
     return response.data;
+  },
+
+  // ========== PROFILE ==========
+
+  async getMyProfile(): Promise<PlannerProfileResponse> {
+    const response = await apiClient.get<PlannerProfileResponse>('/planner/profile');
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('Failed to fetch profile');
+    return response.data;
+  },
+
+  async updateMyProfile(input: UpdatePlannerProfileInput): Promise<PlannerProfileData> {
+    const response = await apiClient.patch<PlannerProfileData>('/planner/profile', input);
+    if (response.error) throw new Error(response.error);
+    if (!response.data) throw new Error('Failed to update profile');
+    return response.data;
+  },
+
+  async uploadProfileImage(file: File): Promise<{ key: string; url: string }> {
+    const token = apiClient.getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_URL}/planner/profile/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to upload image');
+    return { key: data.key as string, url: data.url as string };
   },
 };
 

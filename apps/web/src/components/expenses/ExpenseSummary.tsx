@@ -3,18 +3,21 @@ import { useExpenses } from "@/context/ExpenseContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, Pencil } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, Pencil } from "lucide-react";
+import { formatDateOnly } from "@/lib/dates";
 
 const fmt = (n: number) =>
   "₦" + new Intl.NumberFormat("en-NG").format(Math.abs(Math.round(n)));
 
 const ExpenseSummary = () => {
-  const { totalBudget, setTotalBudget, totalSpent, remainingBudget, expenses } = useExpenses();
+  const {
+    totalBudget, setTotalBudget, totalSpent, remainingBudget, expenses,
+    totalOwed, overdueTotal, overdueCount, nextDue,
+  } = useExpenses();
   const [isEditing, setIsEditing] = useState(false);
   const [draftBudget, setDraftBudget] = useState(totalBudget);
 
   const totalCommitted = expenses.reduce((s, e) => s + e.amount, 0);
-  const totalOwed = Math.max(totalCommitted - totalSpent, 0);
 
   const paidPct  = totalBudget > 0 ? Math.min((totalSpent / totalBudget) * 100, 100) : 0;
   const owedPct  = totalBudget > 0 ? Math.min((totalOwed / totalBudget) * 100, 100 - paidPct) : 0;
@@ -89,6 +92,33 @@ const ExpenseSummary = () => {
         </div>
       </div>
 
+      {/* Overdue / next payment banner */}
+      {overdueCount > 0 ? (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium text-red-900">
+              {fmt(overdueTotal)} overdue across {overdueCount} expense{overdueCount !== 1 ? "s" : ""}
+            </p>
+            <p className="text-red-700 text-xs mt-0.5">
+              These payment dates have passed with a balance outstanding.
+            </p>
+          </div>
+        </div>
+      ) : nextDue ? (
+        <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-card px-4 py-3">
+          <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-medium">
+              Next payment: {nextDue.name} — {fmt(nextDue.balance)}
+            </p>
+            <p className="text-muted-foreground text-xs mt-0.5">
+              Due {formatDateOnly(nextDue.due_date)}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {/* Stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
@@ -107,11 +137,21 @@ const ExpenseSummary = () => {
             bg: "bg-emerald-50 border border-emerald-100",
           },
           {
-            label: "Still Owed",
+            label: "Balance Owed",
             value: fmt(totalOwed),
-            sub: totalOwed > 0 ? "across vendors" : "all settled",
-            accent: totalOwed > 0 ? "text-amber-600" : "text-muted-foreground",
-            bg: totalOwed > 0 ? "bg-amber-50 border border-amber-100" : "bg-card border border-border/60",
+            sub: overdueCount > 0
+              ? `${fmt(overdueTotal)} overdue`
+              : nextDue
+                ? `Next due ${formatDateOnly(nextDue.due_date, { day: "numeric", month: "short" })}`
+                : totalOwed > 0 ? "across vendors" : "all settled",
+            accent: overdueCount > 0
+              ? "text-red-600"
+              : totalOwed > 0 ? "text-amber-600" : "text-muted-foreground",
+            bg: overdueCount > 0
+              ? "bg-red-50 border border-red-100"
+              : totalOwed > 0
+                ? "bg-amber-50 border border-amber-100"
+                : "bg-card border border-border/60",
           },
           {
             label: "Remaining",

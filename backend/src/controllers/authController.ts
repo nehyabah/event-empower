@@ -12,6 +12,10 @@ const registerSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   name: z.string().min(1, 'Name is required'),
   userType: z.enum(['client', 'vendor', 'planner']).optional(),
+  businessName: z.string().optional(),
+  instagramHandle: z.string().optional(),
+  whatsappPhone: z.string().optional(),
+  city: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -52,7 +56,16 @@ export const authController = {
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const input = registerSchema.parse(req.body);
-      const result = await authService.register(input);
+      const result = await authService.register({
+        email: input.email,
+        password: input.password,
+        name: input.name,
+        userType: input.userType,
+        businessName: input.businessName,
+        instagramHandle: input.instagramHandle,
+        whatsappPhone: input.whatsappPhone,
+        city: input.city,
+      });
 
       setRefreshTokenCookie(res, result.tokens.refreshToken);
 

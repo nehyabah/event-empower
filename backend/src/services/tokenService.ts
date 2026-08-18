@@ -9,6 +9,7 @@ export interface TokenPayload {
   userId: string;
   email: string | null;
   userType: string;
+  approvalStatus: string;
 }
 
 export interface TokenPair {
@@ -22,6 +23,7 @@ export const tokenService = {
       userId: user.id,
       email: user.email,
       userType: user.user_type,
+      approvalStatus: (user as unknown as { approval_status?: string }).approval_status ?? 'approved',
     };
 
     return jwt.sign(payload, jwtConfig.accessToken.secret, {

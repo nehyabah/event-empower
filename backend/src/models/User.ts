@@ -18,6 +18,13 @@ export interface User {
   deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  business_name: string | null;
+  instagram_handle: string | null;
+  whatsapp_phone: string | null;
+  city: string | null;
+  rejection_reason: string | null;
+  approved_at: Date | null;
 }
 
 export interface CreateUserInput {
@@ -29,6 +36,11 @@ export interface CreateUserInput {
   avatar_url?: string;
   auth_provider: AuthProvider;
   google_id?: string;
+  approval_status?: 'pending' | 'approved' | 'rejected';
+  business_name?: string;
+  instagram_handle?: string;
+  whatsapp_phone?: string;
+  city?: string;
 }
 
 export interface UpdateUserInput {
@@ -73,8 +85,9 @@ export const UserModel = {
 
   async create(input: CreateUserInput): Promise<User> {
     const result = await queryOne<User>(
-      `INSERT INTO users (email, phone, password_hash, name, user_type, avatar_url, auth_provider, google_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (email, phone, password_hash, name, user_type, avatar_url, auth_provider, google_id,
+        approval_status, business_name, instagram_handle, whatsapp_phone, city)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
         input.email?.toLowerCase() || null,
@@ -85,6 +98,11 @@ export const UserModel = {
         input.avatar_url || null,
         input.auth_provider,
         input.google_id || null,
+        input.approval_status || 'approved',
+        input.business_name || null,
+        input.instagram_handle || null,
+        input.whatsapp_phone || null,
+        input.city || null,
       ]
     );
 

@@ -23,6 +23,11 @@ router.get('/dashboard/stats', ...allAdmins, adminController.stats);
 router.get('/dashboard/activity', ...allAdmins, adminController.dashboardActivity);
 
 // User management
+// Pending approvals
+router.get('/pending-approvals', ...supportPlus, adminController.listPendingApprovals);
+router.post('/users/:id/approve', ...adminPlus, adminController.approveUser);
+router.post('/users/:id/reject', ...adminPlus, adminController.rejectUser);
+
 router.get('/users', ...supportPlus, adminController.listUsers);
 router.get('/users/:id', ...supportPlus, adminController.getUser);
 router.patch('/users/:id', ...adminPlus, adminController.updateUser);

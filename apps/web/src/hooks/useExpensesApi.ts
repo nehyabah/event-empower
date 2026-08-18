@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { userService, Expense, CreateExpenseInput, UpdateExpenseInput, ExpenseSummary, ExpenseCategory } from '@/services/api/userService';
+import { userService, Expense, CreateExpenseInput, UpdateExpenseInput, ExpenseSummary, ExpenseCategory, EMPTY_EXPENSE_SUMMARY } from '@/services/api/userService';
 import { toast } from 'sonner';
 
 export function useExpensesApi() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [summary, setSummary] = useState<ExpenseSummary>({
-    total_spent: 0,
-    total_paid: 0,
-    total_unpaid: 0,
-    total_budget: 0,
-    remaining_budget: 0,
-    by_category: {},
-  });
+  const [summary, setSummary] = useState<ExpenseSummary>(EMPTY_EXPENSE_SUMMARY);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

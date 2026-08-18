@@ -1,7 +1,10 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { userController } from '../controllers/userController.js';
 import { storyController } from '../controllers/storyController.js';
 import { authenticate } from '../middleware/auth.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const router = Router();
 
@@ -13,6 +16,11 @@ router.get('/dashboard', userController.getDashboard);
 router.get('/planner', userController.getPlannerLink);
 router.get('/rsvp-code', userController.getRsvpCode);
 
+// Guest RSVP reminders
+router.get('/guest-reminders', userController.getReminderSettings);
+router.patch('/guest-reminders', userController.updateReminderSettings);
+router.post('/guest-reminders/send', userController.sendRemindersNow);
+
 // Workspace (combined view: event + planner + vendors + shared todos + guest stats)
 router.get('/workspace', userController.getWorkspace);
 
@@ -21,6 +29,11 @@ router.get('/project', userController.getProject);
 router.post('/project/vendors', userController.addProjectVendor);
 router.patch('/project/vendors/:id', userController.updateProjectVendor);
 router.delete('/project/vendors/:id', userController.removeProjectVendor);
+
+// Vendor reviews (couples rate vendors they have used)
+router.get('/reviewable-vendors', userController.getReviewableVendors);
+router.put('/vendors/:vendorProfileId/review', userController.submitVendorReview);
+router.delete('/vendors/:vendorProfileId/review', userController.deleteVendorReview);
 
 // User Event (wedding configuration)
 router.get('/event', userController.getUserEvent);
@@ -94,6 +107,7 @@ router.patch('/story/faq/:id', storyController.updateFaq);
 router.delete('/story/faq/:id', storyController.deleteFaq);
 
 // Wishlist + bank details (private)
+router.post('/wishlist/upload', upload.single('file'), userController.uploadImage);
 router.get('/wishlist', storyController.listMyWishlist);
 router.post('/wishlist', storyController.addMyWishlistItem);
 router.patch('/wishlist/:id', storyController.updateMyWishlistItem);

@@ -83,56 +83,77 @@ interface StoryEditorProps {
   onStoryUpdated: () => void;
 }
 
-// Helper function to compress image
+// Helper function to compress image.
+// Downscales in halving steps (a single large drawImage jump produces
+// visible aliasing/blockiness) and re-encodes at high quality.
 const compressImage = (file: File, maxWidth = 800, maxHeight = 600, quality = 0.7): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (readerEvent) => {
       const img = new Image();
       img.onload = () => {
-        // Calculate new dimensions
+        // Target dimensions — never upscale
         let width = img.width;
         let height = img.height;
-        
+
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
         }
-        
+
         if (height > maxHeight) {
           width = Math.round((width * maxHeight) / height);
           height = maxHeight;
         }
-        
-        // Create canvas and draw image
+
+        // Step-down: halve repeatedly until within 2x of target,
+        // then do the final resize. Keeps fine detail crisp.
+        let source: HTMLImageElement | HTMLCanvasElement = img;
+        let sw = img.width;
+        let sh = img.height;
+        while (sw / 2 >= width && sh / 2 >= height) {
+          sw = Math.round(sw / 2);
+          sh = Math.round(sh / 2);
+          const step = document.createElement('canvas');
+          step.width = sw;
+          step.height = sh;
+          const stepCtx = step.getContext('2d');
+          if (!stepCtx) break;
+          stepCtx.imageSmoothingEnabled = true;
+          stepCtx.imageSmoothingQuality = 'high';
+          stepCtx.drawImage(source, 0, 0, sw, sh);
+          source = step;
+        }
+
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        
+
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Could not get canvas context'));
           return;
         }
-        
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to data URL with reduced quality
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(source, 0, 0, width, height);
+
         const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(compressedDataUrl);
       };
-      
+
       img.onerror = () => {
         reject(new Error('Failed to load image'));
       };
-      
+
       if (typeof readerEvent.target?.result === 'string') {
         img.src = readerEvent.target.result;
       } else {
         reject(new Error('Failed to read file'));
       }
     };
-    
+
     reader.onerror = () => {
       reject(new Error('Failed to read file'));
     };
@@ -251,8 +272,8 @@ const StoryEditor = ({
     setIsUploading(true);
 
     try {
-      // Compress the image
-      const compressedDataUrl = await compressImage(file, 800, 600);
+      // Gallery images render up to ~430 CSS px wide (860 on retina)
+      const compressedDataUrl = await compressImage(file, 1600, 1600, 0.82);
       
       const createdImage = await storyService.addStoryImage({
         url: compressedDataUrl,
@@ -302,8 +323,8 @@ const StoryEditor = ({
     setIsUploading(true);
 
     try {
-      // Compress the banner image — keep it large enough to avoid pixelation
-      const compressedDataUrl = await compressImage(file, 1920, 1080, 0.85);
+      // Hero renders full-screen on retina displays — keep the banner large
+      const compressedDataUrl = await compressImage(file, 2560, 1600, 0.9);
       
       const updatedStory = await storyService.updateMyStory({
         banner_image_url: compressedDataUrl,
@@ -335,7 +356,7 @@ const StoryEditor = ({
 
     setIsUploading(true);
     try {
-      const compressedDataUrl = await compressImage(file, 900, 1200);
+      const compressedDataUrl = await compressImage(file, 1400, 1870, 0.85);
       const updatedStory = await storyService.updateMyStory(
         partner === "bride"
           ? { bride_image_url: compressedDataUrl }

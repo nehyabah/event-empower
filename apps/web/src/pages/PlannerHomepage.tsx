@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, CheckSquare, Users, Clock, ArrowRight, Plus } from "lucide-react";
 import plannerService, { DashboardStats, PlannerTask } from "@/services/api/plannerService";
+import { useAuth } from "@/context/AuthContext";
+import NextEventCard from "@/components/calendar/NextEventCard";
+import { useCalendar } from "@/hooks/useCalendar";
 
 const PlannerHomepage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Next thing across the planner's own events, client weddings and deadlines.
+  const { nextEvent: nextCalendarEntry, isLoading: isCalendarLoading } = useCalendar();
 
   useEffect(() => {
     let isMounted = true;
@@ -119,6 +126,19 @@ const PlannerHomepage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      {user?.approvalStatus === 'pending' && (
+        <div className="fixed top-0 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 mt-16">
+          <div className="container mx-auto flex items-start gap-3">
+            <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-900">Account pending approval</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                We're verifying your details. You'll be notified within 1 working day once approved.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <main className="container mx-auto px-4 pt-24 pb-16">
         <div className="mb-8">
           <h1 className="text-3xl font-serif">Wedding Planner Dashboard</h1>
@@ -140,6 +160,18 @@ const PlannerHomepage = () => {
                 <CardContent className="py-4 text-sm text-destructive">{error}</CardContent>
               </Card>
             )}
+
+            {/* What's next across every client, meeting and deadline */}
+            <NextEventCard
+              entry={nextCalendarEntry}
+              isLoading={isCalendarLoading}
+              action={
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/planner-calendar">Open calendar</Link>
+                </Button>
+              }
+            />
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

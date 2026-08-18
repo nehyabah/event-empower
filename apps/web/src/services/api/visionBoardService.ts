@@ -68,4 +68,20 @@ export const visionBoardService = {
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/vision-board/${id}`);
   },
+
+  async uploadImage(file: File): Promise<string> {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const token = apiClient.getAccessToken();
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch(`${API_URL}/vision-board/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
+      body: form,
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    const { url } = await res.json();
+    return url as string;
+  },
 };

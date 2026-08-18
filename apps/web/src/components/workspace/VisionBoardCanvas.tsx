@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, type CSSProperties } from "react";
 import { toast } from "sonner";
-import { ImageIcon, StickyNote, Sparkles, Pin, PinOff, Trash2 } from "lucide-react";
+import { ImageIcon, StickyNote, Sparkles, Pin, PinOff, Trash2, Upload } from "lucide-react";
 import {
   visionBoardService,
   VisionBoardItem,
@@ -9,12 +9,15 @@ import {
   CreateItemInput,
   UpdateItemInput,
 } from "@/services/api/visionBoardService";
+import { resolveMediaUrl } from "@/lib/media";
 
 export interface VisionBoardServiceApi {
   list(): Promise<VisionBoardItem[]>;
   create(input: CreateItemInput): Promise<VisionBoardItem>;
   update(id: string, input: UpdateItemInput): Promise<VisionBoardItem>;
   remove(id: string): Promise<void>;
+  /** Upload a file and return the stored image URL. */
+  uploadImage(file: File): Promise<string>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -77,6 +80,13 @@ export const VisionBoardCanvas = ({ filter = null, service }: Props) => {
   const [editContent, setEditContent] = useState("");
   const [addingImageUrl, setAddingImageUrl] = useState<string | null>(null);
   const [pendingImageUrl, setPendingImageUrl] = useState("");
+  const [imageInputTab, setImageInputTab] = useState<"url" | "device">("device");
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  // Ids whose image failed to load — shown as a retry prompt rather than
+  // silently hidden, which made broken uploads look like nothing happened.
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadItemId = useRef<string | null>(null);
   const dragRef = useRef<DragState | null>(null);
 
   useEffect(() => {
@@ -131,6 +141,27 @@ export const VisionBoardCanvas = ({ filter = null, service }: Props) => {
     } catch { toast.error("Failed to save image"); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingImageUrl, svc]);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const id = pendingUploadItemId.current;
+    if (!file || !id) return;
+    e.target.value = "";
+    setAddingImageUrl(null);
+    setUploadingId(id);
+    try {
+      const url = await svc.uploadImage(file);
+      const updated = await svc.update(id, { content: url });
+      setItems(prev => prev.map(i => i.id === id ? updated : i));
+      setFailedImages(prev => { const n = new Set(prev); n.delete(id); return n; });
+    } catch {
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingId(null);
+      pendingUploadItemId.current = null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [svc]);
 
   const changeColor = useCallback(async (id: string, color: VisionBoardColor) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, color } : i));
@@ -245,27 +276,74 @@ export const VisionBoardCanvas = ({ filter = null, service }: Props) => {
             ))}
 
             {/* IMAGE */}
-            {item.type === "image" && (addingImageUrl === item.id ? (
+            {item.type === "image" && (uploadingId === item.id ? (
+              <div style={{ minHeight: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, opacity: 0.6 }}>
+                <p style={{ margin: 0, fontSize: 12, color: mutedColor }}>Uploading…</p>
+              </div>
+            ) : addingImageUrl === item.id ? (
               <div onPointerDown={e => e.stopPropagation()}>
-                <p style={{ margin: "0 0 6px", fontSize: 12, color: mutedColor }}>Paste an image URL</p>
-                <input autoFocus placeholder="https://..." value={pendingImageUrl} onChange={e => setPendingImageUrl(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") commitImageUrl(item.id); }}
-                  style={{ width: "100%", padding: "6px 8px", fontSize: 13, borderRadius: 6, border: "1px solid #e8e4df", outline: "none", background: "#fff", boxSizing: "border-box" }} />
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                  <button onClick={() => commitImageUrl(item.id)} style={{ flex: 1, background: "#b2834c", color: "#fff", border: "none", borderRadius: 6, padding: "6px", fontSize: 12, cursor: "pointer" }}>Add image</button>
-                  <button onClick={() => { setAddingImageUrl(null); setPendingImageUrl(""); }} style={{ background: "#f3f4f6", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 12, cursor: "pointer" }}>Skip</button>
+                {/* Tabs */}
+                <div style={{ display: "flex", marginBottom: 8, borderBottom: "1px solid #e8e4df" }}>
+                  {(["device", "url"] as const).map(tab => (
+                    <button key={tab} onClick={() => setImageInputTab(tab)}
+                      style={{ flex: 1, padding: "4px 0", fontSize: 11, fontWeight: 500, background: "none", border: "none", cursor: "pointer",
+                        color: imageInputTab === tab ? "#b2834c" : "#9ca3af",
+                        borderBottom: imageInputTab === tab ? "2px solid #b2834c" : "2px solid transparent" }}>
+                      {tab === "device" ? "From device" : "Paste URL"}
+                    </button>
+                  ))}
                 </div>
+
+                {imageInputTab === "device" ? (
+                  <div style={{ textAlign: "center", padding: "8px 0" }}>
+                    <button
+                      onClick={() => { pendingUploadItemId.current = item.id; fileInputRef.current?.click(); }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#b2834c", color: "#fff", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 12, cursor: "pointer", fontWeight: 500 }}>
+                      <Upload size={13} /> Choose photo
+                    </button>
+                    <p style={{ margin: "6px 0 0", fontSize: 11, color: mutedColor }}>JPG, PNG, WEBP · max 8 MB</p>
+                  </div>
+                ) : (
+                  <>
+                    <input autoFocus placeholder="https://..." value={pendingImageUrl} onChange={e => setPendingImageUrl(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") commitImageUrl(item.id); }}
+                      style={{ width: "100%", padding: "6px 8px", fontSize: 13, borderRadius: 6, border: "1px solid #e8e4df", outline: "none", background: "#fff", boxSizing: "border-box" }} />
+                    <button onClick={() => commitImageUrl(item.id)} style={{ marginTop: 8, width: "100%", background: "#b2834c", color: "#fff", border: "none", borderRadius: 6, padding: "6px", fontSize: 12, cursor: "pointer" }}>Add image</button>
+                  </>
+                )}
+
+                <button onClick={() => { setAddingImageUrl(null); setPendingImageUrl(""); }}
+                  style={{ marginTop: 6, width: "100%", background: "none", border: "none", fontSize: 11, color: mutedColor, cursor: "pointer" }}>
+                  Skip for now
+                </button>
               </div>
             ) : item.content ? (
               <>
                 <div onPointerDown={e => e.stopPropagation()} style={{ marginBottom: 8, borderRadius: 8, overflow: "hidden" }}>
-                  <img src={item.content} alt={item.title ?? "Vision"} style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 180, borderRadius: 8 }} onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  {failedImages.has(item.id) ? (
+                    <div style={{ minHeight: 100, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: 12 }}>
+                      <ImageIcon size={22} color={mutedColor} />
+                      <p style={{ margin: 0, fontSize: 11, color: mutedColor, textAlign: "center" }}>Image couldn't load</p>
+                      <button
+                        onClick={() => { setAddingImageUrl(item.id); setImageInputTab("device"); }}
+                        style={{ fontSize: 11, color: "#b2834c", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                      >Replace</button>
+                    </div>
+                  ) : (
+                    <img
+                      src={resolveMediaUrl(item.content)}
+                      alt={item.title ?? "Vision"}
+                      loading="lazy"
+                      style={{ width: "100%", display: "block", objectFit: "cover", maxHeight: 180, borderRadius: 8 }}
+                      onError={() => setFailedImages(prev => new Set(prev).add(item.id))}
+                    />
+                  )}
                 </div>
                 {isEditing ? (
                   <div onPointerDown={e => e.stopPropagation()}>
                     <input autoFocus placeholder="Caption (optional)" value={editTitle} onChange={e => setEditTitle(e.target.value)}
                       style={{ width: "100%", background: "transparent", border: "none", outline: "none", fontSize: 12, color: textColor, marginBottom: 4 }} />
-                    <button onClick={() => { setAddingImageUrl(item.id); setPendingImageUrl(item.content ?? ""); }} style={{ fontSize: 11, color: "#b2834c", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 4 }}>Change image</button><br />
+                    <button onClick={() => { setAddingImageUrl(item.id); setImageInputTab("device"); setPendingImageUrl(item.content ?? ""); }} style={{ fontSize: 11, color: "#b2834c", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 4 }}>Change image</button><br />
                     <button onClick={() => commitEdit(item.id)} style={{ background: "#b2834c", color: "#fff", border: "none", borderRadius: 6, padding: "4px 12px", fontSize: 12, cursor: "pointer", marginTop: 4 }}>Done</button>
                   </div>
                 ) : (
@@ -315,6 +393,9 @@ export const VisionBoardCanvas = ({ filter = null, service }: Props) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#faf9f7", fontFamily: "'Montserrat', sans-serif" }}>
+      {/* Hidden file input for device uploads */}
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileChange} />
+
       {/* Toolbar */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", background: "#ffffff", borderBottom: "1px solid #ece8e2", flexShrink: 0, flexWrap: "wrap" }}>
         <button onClick={() => addItem("note")} style={addBtnStyle}><StickyNote size={14} /> Note</button>

@@ -74,6 +74,20 @@ export const twilioService = {
     });
   },
 
+  /** Send an arbitrary SMS. Used for guest RSVP reminders. */
+  async sendSms(phone: string, body: string): Promise<void> {
+    await getTwilioClient().messages.create({
+      body,
+      from: env.TWILIO_SMS_FROM,
+      to: phone,
+    });
+  },
+
+  /** True when Twilio credentials look usable, so callers can skip cleanly. */
+  get isConfigured(): boolean {
+    return env.TWILIO_ACCOUNT_SID.startsWith('AC') && Boolean(env.TWILIO_SMS_FROM);
+  },
+
   async verifyOtp(phone: string, code: string, userType?: UserType): Promise<PhoneAuthResult> {
     // Find the valid OTP code
     const otpRecord = await OtpCodeModel.findValidCode(phone);

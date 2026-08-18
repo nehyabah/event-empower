@@ -2386,4 +2386,63 @@ export const adminController = {
     }
   },
 
+  // ========== APPROVALS ==========
+
+  async listPendingApprovals(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const users = await query<{
+        id: string; name: string | null; email: string | null; phone: string | null;
+        user_type: string; business_name: string | null; instagram_handle: string | null;
+        whatsapp_phone: string | null; city: string | null; created_at: Date;
+      }>(
+        `SELECT id, name, email, phone, user_type, business_name, instagram_handle,
+                whatsapp_phone, city, created_at
+         FROM users
+         WHERE approval_status = 'pending' AND user_type IN ('vendor', 'planner')
+         ORDER BY created_at ASC`
+      );
+      res.json(users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        userType: u.user_type,
+        businessName: u.business_name,
+        instagramHandle: u.instagram_handle,
+        whatsappPhone: u.whatsapp_phone,
+        city: u.city,
+        createdAt: u.created_at,
+      })));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async approveUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      await query(
+        `UPDATE users SET approval_status = 'approved', approved_at = NOW(), approved_by = $2 WHERE id = $1`,
+        [id, req.user!.userId]
+      );
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async rejectUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      await query(
+        `UPDATE users SET approval_status = 'rejected', rejection_reason = $2 WHERE id = $1`,
+        [id, reason || null]
+      );
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  },
+
 };

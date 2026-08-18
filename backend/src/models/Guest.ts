@@ -13,6 +13,10 @@ export interface Guest {
   plus_one: boolean;
   dietary_restrictions: string | null;
   notes: string | null;
+  /** Size of the party, including the named guest. */
+  guest_count: number;
+  /** When this guest answered, or null if they never have. */
+  rsvp_responded_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -27,6 +31,8 @@ export interface CreateGuestInput {
   plus_one?: boolean;
   dietary_restrictions?: string;
   notes?: string;
+  guest_count?: number;
+  rsvp_responded_at?: Date | null;
 }
 
 export interface UpdateGuestInput {
@@ -38,6 +44,8 @@ export interface UpdateGuestInput {
   plus_one?: boolean;
   dietary_restrictions?: string | null;
   notes?: string | null;
+  guest_count?: number;
+  rsvp_responded_at?: Date | null;
 }
 
 export const GuestModel = {
@@ -64,8 +72,8 @@ export const GuestModel = {
 
   async create(input: CreateGuestInput): Promise<Guest> {
     const result = await queryOne<Guest>(
-      `INSERT INTO guests (user_id, name, email, phone, status, guest_group, plus_one, dietary_restrictions, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO guests (user_id, name, email, phone, status, guest_group, plus_one, dietary_restrictions, notes, guest_count, rsvp_responded_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         input.user_id,
@@ -77,6 +85,8 @@ export const GuestModel = {
         input.plus_one || false,
         input.dietary_restrictions || null,
         input.notes || null,
+        input.guest_count ?? 1,
+        input.rsvp_responded_at ?? null,
       ]
     );
 
@@ -123,6 +133,14 @@ export const GuestModel = {
     if (input.notes !== undefined) {
       fields.push(`notes = $${paramIndex++}`);
       values.push(input.notes || null);
+    }
+    if (input.guest_count !== undefined) {
+      fields.push(`guest_count = $${paramIndex++}`);
+      values.push(input.guest_count);
+    }
+    if (input.rsvp_responded_at !== undefined) {
+      fields.push(`rsvp_responded_at = $${paramIndex++}`);
+      values.push(input.rsvp_responded_at);
     }
 
     if (fields.length === 0) {

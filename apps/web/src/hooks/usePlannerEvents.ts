@@ -1,23 +1,38 @@
-import { useState, useEffect, useCallback } from 'react';
-import { plannerService, PlannerEvent, CreateEventInput, UpdateEventInput } from '@/services/api/plannerService';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAutoRefresh } from './useAutoRefresh';
+import {
+  plannerService,
+  PlannerEvent,
+  CreateEventInput,
+  UpdateEventInput,
+  CalendarWeddingDate,
+  CalendarTodoDueDate,
+} from '@/services/api/plannerService';
 import { toast } from 'sonner';
 
 export function usePlannerEvents(startDate?: string, endDate?: string) {
   const [events, setEvents] = useState<PlannerEvent[]>([]);
+  const [weddingDates, setWeddingDates] = useState<CalendarWeddingDate[]>([]);
+  const [todoDueDates, setTodoDueDates] = useState<CalendarTodoDueDate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const hasLoadedRef = useRef(false);
+
   const fetchEvents = useCallback(async () => {
     try {
-      setIsLoading(true);
+      // Background refreshes keep the current view on screen.
+      if (!hasLoadedRef.current) setIsLoading(true);
+      const data = await plannerService.getCalendarData();
+      setEvents(data.events);
+      setWeddingDates(data.weddingDates);
+      setTodoDueDates(data.todoDueDates);
       setError(null);
-      const data = await plannerService.getEvents(startDate, endDate);
-      setEvents(data);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch events';
-      setError(message);
-      console.error('Error fetching events:', err);
+      const message = err instanceof Error ? err.message : 'Failed to fetch calendar data';
+      if (!hasLoadedRef.current) setError(message);
     } finally {
+      hasLoadedRef.current = true;
       setIsLoading(false);
     }
   }, [startDate, endDate]);
@@ -25,6 +40,9 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  // Client weddings and shared task deadlines change outside this tab.
+  useAutoRefresh(fetchEvents, { intervalMs: 60_000 });
 
   const createEvent = useCallback(async (input: CreateEventInput): Promise<PlannerEvent | null> => {
     try {
@@ -37,7 +55,6 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create event';
       toast.error(message);
-      console.error('Error creating event:', err);
       return null;
     }
   }, []);
@@ -53,7 +70,6 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update event';
       toast.error(message);
-      console.error('Error updating event:', err);
       return null;
     }
   }, []);
@@ -67,12 +83,10 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete event';
       toast.error(message);
-      console.error('Error deleting event:', err);
       return false;
     }
   }, []);
 
-  // Filter helpers
   const eventsByType = useCallback((type: string) => {
     return events.filter(e => e.event_type === type);
   }, [events]);
@@ -82,7 +96,16 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
     return events.filter(e => e.event_date.split('T')[0] === dateStr);
   }, [events]);
 
-  // Get upcoming events (from today onwards)
+  const weddingOnDate = useCallback((date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return weddingDates.filter(w => w.event_date === dateStr);
+  }, [weddingDates]);
+
+  const todosOnDate = useCallback((date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return todoDueDates.filter(t => t.due_date === dateStr);
+  }, [todoDueDates]);
+
   const upcomingEvents = events.filter(e => {
     const eventDate = new Date(e.event_date);
     const today = new Date();
@@ -90,7 +113,6 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
     return eventDate >= today;
   });
 
-  // Get events for this week
   const thisWeekEvents = events.filter(e => {
     const eventDate = new Date(e.event_date);
     const today = new Date();
@@ -101,6 +123,8 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
 
   return {
     events,
+    weddingDates,
+    todoDueDates,
     isLoading,
     error,
     fetchEvents,
@@ -109,6 +133,8 @@ export function usePlannerEvents(startDate?: string, endDate?: string) {
     deleteEvent,
     eventsByType,
     eventsOnDate,
+    weddingOnDate,
+    todosOnDate,
     upcomingEvents,
     thisWeekEvents,
     meetings: events.filter(e => e.event_type === 'meeting'),

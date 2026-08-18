@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, CheckCircle2, Circle, Sparkles, Plus, Search, Lock, CalendarDays, MapPin, Users, DollarSign, Mail } from "lucide-react";
+import { Loader2, CheckCircle2, Circle, Sparkles, Plus, Search, Lock, CalendarDays, MapPin, Users, DollarSign, Mail, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { apiClient } from "@/services/api/client";
+// Aliased: `ExpenseSummary` is also the name of the component imported below.
+import {
+  userService, ReviewableVendor, VendorReview,
+  ExpenseSummary as ExpenseSummaryData,
+} from "@/services/api/userService";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import ClientCalendarTab from "@/components/calendar/ClientCalendarTab";
+import { formatDateOnly, daysUntilDate } from "@/lib/dates";
+import VendorReviewDialog from "@/components/vendors/VendorReviewDialog";
 import { VisionBoardCanvas } from "@/components/workspace/VisionBoardCanvas";
 import TodoList from "@/components/todos/TodoList";
 import CreateTodoList from "@/components/todos/CreateTodoList";
@@ -82,7 +91,7 @@ interface WorkspaceData {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const formatDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : "TBD";
+  formatDateOnly(d, { month: "long", day: "numeric", year: "numeric" }, "en-US") ?? "TBD";
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -110,20 +119,51 @@ const Workspace = () => {
   const [todoTab, setTodoTab] = useState<"all" | "private" | "active" | "completed">("all");
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [expenseTab, setExpenseTab] = useState<"all" | "categories">("all");
+  // Vendor reviews: map of vendor_profile_id -> the couple's existing review
+  const [reviews, setReviews] = useState<Record<string, VendorReview>>({});
+  const [reviewTarget, setReviewTarget] = useState<{ id: string; name: string } | null>(null);
+  const [expenseSummary, setExpenseSummary] = useState<ExpenseSummaryData | null>(null);
+
+  const loadWorkspace = useCallback(async () => {
+    const r = await apiClient.get<WorkspaceData>("/users/workspace");
+    if (r.error) {
+      // Only surface an error on the first load; a failed background refresh
+      // keeps the workspace on screen.
+      if (workspace) return;
+      if (r.status === 401) setError("session-expired");
+      else if (r.status === 404 || r.error.toLowerCase().includes("not found")) setNoEvent(true);
+      else setError("server");
+    } else {
+      setWorkspace(r.data || null);
+      if (!r.data) setNoEvent(true);
+    }
+  }, [workspace]);
+
+  const loadSummaries = useCallback(async () => {
+    // Budget balance for the overview stat.
+    await userService.getExpenseSummary()
+      .then(setExpenseSummary)
+      .catch(() => { /* non-critical */ });
+
+    // Any reviews the couple has already left.
+    await userService.getReviewableVendors()
+      .then((list: ReviewableVendor[]) => {
+        const map: Record<string, VendorReview> = {};
+        list.forEach((v) => { if (v.review) map[v.vendor_profile_id] = v.review; });
+        setReviews(map);
+      })
+      .catch(() => { /* non-critical */ });
+  }, []);
 
   useEffect(() => {
-    apiClient.get<WorkspaceData>("/users/workspace").then(r => {
-      if (r.error) {
-        if (r.status === 401) setError("session-expired");
-        else if (r.status === 404 || r.error.toLowerCase().includes("not found")) setNoEvent(true);
-        else setError("server");
-      } else {
-        setWorkspace(r.data || null);
-        if (!r.data) setNoEvent(true);
-      }
-    }).catch(() => setError("network"))
+    Promise.all([loadWorkspace().catch(() => setError("network")), loadSummaries()])
       .finally(() => setIsLoading(false));
+    // Run once on mount; refreshes are handled by useAutoRefresh below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The planner and both partners edit this data, so keep it current.
+  useAutoRefresh(() => Promise.all([loadWorkspace(), loadSummaries()]));
 
   if (isLoading) return (
     <div className="min-h-screen bg-background">
@@ -201,14 +241,20 @@ const Workspace = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-4 w-full mb-8 h-10 p-1 bg-muted/60 rounded-lg">
+          <TabsList className="grid grid-cols-5 w-full mb-8 h-10 p-1 bg-muted/60 rounded-lg">
             <TabsTrigger value="overview"    className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
+            <TabsTrigger value="calendar"    className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Calendar</TabsTrigger>
             <TabsTrigger value="visionboard" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
               <Sparkles className="h-3.5 w-3.5" />Mood Board
             </TabsTrigger>
             <TabsTrigger value="todos"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
             <TabsTrigger value="budget"      className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
           </TabsList>
+
+          {/* ── Calendar ─────────────────────────────────────────────────── */}
+          <TabsContent value="calendar">
+            <ClientCalendarTab />
+          </TabsContent>
 
           {/* ── Overview ─────────────────────────────────────────────────── */}
           <TabsContent value="overview" className="space-y-5">
@@ -231,7 +277,7 @@ const Workspace = () => {
                   )}
                 </div>
                 {event.event_date && (() => {
-                  const days = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / 86_400_000);
+                  const days = daysUntilDate(event.event_date) ?? 0;
                   if (days > 0) return (
                     <div className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
                       <span className="text-lg font-bold" style={{ color: "#e4b96a" }}>{days}</span>
@@ -258,10 +304,20 @@ const Workspace = () => {
                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: guestStats.total > 0 ? `${(guestStats.confirmed / guestStats.total) * 100}%` : "0%" }} />
                     </div>
                   </div>
+                  {/* Budget with the outstanding balance, not just the allocation */}
                   <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Budget</p>
                     <p className="text-2xl font-bold">{event.total_budget ? formatCurrency(event.total_budget) : "—"}</p>
-                    <p className="text-xs text-muted-foreground">total allocated</p>
+                    {expenseSummary && expenseSummary.total_unpaid > 0 ? (
+                      <p className={`text-xs font-medium ${expenseSummary.overdue_count > 0 ? "text-red-600" : "text-amber-600"}`}>
+                        {formatCurrency(expenseSummary.total_unpaid)} balance owed
+                        {expenseSummary.overdue_count > 0 && " · overdue"}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {expenseSummary ? "all settled" : "total allocated"}
+                      </p>
+                    )}
                   </div>
                   <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Vendors</p>
@@ -297,7 +353,10 @@ const Workspace = () => {
                       <Link to="/vendors" className="text-primary underline underline-offset-2">Browse vendors</Link>
                     </div>
                   ) : (
-                    vendors.map((v, i) => (
+                    vendors.map((v, i) => {
+                      const canReview = v.status === "booked" || v.status === "confirmed";
+                      const existing = reviews[v.vendor_profile_id];
+                      return (
                       <div key={v.id} className={`flex items-center gap-3 px-6 py-3 hover:bg-muted/30 transition-colors ${i < vendors.length - 1 ? "border-b border-border/40" : ""}`}>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{v.business_name || "Unnamed Vendor"}</p>
@@ -305,8 +364,29 @@ const Workspace = () => {
                         </div>
                         {v.amount != null && v.amount > 0 && <p className="text-sm tabular-nums text-muted-foreground shrink-0">{formatCurrency(v.amount)}</p>}
                         {vendorBadge(v.status)}
+                        {canReview && (
+                          existing ? (
+                            <button
+                              onClick={() => setReviewTarget({ id: v.vendor_profile_id, name: v.business_name || "Vendor" })}
+                              className="flex items-center gap-1 shrink-0 rounded-md px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 transition-colors"
+                              title="Edit your review"
+                            >
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              {existing.rating.toFixed(1)}
+                            </button>
+                          ) : (
+                            <Button
+                              variant="outline" size="sm"
+                              className="h-7 shrink-0 text-xs gap-1"
+                              onClick={() => setReviewTarget({ id: v.vendor_profile_id, name: v.business_name || "Vendor" })}
+                            >
+                              <Star className="w-3.5 h-3.5" /> Rate
+                            </Button>
+                          )
+                        )}
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </CardContent>
               </Card>
@@ -467,6 +547,22 @@ const Workspace = () => {
 
         </Tabs>
       </main>
+
+      {reviewTarget && (
+        <VendorReviewDialog
+          open={!!reviewTarget}
+          onOpenChange={(o) => { if (!o) setReviewTarget(null); }}
+          vendorProfileId={reviewTarget.id}
+          vendorName={reviewTarget.name}
+          existingReview={reviews[reviewTarget.id] || null}
+          onSaved={(review) => setReviews((prev) => ({ ...prev, [reviewTarget.id]: review }))}
+          onDeleted={() => setReviews((prev) => {
+            const next = { ...prev };
+            delete next[reviewTarget.id];
+            return next;
+          })}
+        />
+      )}
     </div>
   );
 };

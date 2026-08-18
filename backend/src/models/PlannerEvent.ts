@@ -13,10 +13,13 @@ export interface PlannerEvent {
   end_time: string | null;
   event_type: EventType;
   location: string | null;
+  /** When true the linked client sees this entry on their own calendar. */
+  visible_to_client: boolean;
   created_at: Date;
   updated_at: Date;
   // Joined fields
   client_name?: string;
+  planner_name?: string;
 }
 
 export interface CreatePlannerEventInput {
@@ -29,6 +32,7 @@ export interface CreatePlannerEventInput {
   end_time?: string;
   event_type?: EventType;
   location?: string;
+  visible_to_client?: boolean;
 }
 
 export interface UpdatePlannerEventInput {
@@ -40,6 +44,7 @@ export interface UpdatePlannerEventInput {
   end_time?: string | null;
   event_type?: EventType;
   location?: string;
+  visible_to_client?: boolean;
 }
 
 export const PlannerEventModel = {
@@ -86,6 +91,26 @@ export const PlannerEventModel = {
     );
   },
 
+  /**
+   * Planner entries that should appear on a client's own calendar, resolved
+   * from the client's user id through their planner_clients link.
+   */
+  async findVisibleForClientUser(userId: string): Promise<PlannerEvent[]> {
+    return query<PlannerEvent>(
+      `SELECT e.*,
+              CONCAT(c.partner1_name, ' & ', c.partner2_name) as client_name,
+              u.name AS planner_name
+       FROM planner_events e
+       JOIN planner_clients c ON e.client_id = c.id
+       LEFT JOIN users u ON u.id = e.planner_id
+       WHERE c.user_id = $1
+         AND c.invite_status = 'accepted'
+         AND e.visible_to_client = TRUE
+       ORDER BY e.event_date ASC, e.start_time ASC NULLS LAST`,
+      [userId]
+    );
+  },
+
   async findUpcoming(plannerId: string, limit: number = 10): Promise<PlannerEvent[]> {
     return query<PlannerEvent>(
       `SELECT e.*, CONCAT(c.partner1_name, ' & ', c.partner2_name) as client_name
@@ -100,8 +125,8 @@ export const PlannerEventModel = {
 
   async create(input: CreatePlannerEventInput): Promise<PlannerEvent> {
     const result = await queryOne<PlannerEvent>(
-      `INSERT INTO planner_events (planner_id, client_id, title, description, event_date, start_time, end_time, event_type, location)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO planner_events (planner_id, client_id, title, description, event_date, start_time, end_time, event_type, location, visible_to_client)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         input.planner_id,
@@ -113,6 +138,7 @@ export const PlannerEventModel = {
         input.end_time || null,
         input.event_type || 'meeting',
         input.location || null,
+        input.visible_to_client ?? true,
       ]
     );
 
@@ -159,6 +185,10 @@ export const PlannerEventModel = {
     if (input.location !== undefined) {
       fields.push(`location = $${paramIndex++}`);
       values.push(input.location || null);
+    }
+    if (input.visible_to_client !== undefined) {
+      fields.push(`visible_to_client = $${paramIndex++}`);
+      values.push(input.visible_to_client);
     }
 
     if (fields.length === 0) {

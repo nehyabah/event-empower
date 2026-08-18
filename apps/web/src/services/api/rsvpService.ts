@@ -6,6 +6,14 @@ export interface EventInfo {
   eventDate: string | null;
   venue: string | null;
   storySlug: string | null;
+  /** Last day guests may respond; null when the link never closes. */
+  rsvpDeadline: string | null;
+  /** Optional note from the couple shown above the form. */
+  rsvpMessage: string | null;
+  /** True once the deadline has passed or the couple closed RSVPs. */
+  rsvpClosed: boolean;
+  /** Human-readable explanation shown in place of the form. */
+  closedReason: string | null;
 }
 
 export interface RsvpSubmission {

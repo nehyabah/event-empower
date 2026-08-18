@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 export type StoryImageType = "general" | "bride" | "groom";
 
 export interface CoupleStory {
@@ -134,6 +136,12 @@ export interface StoryBundle {
   weddingParty: WeddingPartyMember[];
   travelInfo: TravelInfoItem[];
   faqItems: FaqItem[];
+  /** Lets the public wedding site link straight to the RSVP form. */
+  rsvp: {
+    code: string;
+    deadline: string | null;
+    closed: boolean;
+  } | null;
 }
 
 export interface UpdateStoryInput {
@@ -220,6 +228,7 @@ const emptyBundle: StoryBundle = {
   weddingParty: [],
   travelInfo: [],
   faqItems: [],
+  rsvp: null,
 };
 
 export const storyService = {
@@ -272,6 +281,21 @@ export const storyService = {
   },
 
   // --- Wishlist ---
+  async uploadWishlistImage(file: File): Promise<{ key: string; url: string }> {
+    const token = apiClient.getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_URL}/users/wishlist/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to upload image');
+    return { key: data.key as string, url: data.url as string };
+  },
+
   async listWishlist(): Promise<WishlistItem[]> {
     const response = await apiClient.get<WishlistItem[]>("/users/wishlist");
     if (response.error) throw new Error(response.error);

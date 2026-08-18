@@ -140,6 +140,7 @@ const PlannerClientWorkspace = () => {
     update: (id: string, input: Parameters<typeof plannerService.updateClientVisionBoardItem>[2]) =>
       plannerService.updateClientVisionBoardItem(clientId!, id, input),
     remove: (id: string) => plannerService.removeClientVisionBoardItem(clientId!, id),
+    uploadImage: (file: File) => plannerService.uploadClientVisionBoardImage(clientId!, file),
   }), [clientId]);
 
   // ── Loading ────────────────────────────────────────────────────────────────

@@ -1,28 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { userService, Guest, CreateGuestInput, UpdateGuestInput, GuestStats } from '@/services/api/userService';
 import { toast } from 'sonner';
+import { useAutoRefresh } from './useAutoRefresh';
 
 export function useGuests() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [stats, setStats] = useState<GuestStats>({ total: 0, pending: 0, confirmed: 0, declined: 0, maybe: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const fetchGuests = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
+      // Background refreshes must not blank the list.
+      if (!hasLoadedRef.current) setIsLoading(true);
       const [guestsData, statsData] = await Promise.all([
         userService.getGuests(),
         userService.getGuestStats(),
       ]);
       setGuests(guestsData);
       setStats(statsData);
+      setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch guests';
-      setError(message);
+      if (!hasLoadedRef.current) setError(message);
       console.error('Error fetching guests:', err);
     } finally {
+      hasLoadedRef.current = true;
       setIsLoading(false);
     }
   }, []);
@@ -30,6 +34,9 @@ export function useGuests() {
   useEffect(() => {
     fetchGuests();
   }, [fetchGuests]);
+
+  // Guests RSVP from their own devices, so the list must update on its own.
+  useAutoRefresh(fetchGuests, { intervalMs: 30_000 });
 
   const createGuest = useCallback(async (input: CreateGuestInput): Promise<Guest | null> => {
     try {

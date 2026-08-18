@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,23 +15,33 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Heart, Briefcase, Store } from "lucide-react";
+import { Loader2, Heart, Briefcase, Store, Instagram, MapPin, Phone } from "lucide-react";
 import { useAuth, UserType } from "@/context/AuthContext";
 
-const formSchema = z.object({
+const baseSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
-  role: z.enum(["couple", "planner", "vendor"], {
-    required_error: "Please select a role",
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
+  role: z.enum(["couple", "planner", "vendor"], { required_error: "Please select a role" }),
+  businessName: z.string().optional(),
+  city: z.string().optional(),
+  instagramHandle: z.string().optional(),
+  whatsappPhone: z.string().optional(),
+}).refine((d) => d.password === d.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
+}).refine((d) => {
+  if (d.role !== "couple") {
+    return !!(d.businessName?.trim()) && !!(d.instagramHandle?.trim() || d.whatsappPhone?.trim());
+  }
+  return true;
+}, {
+  message: "Business name and at least Instagram or WhatsApp are required",
+  path: ["businessName"],
 });
 
-type RegisterFormValues = z.infer<typeof formSchema>;
+type RegisterFormValues = z.infer<typeof baseSchema>;
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -43,35 +52,49 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
   const { register } = useAuth();
 
   const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(baseSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
       confirmPassword: "",
       role: "couple",
+      businessName: "",
+      city: "",
+      instagramHandle: "",
+      whatsappPhone: "",
     },
   });
 
+  const role = form.watch("role");
+  const isProfessional = role === "vendor" || role === "planner";
+
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
-
     try {
-      console.log("Registration data:", data);
-
-      // Convert role to userType
       const userType: UserType = data.role === "couple" ? "client" : data.role;
+      await register(data.email, data.password, data.name, userType,
+        isProfessional ? {
+          businessName: data.businessName,
+          instagramHandle: data.instagramHandle,
+          whatsappPhone: data.whatsappPhone,
+          city: data.city,
+        } : undefined
+      );
 
-      await register(data.email, data.password, data.name, userType);
+      if (isProfessional) {
+        toast.success("Application submitted!", {
+          description: "We'll review your profile and get back to you within 1 working day.",
+          duration: 6000,
+        });
+      } else {
+        toast.success("Welcome to àjọyọ̀!", {
+          description: `Let's start planning, ${data.name}!`,
+        });
+      }
 
-      toast.success("Registration successful!", {
-        description: `Welcome to àjọyọ̀, ${data.name}! Start planning your perfect event.`,
-      });
-
-      // Close the modal - ProtectedRoute will handle navigation
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Registration error:", error);
       toast.error("Registration failed", {
         description: error instanceof Error ? error.message : "Please check your information and try again.",
       });
@@ -83,80 +106,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="John Doe" 
-                  {...field} 
-                  className="input-elegant"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="you@example.com" 
-                  {...field} 
-                  className="input-elegant"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="••••••••" 
-                  type="password" 
-                  {...field}
-                  className="input-elegant" 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="••••••••" 
-                  type="password" 
-                  {...field}
-                  className="input-elegant" 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
+        {/* Role selector */}
         <FormField
           control={form.control}
           name="role"
@@ -169,69 +119,187 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
                   defaultValue={field.value}
                   className="grid grid-cols-3 gap-2"
                 >
-                  <div>
-                    <RadioGroupItem value="couple" id="couple" className="sr-only" />
-                    <Label
-                      htmlFor="couple"
-                      className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
-                        field.value === "couple"
-                          ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
-                          : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <Heart className="h-4 w-4" />
-                      Couple
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="planner" id="planner" className="sr-only" />
-                    <Label
-                      htmlFor="planner"
-                      className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
-                        field.value === "planner"
-                          ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
-                          : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <Briefcase className="h-4 w-4" />
-                      Planner
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="vendor" id="vendor" className="sr-only" />
-                    <Label
-                      htmlFor="vendor"
-                      className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition ${
-                        field.value === "vendor"
-                          ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
-                          : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <Store className="h-4 w-4" />
-                      Vendor
-                    </Label>
-                  </div>
+                  {[
+                    { value: "couple", label: "Couple", icon: <Heart className="h-4 w-4" /> },
+                    { value: "planner", label: "Planner", icon: <Briefcase className="h-4 w-4" /> },
+                    { value: "vendor", label: "Vendor", icon: <Store className="h-4 w-4" /> },
+                  ].map(({ value, label, icon }) => (
+                    <div key={value}>
+                      <RadioGroupItem value={value} id={value} className="sr-only" />
+                      <Label
+                        htmlFor={value}
+                        className={`flex items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition cursor-pointer ${
+                          field.value === value
+                            ? "border-zinc-400 bg-zinc-100 text-zinc-700 shadow-sm"
+                            : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300 hover:bg-zinc-50"
+                        }`}
+                      >
+                        {icon}
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        <Button 
-          type="submit" 
-          className="w-full mt-6 button-hover" 
-          disabled={isLoading}
-        >
+
+        {/* Name */}
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{isProfessional ? "Your Full Name" : "Full Name"}</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} className="input-elegant" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Email */}
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input placeholder="you@example.com" {...field} className="input-elegant" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Password */}
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input placeholder="••••••••" type="password" {...field} className="input-elegant" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm</FormLabel>
+                <FormControl>
+                  <Input placeholder="••••••••" type="password" {...field} className="input-elegant" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Professional extra fields */}
+        {isProfessional && (
+          <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Business Details (required for verification)
+            </p>
+
+            <FormField
+              control={form.control}
+              name="businessName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business / Brand Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder={role === "vendor" ? "e.g. Bloom Photography" : "e.g. Ife Events Co."} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City / State</FormLabel>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input placeholder="e.g. Lagos" {...field} className="pl-9" />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="instagramHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instagram</FormLabel>
+                    <div className="relative">
+                      <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input placeholder="@handle" {...field} className="pl-9" />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="whatsappPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp</FormLabel>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input placeholder="+234 800..." {...field} className="pl-9" />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              We use this to verify your business. At least Instagram or WhatsApp is required.
+            </p>
+          </div>
+        )}
+
+        <Button type="submit" className="w-full mt-2 button-hover" disabled={isLoading}>
           {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating account...
-            </>
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</>
+          ) : isProfessional ? (
+            "Submit Application"
           ) : (
             "Create Account"
           )}
         </Button>
+
+        {isProfessional && (
+          <p className="text-xs text-center text-muted-foreground">
+            Applications are reviewed within 1 working day. You'll be notified once approved.
+          </p>
+        )}
       </form>
     </Form>
   );

@@ -29,6 +29,7 @@ const toLocalTodoItem = (apiItem: ApiTodoItem): TodoItem => ({
   completed: apiItem.completed,
   status: apiItem.status ?? (apiItem.completed ? "done" : "todo"),
   sortOrder: apiItem.sort_order,
+  dueDate: apiItem.due_date ?? null,
 });
 
 const toLocalTodoList = (apiList: ApiTodoList): TodoListItem => ({
@@ -179,11 +180,12 @@ export const useTodoLists = (): TodoListsHook => {
 
   const updateTodoItem = useCallback(async (listId: string, itemId: string, updates: Partial<TodoItem>) => {
     try {
-      const input: { text?: string; completed?: boolean; status?: TodoItem["status"]; sortOrder?: number } = {};
+      const input: { text?: string; completed?: boolean; status?: TodoItem["status"]; sortOrder?: number; dueDate?: string | null } = {};
       if (updates.text !== undefined) input.text = updates.text;
       if (updates.completed !== undefined) input.completed = updates.completed;
       if (updates.status !== undefined) input.status = updates.status;
       if (updates.sortOrder !== undefined) input.sortOrder = updates.sortOrder;
+      if (updates.dueDate !== undefined) input.dueDate = updates.dueDate;
 
       const updatedItem = await userService.updateTodoItem(listId, itemId, input);
       setTodoLists(prev =>

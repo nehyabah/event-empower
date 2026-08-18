@@ -94,7 +94,10 @@ export const VendorProfileModel = {
 
   async listActive(): Promise<VendorProfile[]> {
     return query<VendorProfile>(
-      'SELECT * FROM vendor_profiles WHERE is_active = true ORDER BY created_at DESC'
+      `SELECT vp.* FROM vendor_profiles vp
+       JOIN users u ON u.id = vp.user_id
+       WHERE vp.is_active = true AND u.approval_status = 'approved'
+       ORDER BY vp.created_at DESC`
     );
   },
 
@@ -268,18 +271,45 @@ export const VendorImageModel = {
   },
 };
 
+export type VendorBookingKind = 'booking' | 'meeting' | 'consultation' | 'site_visit' | 'setup' | 'other';
+
 export interface VendorBooking {
   id: string;
   vendor_id: string;
   client_id: string | null;
   client_name: string;
+  title: string | null;
   event_date: Date;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
   event_type: string | null;
+  booking_kind: VendorBookingKind;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   notes: string | null;
   total_amount: number | null;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface VendorBookingInput {
+  client_name?: string;
+  /**
+   * The couple's user id. Set when the booking is for a client on the vendor's
+   * roster — this is what puts the entry on the couple's (and their planner's)
+   * calendar. Null for an off-platform client entered as free text.
+   */
+  client_id?: string | null;
+  title?: string | null;
+  event_date?: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  location?: string | null;
+  event_type?: string;
+  booking_kind?: VendorBookingKind;
+  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  notes?: string | null;
+  total_amount?: number | null;
 }
 
 export interface VendorInquiry {
@@ -314,14 +344,7 @@ export const VendorBookingModel = {
     );
   },
 
-  async update(id: string, input: {
-    client_name?: string;
-    event_date?: string;
-    event_type?: string;
-    status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    notes?: string | null;
-    total_amount?: number | null;
-  }): Promise<VendorBooking | null> {
+  async update(id: string, input: VendorBookingInput): Promise<VendorBooking | null> {
     const fields: string[] = [];
     const values: unknown[] = [];
     let paramIndex = 1;
@@ -330,9 +353,33 @@ export const VendorBookingModel = {
       fields.push(`client_name = $${paramIndex++}`);
       values.push(input.client_name);
     }
+    if (input.client_id !== undefined) {
+      fields.push(`client_id = $${paramIndex++}`);
+      values.push(input.client_id);
+    }
+    if (input.title !== undefined) {
+      fields.push(`title = $${paramIndex++}`);
+      values.push(input.title || null);
+    }
     if (input.event_date !== undefined) {
       fields.push(`event_date = $${paramIndex++}`);
       values.push(input.event_date);
+    }
+    if (input.start_time !== undefined) {
+      fields.push(`start_time = $${paramIndex++}`);
+      values.push(input.start_time || null);
+    }
+    if (input.end_time !== undefined) {
+      fields.push(`end_time = $${paramIndex++}`);
+      values.push(input.end_time || null);
+    }
+    if (input.location !== undefined) {
+      fields.push(`location = $${paramIndex++}`);
+      values.push(input.location || null);
+    }
+    if (input.booking_kind !== undefined) {
+      fields.push(`booking_kind = $${paramIndex++}`);
+      values.push(input.booking_kind);
     }
     if (input.event_type !== undefined) {
       fields.push(`event_type = $${paramIndex++}`);
@@ -364,32 +411,36 @@ export const VendorBookingModel = {
     );
   },
 
-  async create(input: {
-    vendor_id: string;
-    client_name: string;
-    event_date: string;
-    event_type?: string;
-    status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    notes?: string | null;
-    total_amount?: number | null;
-  }): Promise<VendorBooking> {
+  async create(input: VendorBookingInput & { vendor_id: string; client_name: string; event_date: string }): Promise<VendorBooking> {
     const result = await queryOne<VendorBooking>(
       `INSERT INTO vendor_bookings (
         vendor_id,
         client_name,
+        client_id,
+        title,
         event_date,
+        start_time,
+        end_time,
+        location,
         event_type,
+        booking_kind,
         status,
         notes,
         total_amount
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       RETURNING *`,
       [
         input.vendor_id,
         input.client_name,
+        input.client_id || null,
+        input.title || null,
         input.event_date,
+        input.start_time || null,
+        input.end_time || null,
+        input.location || null,
         input.event_type || 'Wedding',
+        input.booking_kind || 'booking',
         input.status || 'pending',
         input.notes || null,
         input.total_amount ?? null,
@@ -403,21 +454,36 @@ export const VendorBookingModel = {
     return result;
   },
 
+  async findByVendorId(vendorId: string): Promise<VendorBooking[]> {
+    return query<VendorBooking>(
+      `SELECT * FROM vendor_bookings
+       WHERE vendor_id = $1
+       ORDER BY event_date ASC, start_time ASC NULLS LAST`,
+      [vendorId]
+    );
+  },
+
   async findUpcomingByVendorId(vendorId: string, limit = 5): Promise<VendorBooking[]> {
     return query<VendorBooking>(
       `SELECT * FROM vendor_bookings
        WHERE vendor_id = $1 AND status IN ('pending', 'confirmed')
-       ORDER BY event_date ASC
+         AND event_date >= CURRENT_DATE
+       ORDER BY event_date ASC, start_time ASC NULLS LAST
        LIMIT $2`,
       [vendorId, limit]
     );
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const result = await query('DELETE FROM vendor_bookings WHERE id = $1 RETURNING id', [id]);
+    return result.length > 0;
   },
 
   async countByVendorId(vendorId: string): Promise<{ total: number; upcoming: number; confirmed: number }> {
     const result = await queryOne<{ total: string; upcoming: string; confirmed: string }>(
       `SELECT
         COUNT(*) as total,
-        COUNT(*) FILTER (WHERE status IN ('pending', 'confirmed')) as upcoming,
+        COUNT(*) FILTER (WHERE status IN ('pending', 'confirmed') AND event_date >= CURRENT_DATE) as upcoming,
         COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed
        FROM vendor_bookings WHERE vendor_id = $1`,
       [vendorId]

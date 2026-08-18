@@ -9,10 +9,12 @@ import {
   VendorService,
   VendorImage,
   VendorBooking,
+  VendorBookingInput,
   VendorInquiry,
   InquiryMessage,
 } from '../models/VendorProfile.js';
 import { ProjectVendorModel, ProjectVendor } from '../models/ProjectVendor.js';
+import { VendorReviewModel, VendorReview } from '../models/VendorReview.js';
 import { UserEventModel } from '../models/UserEvent.js';
 import { queryOne } from '../config/database.js';
 
@@ -47,6 +49,7 @@ export interface VendorProfileDetails {
   profile: VendorProfile;
   services: VendorService[];
   images: VendorImage[];
+  reviews: VendorReview[];
 }
 
 export interface VendorDashboardData {
@@ -62,12 +65,13 @@ export interface VendorDashboardData {
 }
 
 const buildDetails = async (profile: VendorProfile): Promise<VendorProfileDetails> => {
-  const [services, images] = await Promise.all([
+  const [services, images, reviews] = await Promise.all([
     VendorServiceModel.findByVendorId(profile.id),
     VendorImageModel.findByVendorId(profile.id),
+    VendorReviewModel.findByVendorProfileId(profile.id),
   ]);
 
-  return { profile, services, images };
+  return { profile, services, images, reviews };
 };
 
 export const vendorService = {
@@ -174,38 +178,58 @@ export const vendorService = {
     };
   },
 
-  async createVendorBooking(userId: string, input: {
-    client_name: string;
-    event_date: string;
-    event_type?: string;
-    status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    notes?: string | null;
-    total_amount?: number | null;
-  }): Promise<VendorBooking> {
+  /**
+   * Resolve a roster entry into the couple behind it.
+   *
+   * Guards the link: a vendor may only attach a booking to an event they are
+   * actually on the roster for, otherwise they could write entries onto any
+   * couple's calendar by guessing an id.
+   */
+  async resolveBookingClient(
+    vendorProfileId: string,
+    eventId: string
+  ): Promise<{ client_id: string; client_name: string } | null> {
+    const roster = await ProjectVendorModel.findByVendorProfileId(vendorProfileId);
+    if (!roster.some((pv) => pv.event_id === eventId)) return null;
+
+    const event = await UserEventModel.findById(eventId);
+    if (!event) return null;
+
+    const name = [event.partner1_name, event.partner2_name].filter(Boolean).join(' & ');
+    return { client_id: event.user_id, client_name: name || 'Client' };
+  },
+
+  async createVendorBooking(
+    userId: string,
+    input: VendorBookingInput & { client_name?: string; event_date: string; event_id?: string }
+  ): Promise<VendorBooking> {
     const profile = await VendorProfileModel.findByUserId(userId);
     if (!profile) {
       throw new Error('Vendor profile not found');
     }
 
-    return VendorBookingModel.create({
-      vendor_id: profile.id,
-      client_name: input.client_name,
-      event_date: input.event_date,
-      event_type: input.event_type,
-      status: input.status,
-      notes: input.notes,
-      total_amount: input.total_amount,
-    });
+    const { event_id, ...rest } = input;
+    let client_id: string | null = null;
+    let client_name = input.client_name;
+
+    if (event_id) {
+      const resolved = await this.resolveBookingClient(profile.id, event_id);
+      if (!resolved) throw new Error('Client not on your roster');
+      client_id = resolved.client_id;
+      // Fall back to the couple's real names when the vendor didn't type one.
+      client_name = client_name || resolved.client_name;
+    }
+
+    if (!client_name) throw new Error('Client name is required');
+
+    return VendorBookingModel.create({ ...rest, client_name, client_id, vendor_id: profile.id });
   },
 
-  async updateVendorBooking(userId: string, bookingId: string, input: {
-    client_name?: string;
-    event_date?: string;
-    event_type?: string;
-    status?: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-    notes?: string | null;
-    total_amount?: number | null;
-  }): Promise<VendorBooking | null> {
+  async updateVendorBooking(
+    userId: string,
+    bookingId: string,
+    input: VendorBookingInput & { event_id?: string | null }
+  ): Promise<VendorBooking | null> {
     const profile = await VendorProfileModel.findByUserId(userId);
     if (!profile) {
       throw new Error('Vendor profile not found');
@@ -216,7 +240,80 @@ export const vendorService = {
       return null;
     }
 
-    return VendorBookingModel.update(bookingId, input);
+    const { event_id, ...rest } = input;
+    const patch: VendorBookingInput = { ...rest };
+
+    if (event_id !== undefined) {
+      if (event_id === null) {
+        // Explicitly unlinked: becomes an off-platform booking again.
+        patch.client_id = null;
+      } else {
+        const resolved = await this.resolveBookingClient(profile.id, event_id);
+        if (!resolved) throw new Error('Client not on your roster');
+        patch.client_id = resolved.client_id;
+        patch.client_name = patch.client_name || resolved.client_name;
+      }
+    }
+
+    return VendorBookingModel.update(bookingId, patch);
+  },
+
+  /**
+   * Couples this vendor may attach a booking to — their roster, with the
+   * couple's names and wedding date for the picker.
+   */
+  async getBookableClients(userId: string): Promise<Array<{
+    event_id: string;
+    /** The couple's user id — what a linked booking stores as client_id. */
+    client_user_id: string;
+    client_name: string;
+    event_date: string | null;
+    status: string;
+  }>> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) return [];
+
+    const roster = await ProjectVendorModel.findByVendorProfileId(profile.id);
+
+    const rows = await Promise.all(
+      roster.map(async (pv) => {
+        const event = await UserEventModel.findById(pv.event_id);
+        if (!event) return null;
+        const name = [event.partner1_name, event.partner2_name].filter(Boolean).join(' & ');
+        return {
+          event_id: pv.event_id,
+          client_user_id: event.user_id,
+          client_name: name || 'Client',
+          event_date: event.event_date ? String(event.event_date).split('T')[0] : null,
+          status: pv.status,
+        };
+      })
+    );
+
+    return rows.filter((r): r is NonNullable<typeof r> => r !== null);
+  },
+
+  async deleteVendorBooking(userId: string, bookingId: string): Promise<boolean> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) {
+      throw new Error('Vendor profile not found');
+    }
+
+    const booking = await VendorBookingModel.findById(bookingId);
+    if (!booking || booking.vendor_id !== profile.id) {
+      return false;
+    }
+
+    return VendorBookingModel.delete(bookingId);
+  },
+
+  /** Every booking and meeting for the vendor, ordered for a calendar view. */
+  async listVendorBookings(userId: string): Promise<VendorBooking[]> {
+    const profile = await VendorProfileModel.findByUserId(userId);
+    if (!profile) {
+      throw new Error('Vendor profile not found');
+    }
+    return VendorBookingModel.findByVendorId(profile.id);
   },
 
   async listVendorInquiries(userId: string): Promise<VendorInquiry[]> {

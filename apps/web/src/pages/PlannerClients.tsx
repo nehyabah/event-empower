@@ -22,13 +22,18 @@ import {
   PlusCircle,
   ClipboardList,
   LayoutDashboard,
+  MoreVertical,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { usePlannerClients } from "@/hooks/usePlannerClients";
 import { PlannerClient, ClientTodoList, ClientTodoItem, WorkspaceData, plannerService } from "@/services/api/plannerService";
 import { Separator } from "@/components/ui/separator";
@@ -36,7 +41,28 @@ import { Separator } from "@/components/ui/separator";
 const PlannerClients = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const { clients, isLoading, error, activeClients, upcomingClients, completedClients, getClientName, createClient, createInvite } = usePlannerClients();
+  const { clients, isLoading, error, activeClients, upcomingClients, completedClients, archivedClients, getClientName, createClient, createInvite, deleteClient, archiveClient, unarchiveClient } = usePlannerClients();
+
+  // Delete/archive confirmation state
+  const [confirmDelete, setConfirmDelete] = useState<PlannerClient | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState<PlannerClient | null>(null);
+  const [isActioning, setIsActioning] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setIsActioning(true);
+    await deleteClient(confirmDelete.id);
+    setIsActioning(false);
+    setConfirmDelete(null);
+  };
+
+  const handleArchive = async () => {
+    if (!confirmArchive) return;
+    setIsActioning(true);
+    await archiveClient(confirmArchive.id);
+    setIsActioning(false);
+    setConfirmArchive(null);
+  };
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -159,29 +185,53 @@ const PlannerClients = () => {
   // Get status badge with appropriate color
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge variant="default" className="bg-blue-500">Active</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="text-green-500 border-green-500">Completed</Badge>;
-      case 'upcoming':
-        return <Badge variant="outline" className="text-amber-500 border-amber-500">Upcoming</Badge>;
-      default:
-        return null;
+      case 'active':    return <Badge variant="default" className="bg-blue-500">Active</Badge>;
+      case 'completed': return <Badge variant="outline" className="text-green-500 border-green-500">Completed</Badge>;
+      case 'upcoming':  return <Badge variant="outline" className="text-amber-500 border-amber-500">Upcoming</Badge>;
+      case 'archived':  return <Badge variant="outline" className="text-muted-foreground">Archived</Badge>;
+      default:          return null;
     }
   };
 
   // Client card component to avoid repetition
   const ClientCard = ({ client }: { client: PlannerClient }) => (
-    <Card key={client.id} className="hover:shadow-md transition-shadow">
+    <Card key={client.id} className={`hover:shadow-md transition-shadow ${client.status === 'archived' ? 'opacity-70' : ''}`}>
       <CardHeader className="pb-2 flex justify-between items-start">
-        <div>
+        <div className="flex-1 min-w-0">
           <CardTitle className="text-lg flex items-center">
             {getClientName(client)}
-            <Heart className="h-3 w-3 ml-2 text-red-400" />
+            <Heart className="h-3 w-3 ml-2 text-red-400 shrink-0" />
           </CardTitle>
           <p className="text-sm text-muted-foreground">{client.event_type} - {formatDate(client.event_date)}</p>
         </div>
-        {getStatusBadge(client.status)}
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {getStatusBadge(client.status)}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {client.status === 'archived' ? (
+                <DropdownMenuItem onClick={() => unarchiveClient(client.id)}>
+                  <ArchiveRestore className="mr-2 h-4 w-4" />Restore
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => setConfirmArchive(client)}>
+                  <Archive className="mr-2 h-4 w-4" />Archive
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => setConfirmDelete(client)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -315,23 +365,24 @@ const PlannerClients = () => {
         </div>
 
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-md">
-            <TabsTrigger value="all">All ({clients.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+            <TabsTrigger value="all">All ({clients.filter(c => c.status !== 'archived').length})</TabsTrigger>
             <TabsTrigger value="active">Active ({activeClients.length})</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming ({upcomingClients.length})</TabsTrigger>
             <TabsTrigger value="completed">Completed ({completedClients.length})</TabsTrigger>
+            <TabsTrigger value="archived">Archived ({archivedClients.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredClients.length > 0 ? (
-                filteredClients.map((client) => (
+              {filteredClients.filter(c => c.status !== 'archived').length > 0 ? (
+                filteredClients.filter(c => c.status !== 'archived').map((client) => (
                   <ClientCard key={client.id} client={client} />
                 ))
               ) : (
                 <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
                   <p className="text-muted-foreground">
-                    {clients.length === 0 ? "No clients yet. Add your first client!" : "No clients found matching your search."}
+                    {clients.filter(c => c.status !== 'archived').length === 0 ? "No clients yet. Add your first client!" : "No clients found matching your search."}
                   </p>
                 </div>
               )}
@@ -393,6 +444,26 @@ const PlannerClients = () => {
               ) : (
                 <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
                   <p className="text-muted-foreground">No completed client events yet.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="archived">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {archivedClients.filter(c => {
+                const name = getClientName(c).toLowerCase();
+                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+              }).length > 0 ? (
+                archivedClients.filter(c => {
+                  const name = getClientName(c).toLowerCase();
+                  return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
+                }).map((client) => (
+                  <ClientCard key={client.id} client={client} />
+                ))
+              ) : (
+                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground">No archived clients.</p>
                 </div>
               )}
             </div>
@@ -819,6 +890,46 @@ const PlannerClients = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Archive Confirmation */}
+      <AlertDialog open={!!confirmArchive} onOpenChange={(open) => !open && setConfirmArchive(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive client?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmArchive && `"${getClientName(confirmArchive)}" will be moved to your Archived tab. You can restore them at any time.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isActioning}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchive} disabled={isActioning}>
+              {isActioning ? "Archiving..." : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete client?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete && `This will permanently delete "${getClientName(confirmDelete)}" and all associated data. This cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isActioning}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isActioning}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isActioning ? "Deleting..." : "Delete permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

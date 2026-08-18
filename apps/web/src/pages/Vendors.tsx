@@ -9,6 +9,8 @@ import { vendorService, VendorDetails } from "@/services/api/vendorService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 interface VendorImage {
   url: string;
@@ -33,6 +35,7 @@ interface VendorCardProps {
   images: VendorImage[];
   description: string;
   services: ServiceSummary[];
+  reviews: ReviewSummary[];
   openToTravel: boolean;
   contact: {
     email: string;
@@ -40,6 +43,15 @@ interface VendorCardProps {
     website?: string;
   };
   onViewDetails: () => void;
+}
+
+interface ReviewSummary {
+  id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  created_at: string;
+  reviewer_name?: string | null;
 }
 
 const formatPrice = (n: number) =>
@@ -98,6 +110,7 @@ const VendorCard = ({
 };
 
 const VendorsPage = () => {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
   const [selectedVendor, setSelectedVendor] = useState<Omit<VendorCardProps, 'onViewDetails'> | null>(null);
@@ -106,6 +119,7 @@ const VendorsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({
     name: "",
     email: "",
@@ -124,20 +138,28 @@ const VendorsPage = () => {
 
   const handleSubmitInquiry = async () => {
     if (!selectedVendor) return;
-    if (!inquiryForm.name.trim() || !inquiryForm.message.trim()) return;
+    const senderName = user?.name?.trim() || user?.email?.trim() || inquiryForm.name.trim();
+    if (!senderName || !inquiryForm.message.trim()) return;
 
     try {
+      setIsSending(true);
       await vendorService.createInquiry({
         vendorId: selectedVendor.id,
-        senderName: inquiryForm.name.trim(),
-        senderEmail: inquiryForm.email.trim() || undefined,
+        senderName,
+        senderEmail: user?.email || inquiryForm.email.trim() || undefined,
         eventDate: inquiryForm.eventDate || undefined,
         message: inquiryForm.message.trim(),
       });
       setInquiryForm({ name: "", email: "", eventDate: "", message: "" });
       setIsInquiryOpen(false);
+      toast.success("Inquiry sent!", {
+        description: `Your message has been sent to ${selectedVendor.name}.`,
+      });
     } catch (error) {
+      toast.error("Failed to send inquiry. Please try again.");
       console.error("Failed to send inquiry:", error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -312,27 +334,35 @@ const VendorsPage = () => {
       <Dialog open={isInquiryOpen} onOpenChange={setIsInquiryOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Contact Vendor</DialogTitle>
+            <DialogTitle>Send Inquiry to {selectedVendor?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="inquiry-name">Your Name</Label>
-              <Input
-                id="inquiry-name"
-                value={inquiryForm.name}
-                onChange={(e) => setInquiryForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Your full name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="inquiry-email">Email (optional)</Label>
-              <Input
-                id="inquiry-email"
-                value={inquiryForm.email}
-                onChange={(e) => setInquiryForm(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="you@example.com"
-              />
-            </div>
+            {user ? (
+              <p className="text-sm text-muted-foreground">
+                Sending as <span className="font-medium text-foreground">{user.name || user.email}</span>
+              </p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="inquiry-name">Your Name</Label>
+                  <Input
+                    id="inquiry-name"
+                    value={inquiryForm.name}
+                    onChange={(e) => setInquiryForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Your full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="inquiry-email">Email (optional)</Label>
+                  <Input
+                    id="inquiry-email"
+                    value={inquiryForm.email}
+                    onChange={(e) => setInquiryForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </>
+            )}
             <div className="space-y-2">
               <Label htmlFor="inquiry-date">Event Date (optional)</Label>
               <Input
@@ -353,11 +383,14 @@ const VendorsPage = () => {
               />
             </div>
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsInquiryOpen(false)}>
+              <Button variant="outline" onClick={() => setIsInquiryOpen(false)} disabled={isSending}>
                 Cancel
               </Button>
-              <Button onClick={handleSubmitInquiry} disabled={!inquiryForm.name.trim() || !inquiryForm.message.trim()}>
-                Send Inquiry
+              <Button
+                onClick={handleSubmitInquiry}
+                disabled={isSending || !inquiryForm.message.trim() || (!user && !inquiryForm.name.trim())}
+              >
+                {isSending ? "Sending..." : "Send Inquiry"}
               </Button>
             </div>
           </div>
@@ -382,7 +415,7 @@ const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps
       </svg>`
     );
 
-  return vendors.map(({ profile, services, images }) => {
+  return vendors.map(({ profile, services, images, reviews }) => {
     const primaryImage = images.find(image => image.is_primary)?.url;
     const imageUrl = profile.profile_image_url || primaryImage || profile.cover_image_url || placeholderImage;
     const gallery = images.length > 0
@@ -408,6 +441,14 @@ const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps
         description: service.description,
         price_min: service.price_min,
         price_max: service.price_max,
+      })),
+      reviews: (reviews || []).map(r => ({
+        id: r.id,
+        rating: r.rating,
+        title: r.title,
+        comment: r.comment,
+        created_at: r.created_at,
+        reviewer_name: r.reviewer_name,
       })),
       contact: {
         email: profile.email || "Not provided",

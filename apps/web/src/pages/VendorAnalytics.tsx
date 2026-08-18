@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/home/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { vendorService, VendorDashboard } from "@/services/api/vendorService";
 import { Calendar, MessageSquare, Users } from "lucide-react";
@@ -131,7 +130,6 @@ const VendorAnalytics = () => {
           </section>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

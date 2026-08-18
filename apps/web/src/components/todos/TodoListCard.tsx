@@ -247,6 +247,7 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
                   onToggle={() => toggleTodoItem(todoList.id, item.id)}
                   onDelete={() => deleteTodoItem(todoList.id, item.id)}
                   onStatusChange={(status) => handleStatusChange(item.id, status)}
+                  onDueDateChange={(dueDate) => updateTodoItem(todoList.id, item.id, { dueDate })}
                   draggable
                   isDragging={draggingId === item.id}
                   onDragStart={(event) => handleDragStart(event, item.id)}

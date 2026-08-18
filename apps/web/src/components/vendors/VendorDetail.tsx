@@ -3,12 +3,12 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Calendar,
   Mail,
   Phone,
   Heart,
   Globe,
-  Plane
+  Plane,
+  Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,23 @@ interface ServiceSummary {
   price_max: number | null;
 }
 
+interface ReviewSummary {
+  id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  created_at: string;
+  reviewer_name?: string | null;
+}
+
+const Stars = ({ value, className = "h-3.5 w-3.5" }: { value: number; className?: string }) => (
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((n) => (
+      <Star key={n} className={`${className} ${n <= Math.round(value) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
+    ))}
+  </div>
+);
+
 interface VendorDetailProps {
   id: string;
   name: string;
@@ -36,6 +53,7 @@ interface VendorDetailProps {
   description: string;
   images: VendorImage[];
   services: ServiceSummary[];
+  reviews?: ReviewSummary[];
   openToTravel?: boolean;
   contact: {
     email: string;
@@ -56,6 +74,7 @@ const VendorDetail = ({
   description,
   images,
   services,
+  reviews = [],
   openToTravel,
   contact,
   onClose,
@@ -70,12 +89,6 @@ const VendorDetail = ({
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const handleBooking = () => {
-    toast.success("Booking request sent!", {
-      description: `Your booking request for ${name} has been sent.`
-    });
   };
 
   const toggleFavorite = () => {
@@ -232,6 +245,45 @@ const VendorDetail = ({
               </div>
             )}
 
+            {/* Reviews */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium">
+                  Reviews {reviewCount > 0 && <span className="text-muted-foreground font-normal">({reviewCount})</span>}
+                </h3>
+                {reviewCount > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Stars value={rating} />
+                    <span className="text-sm font-medium">{rating.toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
+              {reviews.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No reviews yet — be the first couple to work with them.</p>
+              ) : (
+                <div className="space-y-3">
+                  {reviews.map((r) => (
+                    <div key={r.id} className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                            {(r.reviewer_name || "G")[0].toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium truncate">{r.reviewer_name || "A couple"}</span>
+                        </div>
+                        <Stars value={r.rating} />
+                      </div>
+                      {r.title && <p className="text-sm font-medium mb-0.5">{r.title}</p>}
+                      {r.comment && <p className="text-sm text-muted-foreground leading-relaxed">{r.comment}</p>}
+                      <p className="text-[11px] text-muted-foreground/70 mt-1.5">
+                        {new Date(r.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Contact */}
             <div>
               <h3 className="text-sm font-medium mb-2">Contact</h3>
@@ -262,15 +314,9 @@ const VendorDetail = ({
 
         {/* Footer Actions */}
         <div className="sticky bottom-0 bg-background border-t p-4 shrink-0">
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={handleBooking}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Book Now
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={onContact}>
-              Send Inquiry
-            </Button>
-          </div>
+          <Button className="w-full" onClick={onContact}>
+            Send Inquiry
+          </Button>
         </div>
       </div>
     </div>

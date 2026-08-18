@@ -1,7 +1,6 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,8 +25,13 @@ import { Link } from "react-router-dom";
 import { vendorService, VendorDashboard, VendorInquiry, VendorWorkspaceProject } from "@/services/api/vendorService";
 import InquiryDetailModal from "@/components/vendors/InquiryDetailModal";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useCalendar } from "@/hooks/useCalendar";
+import NextEventCard from "@/components/calendar/NextEventCard";
 
 const VendorHomepage = () => {
+  const { user } = useAuth();
   const [dashboard, setDashboard] = useState<VendorDashboard | null>(null);
   const [inquiryList, setInquiryList] = useState<VendorInquiry[]>([]);
   const [workspaceProjects, setWorkspaceProjects] = useState<VendorWorkspaceProject[]>([]);
@@ -47,6 +51,9 @@ const VendorHomepage = () => {
     notes: "",
   });
   const [isSavingEvent, setIsSavingEvent] = useState(false);
+
+  // Drives the "next event" card; the full grid lives on /vendor-calendar.
+  const { nextEvent, isLoading: isCalendarLoading } = useCalendar();
 
   const vendorName = dashboard?.profile.business_name || "Vendor";
   const firstName = vendorName.split(' ')[0];
@@ -141,49 +148,15 @@ const VendorHomepage = () => {
         notes: eventForm.notes,
       };
 
-      const booking = editingEventId
-        ? await vendorService.updateVendorBooking(editingEventId, payload)
-        : await vendorService.createVendorBooking(payload);
-
-      setDashboard((prev) => {
-        if (!prev) return prev;
-        const updated = {
-          id: booking.id,
-          client_name: booking.client_name,
-          event_date: booking.event_date,
-          event_type: booking.event_type,
-          status: booking.status,
-        };
-
-        const existing = prev.upcoming_events.find((event) => event.id === booking.id);
-        const upcoming_events = existing
-          ? prev.upcoming_events.map((event) => (event.id === booking.id ? updated : event))
-          : [updated, ...prev.upcoming_events];
-
-        const uniqueUpcoming = upcoming_events.slice(0, 5);
-
-        const confirmedDelta =
-          (existing?.status === "confirmed" ? 1 : 0) !==
-          (booking.status === "confirmed" ? 1 : 0)
-            ? booking.status === "confirmed"
-              ? 1
-              : -1
-            : 0;
-
-        return {
-          ...prev,
-          stats: {
-            ...prev.stats,
-            upcoming_events: existing ? prev.stats.upcoming_events : prev.stats.upcoming_events + 1,
-            confirmed_events: prev.stats.confirmed_events + confirmedDelta,
-          },
-          upcoming_events: uniqueUpcoming,
-        };
-      });
+      if (editingEventId) await vendorService.updateVendorBooking(editingEventId, payload);
+      else await vendorService.createVendorBooking(payload);
 
       resetEventForm();
       setIsAddingEvent(false);
       setEditingEventId(null);
+      // Re-read rather than patching stats by hand: "upcoming" now depends on
+      // the date, so the server is the only place that can compute it.
+      await fetchDashboard();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create event";
       setError(message);
@@ -191,50 +164,77 @@ const VendorHomepage = () => {
       setIsSavingEvent(false);
     }
   };
-  
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const [data, projects] = await Promise.all([
-          vendorService.getVendorDashboard(),
-          vendorService.getVendorWorkspace().catch(() => []),
-        ]);
-        setDashboard(data);
-        setWorkspaceProjects(projects);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load vendor dashboard";
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchDashboard();
+  const hasLoadedRef = useRef(false);
+
+  const fetchDashboard = useCallback(async () => {
+    try {
+      if (!hasLoadedRef.current) setIsLoading(true);
+      const [data, projects] = await Promise.all([
+        vendorService.getVendorDashboard(),
+        vendorService.getVendorWorkspace().catch(() => []),
+      ]);
+      setDashboard(data);
+      setWorkspaceProjects(projects);
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load vendor dashboard";
+      if (!hasLoadedRef.current) setError(message);
+    } finally {
+      hasLoadedRef.current = true;
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchInquiries = useCallback(async () => {
+    try {
+      const data = await vendorService.listVendorInquiries();
+      setInquiryList(data);
+    } catch {
+      // Keep whatever inquiries are already on screen.
+    } finally {
+      setIsLoadingInquiries(false);
+    }
   }, []);
 
   useEffect(() => {
-    const fetchInquiries = async () => {
-      try {
-        setIsLoadingInquiries(true);
-        const data = await vendorService.listVendorInquiries();
-        setInquiryList(data);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load inquiries";
-        setError(message);
-      } finally {
-        setIsLoadingInquiries(false);
-      }
-    };
+    void fetchDashboard();
+    void fetchInquiries();
+  }, [fetchDashboard, fetchInquiries]);
 
-    fetchInquiries();
-  }, []);
+  // New inquiries and bookings should appear without a manual reload.
+  useAutoRefresh(() => Promise.all([fetchDashboard(), fetchInquiries()]));
   
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow pt-20 md:pt-24 pb-16">
+        {user?.approvalStatus === 'pending' && (
+          <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
+            <div className="container mx-auto flex items-start gap-3">
+              <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">Your account is pending approval</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  We're reviewing your business details. You'll receive a notification once approved — usually within 1 working day. You won't appear in the marketplace until then.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {user?.approvalStatus === 'rejected' && (
+          <div className="bg-red-50 border-b border-red-200 px-4 py-3">
+            <div className="container mx-auto flex items-start gap-3">
+              <Clock className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-900">Account application not approved</p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  Please contact support for more information about your application status.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="container mx-auto px-4 space-y-8 md:space-y-10">
           <section className="text-center md:text-left">
             <h1 className="font-serif text-2xl md:text-4xl mb-2">
@@ -245,18 +245,49 @@ const VendorHomepage = () => {
             </p>
           </section>
           
-          <section className="py-4">
+          <section className="py-4 space-y-6">
             {error && (
-              <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
             )}
+
+            {/* What's next, and the way through to the full calendar */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <NextEventCard
+                  entry={nextEvent}
+                  isLoading={isCalendarLoading}
+                  action={
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to="/vendor-calendar">Open calendar</Link>
+                    </Button>
+                  }
+                />
+              </div>
+              <Card className="flex flex-col justify-center">
+                <CardContent className="p-5">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Calendar</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Manage bookings, meetings and site visits, and sync them to
+                    Google or Apple Calendar.
+                  </p>
+                  <Button size="sm" className="mt-3 w-full" asChild>
+                    <Link to="/vendor-calendar">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      View calendar
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <MetricCard 
-                title="Upcoming Events" 
-                value={dashboard ? String(dashboard.stats.upcoming_events) : "--"} 
-                description={upcomingEvents[0] ? `Next event: ${upcomingEvents[0].date}` : "No upcoming events"} 
-                icon={Calendar} 
+              <MetricCard
+                title="Upcoming Events"
+                value={dashboard ? String(dashboard.stats.upcoming_events) : "--"}
+                description={upcomingEvents[0] ? `Next event: ${upcomingEvents[0].date}` : "No upcoming events"}
+                icon={Calendar}
               />
               <MetricCard 
                 title="New Inquiries" 
@@ -552,7 +583,6 @@ const VendorHomepage = () => {
           </section>
         </div>
       </main>
-      <Footer />
 
       <Dialog
         open={isAddingEvent}

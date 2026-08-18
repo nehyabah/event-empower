@@ -1,6 +1,6 @@
 import { query, queryOne } from '../config/database.js';
 
-export type ClientStatus = 'active' | 'completed' | 'upcoming';
+export type ClientStatus = 'active' | 'completed' | 'upcoming' | 'archived';
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired' | null;
 
 export interface PlannerClient {

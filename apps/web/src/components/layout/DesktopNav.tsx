@@ -24,6 +24,7 @@ const DesktopNav = ({ isAuthenticated }: DesktopNavProps) => {
       ) : isVendor ? (
         <>
           <NavLink to="/vendor-home">Dashboard</NavLink>
+          <NavLink to="/vendor-calendar">Calendar</NavLink>
           <NavLink to="/vendor-analytics">Analytics</NavLink>
           <NavLink to="/vendors">Marketplace</NavLink>
           <NavLink to="/vendor-profile">My Profile</NavLink>
@@ -35,6 +36,7 @@ const DesktopNav = ({ isAuthenticated }: DesktopNavProps) => {
           <NavLink to="/vendors">Vendors</NavLink>
           <NavLink to="/planner-tasks">Tasks</NavLink>
           <NavLink to="/planner-calendar">Calendar</NavLink>
+          <NavLink to="/planner-profile">My Profile</NavLink>
         </>
       ) : (
         <>

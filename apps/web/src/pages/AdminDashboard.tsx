@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminStats, getAdminDashboardActivity } from "@/services/api/adminService";
+import { apiClient } from "@/services/api/client";
 
 const statAccents = [
   "border-l-slate-800",
@@ -80,6 +82,14 @@ const timeAgo = (dateString: string) => {
 };
 
 const AdminDashboard = () => {
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiClient.get<unknown[]>("/admin/pending-approvals").then((res) => {
+      if (res.data) setPendingCount(res.data.length);
+    });
+  }, []);
+
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ["admin", "stats"],
     queryFn: getAdminStats,
@@ -92,6 +102,24 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout title="Dashboard">
+      {/* Pending approvals banner */}
+      {pendingCount !== null && pendingCount > 0 && (
+        <Link
+          to="/admin/approvals"
+          className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-5 py-3.5 hover:bg-amber-100 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
+              {pendingCount}
+            </span>
+            <span className="text-sm font-medium text-amber-900">
+              {pendingCount === 1 ? "1 vendor/planner application" : `${pendingCount} vendor/planner applications`} awaiting approval
+            </span>
+          </div>
+          <span className="text-xs font-medium text-amber-700">Review →</span>
+        </Link>
+      )}
+
       {/* Stat Cards */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[

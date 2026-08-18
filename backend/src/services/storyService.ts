@@ -3,6 +3,7 @@ import { StoryImageModel, CreateStoryImageInput } from '../models/StoryImage.js'
 import { StoryCommentModel, CreateStoryCommentInput } from '../models/StoryComment.js';
 import { WishlistItemModel, CreateWishlistItemInput, UpdateWishlistItemInput } from '../models/WishlistItem.js';
 import { BankDetailModel, CreateBankDetailInput, UpdateBankDetailInput } from '../models/BankDetail.js';
+import { UserEventModel } from '../models/UserEvent.js';
 import { query, queryOne } from '../config/database.js';
 
 // --- New entity types ---
@@ -54,7 +55,7 @@ export interface FaqItem {
 
 export const storyService = {
   async getStoryBundle(userId: string) {
-    const [story, images, comments, wishlist, bankDetails, timeline, weddingParty, travelInfo, faqItems] = await Promise.all([
+    const [story, images, comments, wishlist, bankDetails, timeline, weddingParty, travelInfo, faqItems, event] = await Promise.all([
       CoupleStoryModel.findByUserId(userId),
       StoryImageModel.listByUserId(userId),
       StoryCommentModel.listByUserId(userId),
@@ -64,7 +65,21 @@ export const storyService = {
       this.listWeddingParty(userId),
       this.listTravel(userId),
       this.listFaq(userId),
+      UserEventModel.findByUserId(userId),
     ]);
+
+    // Enough for the wedding site to show an RSVP call to action. The code is
+    // already public (it is the RSVP link), but nothing else from the event is
+    // exposed here.
+    const rsvp = event
+      ? {
+          code: event.rsvp_code,
+          deadline: event.rsvp_deadline,
+          closed:
+            Boolean(event.rsvp_closed) ||
+            Boolean(event.rsvp_deadline && new Date(event.rsvp_deadline) < new Date(new Date().toDateString())),
+        }
+      : null;
 
     return {
       story,
@@ -76,6 +91,7 @@ export const storyService = {
       weddingParty,
       travelInfo,
       faqItems,
+      rsvp,
     };
   },
 

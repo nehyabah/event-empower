@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams, useParams } from "react-router-dom";
+import { useSearchParams, useParams, Link } from "react-router-dom";
 import {
   Heart,
   Gift,
@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Send,
   Pin,
+  Mail,
 } from "lucide-react";
 import { type Comment } from "@/components/couple-story/CommentsSection";
 import { StoryImage } from "@/components/couple-story/StoryEditor";
@@ -26,8 +27,9 @@ import FaqSection from "@/components/couple-story/sections/FaqSection";
 import { Button } from "@/components/ui/button";
 import storyService from "@/services/api/storyService";
 import { WishlistItem as WishlistItemType, BankDetail } from "@/context/types";
-import type { TimelineEvent, WeddingPartyMember, TravelInfoItem, FaqItem } from "@/services/api/storyService";
+import type { TimelineEvent, WeddingPartyMember, TravelInfoItem, FaqItem, StoryBundle } from "@/services/api/storyService";
 import { getTheme, isDarkTheme, DEFAULT_SECTION_ORDER } from "@/lib/siteThemes";
+import { getSiteFlorals, FloralGroup, Sprig } from "@/components/couple-story/FloralDecor";
 
 function useCountdown(date: Date | undefined) {
   const [tl, setTl] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -96,6 +98,14 @@ const SharedStoryPage = () => {
   // Premium fields
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
+  const [rsvp, setRsvp] = useState<StoryBundle["rsvp"]>(null);
+
+  // Guests land here straight after answering; ?rsvp= carries what they said so
+  // the redirect still acknowledges them.
+  const rsvpResponse = searchParams.get("rsvp");
+  const [showRsvpAck, setShowRsvpAck] = useState(
+    rsvpResponse === "confirmed" || rsvpResponse === "declined",
+  );
 
   // Comments
   const [newCommentName, setNewCommentName] = useState("");
@@ -182,6 +192,7 @@ const SharedStoryPage = () => {
         setComments(bundle.comments.map((c) => ({ id: c.id, name: c.name, text: c.text, date: c.created_at })));
         setWishlistItems(bundle.wishlist.map((item) => ({ id: item.id, name: item.name, price: item.price || undefined, link: item.link || undefined, priority: item.priority, purchasedBy: item.purchased_by || undefined, isAnonymous: item.is_anonymous || undefined })));
         setBankDetails(bundle.bankDetails.map((d) => ({ id: d.id, bankName: d.bank_name, accountName: d.account_name, accountNumber: d.account_number, sortCode: d.sort_code || undefined, iban: d.iban || undefined, swift: d.swift || undefined, description: d.description || undefined })));
+        setRsvp(bundle.rsvp ?? null);
         setTimeline(bundle.timeline || []);
         setWeddingParty(bundle.weddingParty || []);
         setTravelInfo(bundle.travelInfo || []);
@@ -240,9 +251,13 @@ const SharedStoryPage = () => {
     );
   }
 
-  const activeTheme = getTheme(selectedTemplate);
+  // ?theme= lets the couple preview any theme on the live site without saving
+  const themeOverride = searchParams.get("theme");
+  const effectiveTemplate = themeOverride || selectedTemplate;
+  const activeTheme = getTheme(effectiveTemplate);
   const s = activeTheme.styles;
-  const isDark = isDarkTheme(selectedTemplate);
+  const isDark = isDarkTheme(effectiveTemplate);
+  const florals = getSiteFlorals(effectiveTemplate);
   const weddingDateObj = new Date(coupleStory.weddingDate);
   const formattedDate = !Number.isNaN(weddingDateObj.getTime())
     ? weddingDateObj.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
@@ -256,9 +271,17 @@ const SharedStoryPage = () => {
       case "hero": return null;
       case "quote":
         return (
-          <section key="quote" className={`${s.sectionPadding} container mx-auto px-4 text-center`}>
-            <Quote className={`w-10 h-10 mx-auto mb-8 opacity-20 ${s.text}`} />
-            <h2 className={`text-3xl md:text-5xl lg:text-6xl ${s.fontHeading} max-w-4xl mx-auto leading-tight italic`}>"{coupleStory.loveQuote}"</h2>
+          <section key="quote" className={`${s.sectionPadding} text-center relative overflow-hidden`}>
+            <div className="container mx-auto px-4 relative z-10">
+              {florals?.sprig ? (
+                <div className="mb-8">
+                  <Sprig src={florals.sprig} className={florals.sprigClass ?? "h-16 w-36"} />
+                </div>
+              ) : (
+                <Quote className={`w-10 h-10 mx-auto mb-8 opacity-20 ${s.text}`} />
+              )}
+              <h2 className={`text-3xl md:text-5xl lg:text-6xl ${s.fontHeading} max-w-3xl mx-auto leading-tight italic`}>"{coupleStory.loveQuote}"</h2>
+            </div>
             {s.sectionDivider !== "hidden" && (
               <div className="mt-16">
                 {s.sectionDivider.includes("[&>span]") ? (
@@ -361,8 +384,9 @@ const SharedStoryPage = () => {
         return <TravelSection key="travel" travelInfo={travelInfo} styles={s} isDark={isDark} />;
       case "wishes":
         return (
-          <section key="wishes" className={`${s.sectionPadding} ${s.sectionBgAlt}`}>
-            <div className="container mx-auto px-4">
+          <section key="wishes" className={`${s.sectionPadding} ${s.sectionBgAlt} relative overflow-hidden`}>
+            <FloralGroup items={florals?.wishes} />
+            <div className="container mx-auto px-4 relative z-10">
               <div className="flex flex-col items-center text-center mb-16">
                 <div className={`p-3 rounded-full bg-current/5 mb-4 ${s.accent}`}><MessageSquare className="w-6 h-6" /></div>
                 <h3 className={`text-4xl md:text-5xl ${s.fontHeading} ${s.text}`}>Well Wishes</h3>
@@ -475,6 +499,31 @@ const SharedStoryPage = () => {
 
   return (
     <div className={`min-h-screen transition-all duration-700 ease-in-out ${s.bg} ${s.text} ${s.fontBody}`}>
+      {/* Acknowledgement for a guest who just responded and was redirected here */}
+      {showRsvpAck && (
+        <div className="fixed top-0 left-0 right-0 z-50 animate-fade-in-up">
+          <div className="bg-[#b2834c] text-white shadow-lg">
+            <div className="container mx-auto flex items-center gap-3 px-4 py-3">
+              <span className="text-xl leading-none">
+                {rsvpResponse === "confirmed" ? "🎉" : "💐"}
+              </span>
+              <p className="flex-1 text-sm leading-snug">
+                {rsvpResponse === "confirmed"
+                  ? "Your RSVP is in — we can't wait to celebrate with you!"
+                  : "Thank you for letting us know. You'll be missed!"}
+              </p>
+              <button
+                onClick={() => setShowRsvpAck(false)}
+                aria-label="Dismiss"
+                className="shrink-0 rounded-full px-2 py-1 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       {visibleSections.includes("hero") && (
         <section className="relative h-[100dvh] w-full overflow-hidden flex flex-col justify-center" ref={heroRef}>
@@ -506,9 +555,62 @@ const SharedStoryPage = () => {
       <div className={`relative z-20 transition-colors duration-700 ${s.bg}`}>
         {visibleSections.filter((id) => id !== "hero").map(renderSection)}
 
-        <footer className={`py-12 text-center opacity-60 text-sm ${s.subtext}`}>
-          <p className="font-serif italic text-lg mb-2">{coupleStory.hashtag ? `#${coupleStory.hashtag}` : "Forever & Always"}</p>
-          <p>Created with àjọyọ̀</p>
+        {/* RSVP — the wedding site is where most guests arrive, so the
+            invitation response lives here rather than only in the email. */}
+        {rsvp && (
+          <section className={`${s.sectionPadding} ${s.sectionBgAlt} relative overflow-hidden`}>
+            <div className="container mx-auto px-4 relative z-10">
+              <div className="max-w-xl mx-auto text-center">
+                <div className={`p-3 rounded-full bg-current/5 mb-4 inline-flex ${s.accent}`}>
+                  <Mail className="w-6 h-6" />
+                </div>
+                <h3 className={`text-4xl md:text-5xl ${s.fontHeading} ${s.text}`}>RSVP</h3>
+
+                {rsvp.closed ? (
+                  <>
+                    <p className={`mt-4 text-lg ${s.subtext}`}>
+                      Responses are now closed
+                      {rsvp.deadline
+                        ? ` — the deadline was ${new Date(rsvp.deadline).toLocaleDateString("en-GB", {
+                            day: "numeric", month: "long", year: "numeric",
+                          })}.`
+                        : "."}
+                    </p>
+                    <p className={`mt-2 text-sm ${s.subtext} opacity-70`}>
+                      Please reach out to the couple directly.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className={`mt-3 text-lg ${s.subtext}`}>
+                      {rsvp.deadline
+                        ? `Kindly respond by ${new Date(rsvp.deadline).toLocaleDateString("en-GB", {
+                            day: "numeric", month: "long", year: "numeric",
+                          })}`
+                        : "We would love to know if you can join us"}
+                    </p>
+                    <Link
+                      to={`/rsvp/${rsvp.code}`}
+                      className={`mt-8 inline-block px-10 py-4 text-sm font-bold uppercase tracking-widest transition-transform hover:scale-105 ${s.button}`}
+                    >
+                      Respond to invitation
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <footer className={`py-16 text-center text-sm relative overflow-hidden ${s.subtext}`}>
+          <FloralGroup items={florals?.footer} />
+          <div className="relative z-10">
+            {florals?.sprig && (
+              <Sprig src={florals.sprig} className={`${florals.sprigClass ?? "h-16 w-36"} mb-5`} opacity={0.75} />
+            )}
+            <p className="font-serif italic text-lg mb-2 opacity-80">{coupleStory.hashtag ? `#${coupleStory.hashtag}` : "Forever & Always"}</p>
+            <p className="opacity-60">Created with àjọyọ̀</p>
+          </div>
         </footer>
       </div>
     </div>

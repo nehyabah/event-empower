@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { plannerService } from '../services/plannerService.js';
+import { PlannerProfileModel } from '../models/PlannerProfile.js';
+import { storageService } from '../services/storageService.js';
+import { query } from '../config/database.js';
+
+type UploadRequest = Request & { file?: { buffer: Buffer; mimetype: string; originalname: string } };
 
 // ========== VALIDATION SCHEMAS ==========
 
@@ -59,6 +64,8 @@ const createEventSchema = z.object({
   endTime: z.string().optional(),
   eventType: z.enum(['meeting', 'visit', 'rehearsal', 'wedding', 'consultation', 'other']).default('meeting'),
   location: z.string().optional(),
+  // Shared with the linked client's calendar by default.
+  visibleToClient: z.boolean().optional(),
 });
 
 const updateEventSchema = z.object({
@@ -70,6 +77,7 @@ const updateEventSchema = z.object({
   endTime: z.string().nullable().optional(),
   eventType: z.enum(['meeting', 'visit', 'rehearsal', 'wedding', 'consultation', 'other']).optional(),
   location: z.string().nullable().optional(),
+  visibleToClient: z.boolean().optional(),
 });
 
 const inviteSchema = z.object({
@@ -175,6 +183,22 @@ export const plannerController = {
     }
   },
 
+  async archiveClient(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const client = await plannerService.archiveClient(req.params.id, req.user!.userId);
+      if (!client) { res.status(404).json({ error: 'Client not found' }); return; }
+      res.json(client);
+    } catch (error) { next(error); }
+  },
+
+  async unarchiveClient(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const client = await plannerService.unarchiveClient(req.params.id, req.user!.userId);
+      if (!client) { res.status(404).json({ error: 'Client not found' }); return; }
+      res.json(client);
+    } catch (error) { next(error); }
+  },
+
   // ========== TASKS ==========
 
   async getTasks(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -264,6 +288,15 @@ export const plannerController = {
     }
   },
 
+  async getCalendarData(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = await plannerService.getCalendarData(req.user!.userId);
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getEvent(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const event = await plannerService.getEvent(req.params.id, req.user!.userId);
@@ -289,6 +322,7 @@ export const plannerController = {
         end_time: input.endTime,
         event_type: input.eventType,
         location: input.location,
+        visible_to_client: input.visibleToClient,
       });
       res.status(201).json(event);
     } catch (error) {
@@ -308,6 +342,7 @@ export const plannerController = {
         end_time: input.endTime,
         event_type: input.eventType,
         location: input.location,
+        visible_to_client: input.visibleToClient,
       });
       if (!event) {
         res.status(404).json({ error: 'Event not found' });
@@ -523,7 +558,38 @@ export const plannerController = {
   async getClientVisionBoard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const items = await plannerService.getClientVisionBoard(req.user!.userId, String(req.params.clientId));
-      res.json(items);
+      // Rewrite legacy presigned image URLs, which expire an hour after upload.
+      res.json(items.map((item) =>
+        item.type === 'image'
+          ? { ...item, content: storageService.toStableUrl(item.content) }
+          : item
+      ));
+    } catch (error) { next(error); }
+  },
+
+  /** Upload an image onto a client's mood board. */
+  async uploadClientVisionBoardImage(req: UploadRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No file uploaded' });
+        return;
+      }
+
+      // Confirm this planner actually owns the client before writing anything.
+      const client = await plannerService.getClient(String(req.params.clientId), req.user!.userId);
+      if (!client || !client.user_id) {
+        res.status(404).json({ error: 'Client not found or not linked' });
+        return;
+      }
+
+      try {
+        const result = await storageService.uploadImage(`vision-board/${client.user_id}`, req.file);
+        res.json({ url: result.url });
+      } catch {
+        // Same fallback as the couple's own board when storage is unconfigured.
+        const b64 = req.file.buffer.toString('base64');
+        res.json({ url: `data:${req.file.mimetype};base64,${b64}` });
+      }
     } catch (error) { next(error); }
   },
 
@@ -606,6 +672,69 @@ export const plannerController = {
     try {
       const stats = await plannerService.getDashboardStats(req.user!.userId);
       res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== PROFILE ==========
+
+  async getMyProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const [profile, userRows] = await Promise.all([
+        PlannerProfileModel.getByUserId(userId),
+        query<{ id: string; name: string | null; email: string | null }>('SELECT id, name, email FROM users WHERE id = $1', [userId]),
+      ]);
+      const user = userRows[0] || null;
+      res.json({ profile: profile || null, user });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateMyProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const updateSchema = z.object({
+        bio: z.string().nullable().optional(),
+        tagline: z.string().max(255).nullable().optional(),
+        location: z.string().nullable().optional(),
+        website: z.string().url().nullable().optional().or(z.literal('')),
+        years_of_experience: z.number().int().min(0).nullable().optional(),
+        specializations: z.array(z.string()).optional(),
+        profile_image_url: z.string().nullable().optional(),
+        cover_image_url: z.string().nullable().optional(),
+        phone: z.string().nullable().optional(),
+        instagram: z.string().nullable().optional(),
+        facebook: z.string().nullable().optional(),
+        twitter: z.string().nullable().optional(),
+        name: z.string().optional(),
+      });
+      const validation = updateSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+      const { name, ...profileData } = validation.data;
+      const userId = req.user!.userId;
+      if (name !== undefined) {
+        await query('UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2', [name, userId]);
+      }
+      const profile = await PlannerProfileModel.upsert(userId, profileData);
+      res.json(profile);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async uploadProfileImage(req: UploadRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No file uploaded' });
+        return;
+      }
+      const result = await storageService.uploadImage(`planners/${req.user!.userId}`, req.file);
+      res.json(result);
     } catch (error) {
       next(error);
     }

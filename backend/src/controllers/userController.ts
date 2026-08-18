@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { userService } from '../services/userService.js';
 import { vendorService } from '../services/vendorService.js';
+import { storageService } from '../services/storageService.js';
+import { reminderService } from '../services/reminderService.js';
+
+type UploadRequest = Request & { file?: { buffer: Buffer; mimetype: string; originalname: string } };
 
 // ========== VALIDATION SCHEMAS ==========
 
@@ -14,6 +18,9 @@ const updateUserEventSchema = z.object({
   totalBudget: z.number().min(0).optional(),
   guestCountEstimate: z.number().min(0).optional(),
   notes: z.string().nullable().optional(),
+  rsvpDeadline: z.string().nullable().optional(),
+  rsvpMessage: z.string().nullable().optional(),
+  rsvpClosed: z.boolean().optional(),
 });
 
 // Guest schemas
@@ -52,6 +59,7 @@ const createExpenseSchema = z.object({
   amountPaid: z.number().min(0).optional(),
   category: z.enum(expenseCategories),
   date: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
   paid: z.boolean().default(false),
   notes: z.string().optional(),
   vendorId: z.string().uuid().optional(),
@@ -63,6 +71,7 @@ const updateExpenseSchema = z.object({
   amountPaid: z.number().min(0).optional(),
   category: z.enum(expenseCategories).optional(),
   date: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional(),
   paid: z.boolean().optional(),
   notes: z.string().nullable().optional(),
   vendorId: z.string().uuid().nullable().optional(),
@@ -86,6 +95,7 @@ const createTodoItemSchema = z.object({
   text: z.string().min(1, 'Text is required'),
   completed: z.boolean().default(false),
   status: z.enum(['todo', 'in_progress', 'done']).optional(),
+  dueDate: z.string().optional(),
 });
 
 const updateTodoItemSchema = z.object({
@@ -93,6 +103,7 @@ const updateTodoItemSchema = z.object({
   completed: z.boolean().optional(),
   status: z.enum(['todo', 'in_progress', 'done']).optional(),
   sortOrder: z.number().optional(),
+  dueDate: z.string().nullable().optional(),
 });
 
 // Inquiry message schema
@@ -108,6 +119,16 @@ const publicRsvpSchema = z.object({
   status: z.enum(['confirmed', 'declined']),
   guestCount: z.number().min(1).max(2).optional(),
   dietaryNotes: z.string().optional(),
+});
+
+// Guest reminder schedule
+const reminderSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  frequency: z.enum(['daily', 'every_3_days', 'weekly', 'biweekly', 'monthly']).optional(),
+  channel: z.enum(['email', 'sms', 'both']).optional(),
+  targetStatuses: z.array(z.enum(['pending', 'confirmed', 'declined', 'maybe'])).min(1).optional(),
+  customMessage: z.string().max(500).nullable().optional(),
+  stopDaysBefore: z.number().min(0).max(365).optional(),
 });
 
 // ========== CONTROLLER ==========
@@ -141,6 +162,10 @@ export const userController = {
         total_budget: data.totalBudget,
         guest_count_estimate: data.guestCountEstimate,
         notes: data.notes || undefined,
+        // Passed through as-is so an explicit null clears the deadline.
+        rsvp_deadline: data.rsvpDeadline,
+        rsvp_message: data.rsvpMessage,
+        rsvp_closed: data.rsvpClosed,
       });
 
       res.json(event);
@@ -300,6 +325,7 @@ export const userController = {
         amount_paid: data.amountPaid,
         category: data.category,
         expense_date: data.date,
+        due_date: data.dueDate,
         paid: data.paid,
         notes: data.notes,
         vendor_id: data.vendorId,
@@ -326,6 +352,7 @@ export const userController = {
         amount_paid: data.amountPaid,
         category: data.category,
         expense_date: data.date,
+        due_date: data.dueDate,
         paid: data.paid,
         notes: data.notes,
         vendor_id: data.vendorId,
@@ -473,6 +500,7 @@ export const userController = {
         completed: data.completed,
         status: data.status,
         sort_order: data.sortOrder,
+        due_date: data.dueDate !== undefined ? (data.dueDate ?? null) : undefined,
       });
 
       if (!item) {
@@ -579,6 +607,21 @@ export const userController = {
     }
   },
 
+  // ========== IMAGE UPLOAD ==========
+
+  async uploadImage(req: UploadRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No file uploaded' });
+        return;
+      }
+      const result = await storageService.uploadImage(`users/${req.user!.userId}/registry`, req.file);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // ========== PUBLIC RSVP (No auth required) ==========
 
   async getEventInfo(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -601,6 +644,12 @@ export const userController = {
         eventDate: event.eventDate,
         venue: event.venue,
         storySlug: event.storySlug,
+        rsvpDeadline: event.rsvpDeadline,
+        rsvpMessage: event.rsvpMessage,
+        // Still a 200: the guest gets the event details plus the reason the
+        // form is closed, rather than a bare "invalid link".
+        rsvpClosed: event.rsvpClosed,
+        closedReason: event.closedReason,
       });
     } catch (error) {
       next(error);
@@ -640,6 +689,15 @@ export const userController = {
         res.status(404).json({ error: 'Invalid RSVP code' });
         return;
       }
+      if (error instanceof Error && (error as Error & { statusCode?: number }).statusCode === 409) {
+        res.status(409).json({ error: error.message });
+        return;
+      }
+      // 410 Gone: the link was valid but the RSVP window has closed.
+      if (error instanceof Error && (error as Error & { statusCode?: number }).statusCode === 410) {
+        res.status(410).json({ error: error.message, rsvpClosed: true });
+        return;
+      }
       next(error);
     }
   },
@@ -648,6 +706,51 @@ export const userController = {
     try {
       const code = await userService.getRsvpCode(req.user!.userId);
       res.json({ rsvpCode: code });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== GUEST REMINDERS ==========
+
+  async getReminderSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { settings, recentLog } = await reminderService.getSettings(req.user!.userId);
+      res.json({ settings, recentLog });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateReminderSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = reminderSettingsSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const data = validation.data;
+      const settings = await reminderService.updateSettings(req.user!.userId, {
+        enabled: data.enabled,
+        frequency: data.frequency,
+        channel: data.channel,
+        target_statuses: data.targetStatuses,
+        custom_message: data.customMessage,
+        stop_days_before: data.stopDaysBefore,
+      });
+
+      res.json(settings);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** Fire a round of reminders immediately, independent of the schedule. */
+  async sendRemindersNow(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await reminderService.sendReminders(req.user!.userId, 'manual');
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -731,6 +834,56 @@ export const userController = {
       const deleted = await userService.removeProjectVendor(req.user!.userId, String(req.params.id));
       if (!deleted) {
         res.status(404).json({ error: 'Project vendor not found' });
+        return;
+      }
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ========== VENDOR REVIEWS ==========
+
+  async getReviewableVendors(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const vendors = await userService.getReviewableVendors(req.user!.userId);
+      res.json(vendors);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async submitVendorReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schema = z.object({
+        rating: z.number().int().min(1).max(5),
+        title: z.string().max(150).nullable().optional(),
+        comment: z.string().max(2000).nullable().optional(),
+      });
+      const data = schema.parse(req.body);
+      const review = await userService.submitVendorReview(
+        req.user!.userId,
+        String(req.params.vendorProfileId),
+        data
+      );
+      res.status(201).json(review);
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('You can only review')) {
+        res.status(403).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async deleteVendorReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const deleted = await userService.deleteVendorReview(
+        req.user!.userId,
+        String(req.params.vendorProfileId)
+      );
+      if (!deleted) {
+        res.status(404).json({ error: 'Review not found' });
         return;
       }
       res.status(204).send();

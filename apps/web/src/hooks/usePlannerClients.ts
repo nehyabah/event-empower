@@ -58,12 +58,37 @@ export function usePlannerClients() {
     try {
       await plannerService.deleteClient(id);
       setClients(prev => prev.filter(c => c.id !== id));
-      toast.success('Client deleted successfully');
+      toast.success('Client deleted');
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to delete client';
       toast.error(message);
-      console.error('Error deleting client:', err);
+      return false;
+    }
+  }, []);
+
+  const archiveClient = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const updated = await plannerService.archiveClient(id);
+      setClients(prev => prev.map(c => c.id === id ? updated : c));
+      toast.success('Client archived');
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to archive client';
+      toast.error(message);
+      return false;
+    }
+  }, []);
+
+  const unarchiveClient = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const updated = await plannerService.unarchiveClient(id);
+      setClients(prev => prev.map(c => c.id === id ? updated : c));
+      toast.success('Client restored');
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to restore client';
+      toast.error(message);
       return false;
     }
   }, []);
@@ -92,8 +117,7 @@ export function usePlannerClients() {
     return `${client.partner1_name} & ${client.partner2_name}`;
   }, []);
 
-  // Filter helpers
-  const clientsByStatus = useCallback((status: 'active' | 'completed' | 'upcoming') => {
+  const clientsByStatus = useCallback((status: 'active' | 'completed' | 'upcoming' | 'archived') => {
     return clients.filter(c => c.status === status);
   }, [clients]);
 
@@ -105,12 +129,15 @@ export function usePlannerClients() {
     createClient,
     updateClient,
     deleteClient,
+    archiveClient,
+    unarchiveClient,
     createInvite,
     getClientName,
     clientsByStatus,
-    activeClients: clients.filter(c => c.status === 'active'),
+    activeClients:   clients.filter(c => c.status === 'active'),
     upcomingClients: clients.filter(c => c.status === 'upcoming'),
     completedClients: clients.filter(c => c.status === 'completed'),
+    archivedClients: clients.filter(c => c.status === 'archived'),
   };
 }
 

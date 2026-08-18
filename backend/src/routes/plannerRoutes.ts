@@ -1,12 +1,20 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { plannerController } from '../controllers/plannerController.js';
 import { authenticate, requireUserType } from '../middleware/auth.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const router = Router();
 
 // All routes require authentication and planner role
 router.use(authenticate);
 router.use(requireUserType('planner'));
+
+// Profile
+router.get('/profile', plannerController.getMyProfile);
+router.patch('/profile', plannerController.updateMyProfile);
+router.post('/profile/upload', upload.single('file'), plannerController.uploadProfileImage);
 
 // Dashboard
 router.get('/dashboard', plannerController.getDashboardStats);
@@ -18,6 +26,8 @@ router.post('/clients', plannerController.createClient);
 router.patch('/clients/:id', plannerController.updateClient);
 router.delete('/clients/:id', plannerController.deleteClient);
 router.post('/clients/:id/invite', plannerController.createInvite);
+router.post('/clients/:id/archive', plannerController.archiveClient);
+router.post('/clients/:id/unarchive', plannerController.unarchiveClient);
 
 // Client workspace (combined view)
 router.get('/clients/:clientId/workspace', plannerController.getClientWorkspace);
@@ -31,6 +41,7 @@ router.delete('/clients/:clientId/project/vendors/:vendorId', plannerController.
 // Client vision board (shared)
 router.get('/clients/:clientId/vision-board', plannerController.getClientVisionBoard);
 router.post('/clients/:clientId/vision-board', plannerController.addClientVisionBoardItem);
+router.post('/clients/:clientId/vision-board/upload', upload.single('file'), plannerController.uploadClientVisionBoardImage);
 router.patch('/clients/:clientId/vision-board/:itemId', plannerController.updateClientVisionBoardItem);
 router.delete('/clients/:clientId/vision-board/:itemId', plannerController.deleteClientVisionBoardItem);
 
@@ -47,6 +58,9 @@ router.get('/tasks/:id', plannerController.getTask);
 router.post('/tasks', plannerController.createTask);
 router.patch('/tasks/:id', plannerController.updateTask);
 router.delete('/tasks/:id', plannerController.deleteTask);
+
+// Calendar data (events + wedding dates + todo due dates)
+router.get('/calendar', plannerController.getCalendarData);
 
 // Events
 router.get('/events', plannerController.getEvents);

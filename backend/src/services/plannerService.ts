@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { PlannerClientModel, PlannerClient, CreatePlannerClientInput, UpdatePlannerClientInput } from '../models/PlannerClient.js';
+import { PlannerClientModel, PlannerClient, ClientStatus, CreatePlannerClientInput, UpdatePlannerClientInput } from '../models/PlannerClient.js';
 import { PlannerTaskModel, PlannerTask, CreatePlannerTaskInput, UpdatePlannerTaskInput } from '../models/PlannerTask.js';
 import { PlannerEventModel, PlannerEvent, CreatePlannerEventInput, UpdatePlannerEventInput } from '../models/PlannerEvent.js';
 import { UserEventModel, UserEvent } from '../models/UserEvent.js';
@@ -42,10 +42,20 @@ export const plannerService = {
 
   async deleteClient(id: string, plannerId: string): Promise<boolean> {
     const client = await this.getClient(id, plannerId);
-    if (!client) {
-      return false;
-    }
+    if (!client) return false;
     return PlannerClientModel.delete(id);
+  },
+
+  async archiveClient(id: string, plannerId: string): Promise<PlannerClient | null> {
+    const client = await this.getClient(id, plannerId);
+    if (!client) return null;
+    return PlannerClientModel.update(id, { status: 'archived' });
+  },
+
+  async unarchiveClient(id: string, plannerId: string, status: ClientStatus = 'upcoming'): Promise<PlannerClient | null> {
+    const client = await this.getClient(id, plannerId);
+    if (!client) return null;
+    return PlannerClientModel.update(id, { status });
   },
 
   async getClientStats(plannerId: string) {
@@ -462,6 +472,71 @@ export const plannerService = {
     if (!item || item.user_id !== client.user_id) return false;
     await VisionBoardItemModel.delete(itemId, client.user_id);
     return true;
+  },
+
+  // ========== CALENDAR DATA (combined) ==========
+
+  async getCalendarData(plannerId: string) {
+    const [events, clients] = await Promise.all([
+      PlannerEventModel.findByPlannerId(plannerId),
+      PlannerClientModel.findByPlannerId(plannerId),
+    ]);
+
+    const linkedClients = clients.filter(c => c.user_id);
+
+    // Wedding dates from user_events for linked clients
+    const weddingDates: Array<{
+      client_id: string;
+      client_name: string;
+      event_date: string;
+    }> = [];
+
+    // Todo due dates from shared todo items
+    const todoDueDates: Array<{
+      client_id: string;
+      client_name: string;
+      list_title: string;
+      item_text: string;
+      due_date: string;
+    }> = [];
+
+    await Promise.all(linkedClients.map(async (client) => {
+      const clientName = [client.partner1_name, client.partner2_name].filter(Boolean).join(' & ') || client.email;
+
+      const [event, sharedTodos] = await Promise.all([
+        UserEventModel.findByUserId(client.user_id!),
+        TodoListModel.findByUserIdWithItems(client.user_id!),
+      ]);
+
+      if (event?.event_date) {
+        weddingDates.push({
+          client_id: client.id,
+          client_name: clientName,
+          event_date: typeof event.event_date === 'string'
+            ? event.event_date
+            : (event.event_date as Date).toISOString().split('T')[0],
+        });
+      }
+
+      for (const list of sharedTodos) {
+        if (!list.is_shared || !list.items) continue;
+        for (const item of list.items) {
+          if (item.due_date) {
+            todoDueDates.push({
+              client_id: client.id,
+              client_name: clientName,
+              list_title: list.title,
+              item_text: item.text,
+              due_date: item.due_date instanceof Date
+                ? item.due_date.toISOString().split('T')[0]
+                : String(item.due_date),
+            });
+          }
+        }
+      }
+    }));
+
+    return { events, weddingDates, todoDueDates };
   },
 
   async acceptInvite(userId: string, inviteCode: string): Promise<PlannerClient> {

@@ -12,6 +12,12 @@ export interface UserEvent {
   guest_count_estimate: number;
   notes: string | null;
   rsvp_code: string;
+  /** Last day guests may respond; null means the link never closes. */
+  rsvp_deadline: Date | null;
+  /** Note shown to guests on the RSVP page. */
+  rsvp_message: string | null;
+  /** Manual override so the couple can close (or reopen) RSVPs early. */
+  rsvp_closed: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -25,6 +31,9 @@ export interface CreateUserEventInput {
   total_budget?: number;
   guest_count_estimate?: number;
   notes?: string;
+  rsvp_deadline?: Date | string | null;
+  rsvp_message?: string | null;
+  rsvp_closed?: boolean;
 }
 
 export interface UpdateUserEventInput {
@@ -35,6 +44,9 @@ export interface UpdateUserEventInput {
   total_budget?: number;
   guest_count_estimate?: number;
   notes?: string | null;
+  rsvp_deadline?: Date | string | null;
+  rsvp_message?: string | null;
+  rsvp_closed?: boolean;
 }
 
 export const UserEventModel = {
@@ -64,8 +76,8 @@ export const UserEventModel = {
     const rsvpCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     const result = await queryOne<UserEvent>(
-      `INSERT INTO user_events (user_id, partner1_name, partner2_name, event_date, venue, total_budget, guest_count_estimate, notes, rsvp_code)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO user_events (user_id, partner1_name, partner2_name, event_date, venue, total_budget, guest_count_estimate, notes, rsvp_code, rsvp_deadline, rsvp_message, rsvp_closed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         input.user_id,
@@ -77,6 +89,9 @@ export const UserEventModel = {
         input.guest_count_estimate || 0,
         input.notes || null,
         rsvpCode,
+        input.rsvp_deadline || null,
+        input.rsvp_message || null,
+        input.rsvp_closed ?? false,
       ]
     );
 
@@ -119,6 +134,18 @@ export const UserEventModel = {
     if (input.notes !== undefined) {
       fields.push(`notes = $${paramIndex++}`);
       values.push(input.notes || null);
+    }
+    if (input.rsvp_deadline !== undefined) {
+      fields.push(`rsvp_deadline = $${paramIndex++}`);
+      values.push(input.rsvp_deadline || null);
+    }
+    if (input.rsvp_message !== undefined) {
+      fields.push(`rsvp_message = $${paramIndex++}`);
+      values.push(input.rsvp_message || null);
+    }
+    if (input.rsvp_closed !== undefined) {
+      fields.push(`rsvp_closed = $${paramIndex++}`);
+      values.push(input.rsvp_closed);
     }
 
     if (fields.length === 0) {

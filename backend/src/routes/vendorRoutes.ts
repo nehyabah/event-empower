@@ -15,8 +15,11 @@ router.patch('/me', authenticate, requireUserType('vendor'), vendorController.up
 router.get('/dashboard', authenticate, requireUserType('vendor'), vendorController.getVendorDashboard);
 router.get('/me/projects', authenticate, requireUserType('vendor'), vendorController.getVendorProjects);
 router.get('/workspace', authenticate, requireUserType('vendor'), vendorController.getVendorWorkspace);
+router.get('/bookings', authenticate, requireUserType('vendor'), vendorController.listVendorBookings);
+router.get('/bookable-clients', authenticate, requireUserType('vendor'), vendorController.listBookableClients);
 router.post('/bookings', authenticate, requireUserType('vendor'), vendorController.createVendorBooking);
 router.patch('/bookings/:id', authenticate, requireUserType('vendor'), vendorController.updateVendorBooking);
+router.delete('/bookings/:id', authenticate, requireUserType('vendor'), vendorController.deleteVendorBooking);
 router.get('/inquiries', authenticate, requireUserType('vendor'), vendorController.listVendorInquiries);
 router.get('/inquiries/:id', authenticate, requireUserType('vendor'), vendorController.getInquiryWithMessages);
 router.patch('/inquiries/:id', authenticate, requireUserType('vendor'), vendorController.updateVendorInquiry);

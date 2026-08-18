@@ -10,6 +10,10 @@ export interface RegisterInput {
   password: string;
   name: string;
   userType?: UserType;
+  businessName?: string;
+  instagramHandle?: string;
+  whatsappPhone?: string;
+  city?: string;
 }
 
 export interface LoginInput {
@@ -24,6 +28,7 @@ export interface AuthResult {
     name: string | null;
     userType: UserType;
     avatarUrl: string | null;
+    approvalStatus: string;
   };
   tokens: TokenPair;
 }
@@ -45,6 +50,8 @@ export const authService = {
     // Hash the password
     const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
 
+    const needsApproval = input.userType === 'vendor' || input.userType === 'planner';
+
     // Create the user
     const user = await UserModel.create({
       email: input.email,
@@ -52,6 +59,11 @@ export const authService = {
       name: input.name,
       user_type: input.userType || 'client',
       auth_provider: 'email',
+      approval_status: needsApproval ? 'pending' : 'approved',
+      business_name: input.businessName || null,
+      instagram_handle: input.instagramHandle || null,
+      whatsapp_phone: input.whatsappPhone || null,
+      city: input.city || null,
     });
 
     // Generate tokens
@@ -64,6 +76,7 @@ export const authService = {
         name: user.name,
         userType: user.user_type,
         avatarUrl: user.avatar_url,
+        approvalStatus: user.approval_status,
       },
       tokens,
     };
@@ -104,6 +117,7 @@ export const authService = {
         name: user.name,
         userType: user.user_type,
         avatarUrl: user.avatar_url,
+        approvalStatus: user.approval_status,
       },
       tokens,
     };
@@ -140,6 +154,7 @@ export const authService = {
         name: user.name,
         userType: user.user_type,
         avatarUrl: user.avatar_url,
+        approvalStatus: user.approval_status,
       },
       tokens,
     };

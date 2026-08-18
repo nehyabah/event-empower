@@ -5,6 +5,7 @@ export interface TodoItem {
   completed: boolean;
   status: "todo" | "in_progress" | "done";
   sortOrder: number;
+  dueDate?: string | null;
 }
 
 export interface TodoListItem {

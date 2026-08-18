@@ -1,10 +1,42 @@
 import { Fragment, useState } from "react";
 import { format } from "date-fns";
-import { Calendar, ChevronDown, ChevronUp, Edit2, Tag, Trash2 } from "lucide-react";
+import { Calendar, ChevronDown, ChevronUp, Clock, Edit2, Tag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Expense, useExpenses } from "@/context/ExpenseContext";
+import {
+  Expense,
+  useExpenses,
+  expenseBalance,
+  isExpenseOverdue,
+} from "@/context/ExpenseContext";
 import ExpenseForm from "./ExpenseForm";
+
+const money = (n: number) => "₦" + n.toLocaleString();
+
+/** Due date with an overdue/soon flag, or a dash when none is set. */
+const DueDate = ({ expense }: { expense: Expense }) => {
+  if (!expense.dueDate) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  const overdue = isExpenseOverdue(expense);
+  const settled = expenseBalance(expense) <= 0;
+
+  return (
+    <span
+      className={
+        overdue
+          ? "font-medium text-red-600"
+          : settled
+            ? "text-muted-foreground"
+            : "text-foreground"
+      }
+    >
+      {format(expense.dueDate, "MMM d, yyyy")}
+      {overdue && <span className="ml-1.5 text-xs font-semibold uppercase">Overdue</span>}
+    </span>
+  );
+};
 
 // Mobile Expense Card
 const ExpenseCard = ({
@@ -34,7 +66,18 @@ const ExpenseCard = ({
                 {status.label}
               </span>
             </div>
-            <p className="text-lg font-semibold">₦{expense.amount.toLocaleString()}</p>
+            <p className="text-lg font-semibold">{money(expense.amount)}</p>
+
+            {/* Balance owed — the number couples actually chase */}
+            {expenseBalance(expense) > 0 && (
+              <p className="text-sm mt-0.5">
+                <span className="text-muted-foreground">Balance </span>
+                <span className={`font-semibold ${isExpenseOverdue(expense) ? "text-red-600" : "text-amber-600"}`}>
+                  {money(expenseBalance(expense))}
+                </span>
+              </p>
+            )}
+
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Tag className="h-3 w-3" />
@@ -44,6 +87,13 @@ const ExpenseCard = ({
                 <Calendar className="h-3 w-3" />
                 {format(new Date(expense.date), "MMM d, yyyy")}
               </span>
+              {expense.dueDate && (
+                <span className={`flex items-center gap-1 ${isExpenseOverdue(expense) ? "text-red-600 font-medium" : ""}`}>
+                  <Clock className="h-3 w-3" />
+                  Due {format(expense.dueDate, "MMM d")}
+                  {isExpenseOverdue(expense) && " · overdue"}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
@@ -152,9 +202,11 @@ const ExpenseList = () => {
           <thead>
             <tr className="bg-muted/50">
               <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Amount</th>
+              <th className="px-4 py-3 text-right font-medium">Amount</th>
+              <th className="px-4 py-3 text-right font-medium">Paid</th>
+              <th className="px-4 py-3 text-right font-medium">Balance</th>
               <th className="px-4 py-3 text-left font-medium">Category</th>
-              <th className="px-4 py-3 text-left font-medium">Date</th>
+              <th className="px-4 py-3 text-left font-medium">Due</th>
               <th className="px-4 py-3 text-left font-medium">Status</th>
               <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
@@ -172,9 +224,21 @@ const ExpenseList = () => {
                     onClick={() => setExpandedExpenseId(isExpanded ? null : expense.id)}
                   >
                     <td className="px-4 py-3">{expense.name}</td>
-                    <td className="px-4 py-3">₦{expense.amount.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{money(expense.amount)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+                      {money(expense.amountPaid)}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {expenseBalance(expense) > 0 ? (
+                        <span className={`font-semibold ${isExpenseOverdue(expense) ? "text-red-600" : "text-amber-600"}`}>
+                          {money(expenseBalance(expense))}
+                        </span>
+                      ) : (
+                        <span className="text-emerald-600">Settled</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{getCategoryLabel(expense.category)}</td>
-                    <td className="px-4 py-3">{format(new Date(expense.date), "MMM d, yyyy")}</td>
+                    <td className="px-4 py-3"><DueDate expense={expense} /></td>
                     <td className="px-4 py-3">
                       <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${status.className}`}>
                         {status.label}
@@ -207,7 +271,7 @@ const ExpenseList = () => {
                   </tr>
                   {isExpanded && (
                     <tr className="border-t bg-muted/20">
-                      <td colSpan={6} className="px-4 py-4">
+                      <td colSpan={8} className="px-4 py-4">
                         <div className="text-sm font-medium mb-3">Notes</div>
                         {noteItems.length === 0 ? (
                           <div className="rounded-lg bg-muted/50 px-4 py-3 text-sm text-muted-foreground">

@@ -4,8 +4,11 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { parseDateOnly, toDateInput } from "@/lib/dates";
 import {
   userService,
   Expense as ApiExpense,
@@ -13,6 +16,7 @@ import {
   CreateExpenseInput,
   UpdateExpenseInput,
   ExpenseSummary,
+  EMPTY_EXPENSE_SUMMARY,
 } from "@/services/api/userService";
 import { toast } from "sonner";
 
@@ -26,9 +30,23 @@ export interface Expense {
   amountPaid: number;
   category: ExpenseCategory;
   date: Date;
+  /** When the outstanding balance is due; null when no date was set. */
+  dueDate: Date | null;
   paid: boolean;
   notes?: string;
 }
+
+/** What is still owed on an expense. */
+export const expenseBalance = (expense: Expense): number =>
+  Math.max(expense.amount - expense.amountPaid, 0);
+
+/** True when money is still owed and the due date has passed. */
+export const isExpenseOverdue = (expense: Expense): boolean => {
+  if (!expense.dueDate || expenseBalance(expense) <= 0) return false;
+  const endOfDue = new Date(expense.dueDate);
+  endOfDue.setHours(23, 59, 59, 999);
+  return endOfDue < new Date();
+};
 
 interface ExpenseContextType {
   expenses: Expense[];
@@ -41,6 +59,12 @@ interface ExpenseContextType {
   setTotalBudget: (budget: number) => Promise<void>;
   totalSpent: number;
   remainingBudget: number;
+  /** Total still owed across every expense. */
+  totalOwed: number;
+  overdueTotal: number;
+  overdueCount: number;
+  nextDue: ExpenseSummary["next_due"];
+  refresh: () => Promise<void>;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -61,6 +85,13 @@ const normalizeSummary = (data: ExpenseSummary): ExpenseSummary => ({
   total_spent: toNumber(data.total_spent),
   total_paid: toNumber(data.total_paid),
   total_unpaid: toNumber(data.total_unpaid),
+  total_committed: toNumber(data.total_committed),
+  overdue_total: toNumber(data.overdue_total),
+  overdue_count: toNumber(data.overdue_count),
+  due_soon_total: toNumber(data.due_soon_total),
+  next_due: data.next_due
+    ? { ...data.next_due, balance: toNumber(data.next_due.balance) }
+    : null,
   total_budget: toNumber(data.total_budget),
   remaining_budget: toNumber(data.remaining_budget),
   by_category: Object.fromEntries(
@@ -78,50 +109,51 @@ const toLocalExpense = (apiExpense: ApiExpense): Expense => ({
   amount: toNumber(apiExpense.amount),
   amountPaid: toNumber(apiExpense.amount_paid),
   category: apiExpense.category,
-  date: apiExpense.expense_date
-    ? new Date(apiExpense.expense_date)
-    : new Date(),
+  // Date-only columns: anchor to local midnight so the day never shifts.
+  date: parseDateOnly(apiExpense.expense_date) ?? new Date(),
+  dueDate: parseDateOnly(apiExpense.due_date),
   paid: apiExpense.paid,
   notes: apiExpense.notes || undefined,
 });
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [summary, setSummary] = useState<ExpenseSummary>({
-    total_spent: 0,
-    total_paid: 0,
-    total_unpaid: 0,
-    total_budget: 0,
-    remaining_budget: 0,
-    by_category: {},
-  });
+  const [summary, setSummary] = useState<ExpenseSummary>(EMPTY_EXPENSE_SUMMARY);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch expenses on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const [expensesData, summaryData] = await Promise.all([
-          userService.getExpenses(),
-          userService.getExpenseSummary(),
-        ]);
-        setExpenses(expensesData.map(toLocalExpense));
-        setSummary(normalizeSummary(summaryData));
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to fetch expenses";
-        setError(message);
-        console.error("Error fetching expenses:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const hasLoadedRef = useRef(false);
 
-    fetchData();
+  const fetchData = useCallback(async () => {
+    try {
+      // Only the first load blanks the screen; background refreshes swap the
+      // data in place so the page never flickers.
+      if (!hasLoadedRef.current) setIsLoading(true);
+      const [expensesData, summaryData] = await Promise.all([
+        userService.getExpenses(),
+        userService.getExpenseSummary(),
+      ]);
+      setExpenses(expensesData.map(toLocalExpense));
+      setSummary(normalizeSummary(summaryData));
+      setError(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch expenses";
+      // A failed refresh keeps the last good figures on screen.
+      if (!hasLoadedRef.current) setError(message);
+      console.error("Error fetching expenses:", err);
+    } finally {
+      hasLoadedRef.current = true;
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
+
+  // Budgets are edited by both partners and by the planner, so keep them live.
+  useAutoRefresh(fetchData);
 
   const addExpense = useCallback(async (expense: Omit<Expense, "id">) => {
     try {
@@ -130,27 +162,18 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         amount: expense.amount,
         amountPaid: expense.amountPaid,
         category: expense.category,
-        date: expense.date.toISOString().split("T")[0],
+        date: toDateInput(expense.date) ?? undefined,
+        dueDate: toDateInput(expense.dueDate),
         paid: expense.paid,
         notes: expense.notes,
       };
 
       const newExpense = await userService.createExpense(input);
-      const localExpense = toLocalExpense(newExpense);
-      setExpenses((prev) => [...prev, localExpense]);
-      const unpaidAmount = Math.max(
-        localExpense.amount - localExpense.amountPaid,
-        0,
-      );
+      setExpenses((prev) => [...prev, toLocalExpense(newExpense)]);
 
-      // Update summary
-      setSummary((prev) => ({
-        ...prev,
-        total_spent: prev.total_spent + localExpense.amountPaid,
-        total_paid: prev.total_paid + localExpense.amountPaid,
-        total_unpaid: prev.total_unpaid + unpaidAmount,
-        remaining_budget: prev.remaining_budget - localExpense.amountPaid,
-      }));
+      // Re-read the summary rather than patching it locally: overdue and
+      // next-due figures depend on dates the client would have to re-derive.
+      setSummary(normalizeSummary(await userService.getExpenseSummary()));
 
       toast.success("Expense added successfully");
     } catch (err) {
@@ -173,7 +196,9 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         if (updatedExpense.category !== undefined)
           input.category = updatedExpense.category;
         if (updatedExpense.date !== undefined)
-          input.date = updatedExpense.date.toISOString().split("T")[0];
+          input.date = toDateInput(updatedExpense.date);
+        if (updatedExpense.dueDate !== undefined)
+          input.dueDate = toDateInput(updatedExpense.dueDate);
         if (updatedExpense.paid !== undefined) input.paid = updatedExpense.paid;
         if (updatedExpense.notes !== undefined)
           input.notes = updatedExpense.notes;
@@ -201,24 +226,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const deleteExpense = useCallback(
     async (id: string) => {
       try {
-        const expenseToDelete = expenses.find((e) => e.id === id);
         await userService.deleteExpense(id);
         setExpenses((prev) => prev.filter((e) => e.id !== id));
 
-        if (expenseToDelete) {
-          const unpaidAmount = Math.max(
-            expenseToDelete.amount - expenseToDelete.amountPaid,
-            0,
-          );
-          setSummary((prev) => ({
-            ...prev,
-            total_spent: prev.total_spent - expenseToDelete.amountPaid,
-            total_paid: prev.total_paid - expenseToDelete.amountPaid,
-            total_unpaid: prev.total_unpaid - unpaidAmount,
-            remaining_budget:
-              prev.remaining_budget + expenseToDelete.amountPaid,
-          }));
-        }
+        // Overdue/next-due totals depend on dates, so re-read rather than
+        // adjusting the summary by hand.
+        setSummary(normalizeSummary(await userService.getExpenseSummary()));
 
         toast.success("Expense deleted successfully");
       } catch (err) {
@@ -228,7 +241,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
         throw err;
       }
     },
-    [expenses],
+    [],
   );
 
   const setTotalBudget = useCallback(async (newBudget: number) => {
@@ -259,6 +272,11 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     setTotalBudget,
     totalSpent: summary.total_spent,
     remainingBudget: summary.remaining_budget,
+    totalOwed: summary.total_unpaid,
+    overdueTotal: summary.overdue_total,
+    overdueCount: summary.overdue_count,
+    nextDue: summary.next_due,
+    refresh: fetchData,
   };
 
   return (
