@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,8 @@ import {
   Plus,
   Search,
   Filter,
-  Calendar,
-  Users,
-  ArrowUpDown,
   Mail,
   Phone,
-  Heart,
   Loader2,
   CheckCircle2,
   Circle,
@@ -25,6 +21,9 @@ import {
   MoreVertical,
   Archive,
   ArchiveRestore,
+  Check,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -41,6 +40,15 @@ import { Separator } from "@/components/ui/separator";
 const PlannerClients = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<"card" | "list">(() => {
+    // Remembered per browser: planners tend to settle on one and stay there.
+    const saved = typeof window !== "undefined" && localStorage.getItem("planr:clients-view");
+    return saved === "list" ? "list" : "card";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("planr:clients-view", viewMode);
+  }, [viewMode]);
   const { clients, isLoading, error, activeClients, upcomingClients, completedClients, archivedClients, getClientName, createClient, createInvite, deleteClient, archiveClient, unarchiveClient } = usePlannerClients();
 
   // Delete/archive confirmation state
@@ -194,107 +202,194 @@ const PlannerClients = () => {
   };
 
   // Client card component to avoid repetition
+  // Shared bits, so the card and the row can never drift apart.
+  const clientActions = (client: PlannerClient) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {client.status === 'archived' ? (
+          <DropdownMenuItem onClick={() => unarchiveClient(client.id)}>
+            <ArchiveRestore className="mr-2 h-4 w-4" />Restore
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => setConfirmArchive(client)}>
+            <Archive className="mr-2 h-4 w-4" />Archive
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={() => setConfirmDelete(client)}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const copyInvite = async (client: PlannerClient) => {
+    if (client.invite_code) {
+      await navigator.clipboard.writeText(client.invite_code);
+      toast.success("Invite code copied");
+      return;
+    }
+    const result = await createInvite(client.id);
+    if (result?.inviteCode) {
+      await navigator.clipboard.writeText(result.inviteCode);
+      toast.success("Invite code copied");
+    }
+  };
+
+  /** A linked client needs no invite prompt — that space is better spent. */
+  const InviteState = ({ client }: { client: PlannerClient }) =>
+    client.user_id ? (
+      <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+        <Check className="h-3 w-3" />Linked
+      </span>
+    ) : (
+      <button
+        onClick={() => copyInvite(client)}
+        className="text-xs text-primary underline underline-offset-2 hover:opacity-80"
+      >
+        {client.invite_code ? "Copy invite" : "Generate invite"}
+      </button>
+    );
+
   const ClientCard = ({ client }: { client: PlannerClient }) => (
-    <Card key={client.id} className={`hover:shadow-md transition-shadow ${client.status === 'archived' ? 'opacity-70' : ''}`}>
-      <CardHeader className="pb-2 flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <CardTitle className="text-lg flex items-center">
-            {getClientName(client)}
-            <Heart className="h-3 w-3 ml-2 text-red-400 shrink-0" />
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">{client.event_type} - {formatDate(client.event_date)}</p>
-        </div>
-        <div className="flex items-center gap-1 shrink-0 ml-2">
-          {getStatusBadge(client.status)}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {client.status === 'archived' ? (
-                <DropdownMenuItem onClick={() => unarchiveClient(client.id)}>
-                  <ArchiveRestore className="mr-2 h-4 w-4" />Restore
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => setConfirmArchive(client)}>
-                  <Archive className="mr-2 h-4 w-4" />Archive
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setConfirmDelete(client)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <Card
+      key={client.id}
+      className={`flex flex-col transition-shadow hover:shadow-md ${client.status === 'archived' ? 'opacity-70' : ''}`}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="truncate text-base leading-tight">{getClientName(client)}</CardTitle>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {client.event_type} · {formatDate(client.event_date)}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {getStatusBadge(client.status)}
+            {clientActions(client)}
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center text-sm">
-            <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>{client.email}</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>{client.phone || 'No phone'}</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>{client.guest_count || 'TBD'} guests</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-            <span>{client.venue || 'Venue TBD'}</span>
-          </div>
-          <div className="pt-2 flex justify-between gap-2">
-            <span className="font-medium self-center">Budget: {formatBudget(client.budget)}</span>
-            <div className="flex gap-2">
-              {client.user_id && (
-                <Button variant="outline" size="sm" onClick={() => openClientTodos(client)} className="gap-1">
-                  <ClipboardList className="h-3.5 w-3.5" />
-                  Todos
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/workspace`)} className="gap-1">
-                <LayoutDashboard className="h-3.5 w-3.5" />
-                Workspace
-              </Button>
+
+      <CardContent className="flex flex-1 flex-col gap-4 pt-0">
+        {/* Three facts side by side rather than four stacked rows */}
+        <div className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/30 p-3">
+          {[
+            { label: "Guests", value: client.guest_count ? String(client.guest_count) : "TBD" },
+            { label: "Budget", value: formatBudget(client.budget) },
+            { label: "Venue",  value: client.venue || "TBD" },
+          ].map((f) => (
+            <div key={f.label} className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{f.label}</p>
+              <p className="truncate text-sm font-medium" title={f.value}>{f.value}</p>
             </div>
-          </div>
-          <div className="flex items-center justify-between rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-            <span>
-              {client.invite_code
-                ? `Invite code: ${client.invite_code}`
-                : "No invite code yet"}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={async () => {
-                if (client.invite_code) {
-                  await navigator.clipboard.writeText(client.invite_code);
-                  toast.success("Invite code copied");
-                  return;
-                }
-                const result = await createInvite(client.id);
-                if (result?.inviteCode) {
-                  await navigator.clipboard.writeText(result.inviteCode);
-                  toast.success("Invite code copied");
-                }
-              }}
-            >
-              {client.invite_code ? "Copy" : "Generate"}
+          ))}
+        </div>
+
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p className="flex items-center gap-2">
+            <Mail className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate" title={client.email}>{client.email}</span>
+          </p>
+          {client.phone && (
+            <p className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{client.phone}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3">
+          <InviteState client={client} />
+          <div className="flex gap-2">
+            {client.user_id && (
+              <Button variant="ghost" size="sm" onClick={() => openClientTodos(client)} className="gap-1">
+                <ClipboardList className="h-3.5 w-3.5" />
+                Todos
+              </Button>
+            )}
+            <Button size="sm" onClick={() => navigate(`/clients/${client.id}/workspace`)} className="gap-1">
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              Workspace
             </Button>
           </div>
         </div>
       </CardContent>
     </Card>
   );
+
+  /** Compact row for scanning many clients at once. */
+  const ClientRow = ({ client }: { client: PlannerClient }) => (
+    <div
+      className={`flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3 last:border-b-0 hover:bg-muted/40 sm:flex-nowrap ${client.status === 'archived' ? 'opacity-70' : ''}`}
+    >
+      <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-medium">{getClientName(client)}</p>
+          {getStatusBadge(client.status)}
+        </div>
+        <p className="truncate text-xs text-muted-foreground">
+          {client.event_type} · {formatDate(client.event_date)}
+        </p>
+      </div>
+
+      <p className="hidden w-40 truncate text-xs text-muted-foreground lg:block" title={client.venue || undefined}>
+        {client.venue || "Venue TBD"}
+      </p>
+      <p className="hidden w-20 text-xs text-muted-foreground md:block">
+        {client.guest_count ? `${client.guest_count} guests` : "TBD"}
+      </p>
+      <p className="hidden w-28 truncate text-sm font-medium md:block">{formatBudget(client.budget)}</p>
+      <div className="hidden w-28 md:block"><InviteState client={client} /></div>
+
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        {client.user_id && (
+          <Button variant="ghost" size="sm" onClick={() => openClientTodos(client)} className="gap-1">
+            <ClipboardList className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Todos</span>
+          </Button>
+        )}
+        <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/workspace`)} className="gap-1">
+          <LayoutDashboard className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Workspace</span>
+        </Button>
+        {clientActions(client)}
+      </div>
+    </div>
+  );
+
+  /**
+   * One renderer for every tab, so card and list views stay consistent and a
+   * change lands everywhere at once.
+   */
+  const ClientCollection = ({
+    clients: list, empty,
+  }: { clients: PlannerClient[]; empty: React.ReactNode }) => {
+    if (list.length === 0) return <>{empty}</>;
+
+    if (viewMode === "list") {
+      return (
+        <div className="overflow-hidden rounded-lg border bg-card">
+          {list.map((c) => <ClientRow key={c.id} client={c} />)}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {list.map((c) => <ClientCard key={c.id} client={c} />)}
+      </div>
+    );
+  };
+
 
   // Loading state
   if (isLoading) {
@@ -354,13 +449,24 @@ const PlannerClients = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon">
-              <ArrowUpDown className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-1 rounded-lg border p-1">
+            {([
+              { value: "card" as const, Icon: LayoutGrid, label: "Card view" },
+              { value: "list" as const, Icon: List,       label: "List view" },
+            ]).map(({ value, Icon, label }) => (
+              <Button
+                key={value}
+                variant={viewMode === value ? "secondary" : "ghost"}
+                size="icon"
+                className="h-8 w-8"
+                aria-label={label}
+                aria-pressed={viewMode === value}
+                title={label}
+                onClick={() => setViewMode(value)}
+              >
+                <Icon className="h-4 w-4" />
+              </Button>
+            ))}
           </div>
         </div>
 
@@ -374,99 +480,80 @@ const PlannerClients = () => {
           </TabsList>
 
           <TabsContent value="all">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredClients.filter(c => c.status !== 'archived').length > 0 ? (
-                filteredClients.filter(c => c.status !== 'archived').map((client) => (
-                  <ClientCard key={client.id} client={client} />
-                ))
-              ) : (
-                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
+            <ClientCollection
+              clients={filteredClients.filter(c => c.status !== 'archived')}
+              empty={
+                <div className="rounded-lg bg-muted/50 p-8 text-center">
                   <p className="text-muted-foreground">
                     {clients.filter(c => c.status !== 'archived').length === 0 ? "No clients yet. Add your first client!" : "No clients found matching your search."}
                   </p>
                 </div>
-              )}
-            </div>
+              }
+            />
           </TabsContent>
 
           <TabsContent value="active">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {activeClients.filter(c => {
-                const name = getClientName(c).toLowerCase();
-                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-              }).length > 0 ? (
-                activeClients.filter(c => {
+            <ClientCollection
+              clients={activeClients.filter(c => {
                   const name = getClientName(c).toLowerCase();
                   return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-                }).map((client) => (
-                  <ClientCard key={client.id} client={client} />
-                ))
-              ) : (
-                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">No active clients.</p>
+                })}
+              empty={
+                <div className="rounded-lg bg-muted/50 p-8 text-center">
+                  <p className="text-muted-foreground">
+                    No active clients.
+                  </p>
                 </div>
-              )}
-            </div>
+              }
+            />
           </TabsContent>
 
           <TabsContent value="upcoming">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingClients.filter(c => {
-                const name = getClientName(c).toLowerCase();
-                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-              }).length > 0 ? (
-                upcomingClients.filter(c => {
+            <ClientCollection
+              clients={upcomingClients.filter(c => {
                   const name = getClientName(c).toLowerCase();
                   return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-                }).map((client) => (
-                  <ClientCard key={client.id} client={client} />
-                ))
-              ) : (
-                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">No upcoming clients.</p>
+                })}
+              empty={
+                <div className="rounded-lg bg-muted/50 p-8 text-center">
+                  <p className="text-muted-foreground">
+                    No upcoming clients.
+                  </p>
                 </div>
-              )}
-            </div>
+              }
+            />
           </TabsContent>
 
           <TabsContent value="completed">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {completedClients.filter(c => {
-                const name = getClientName(c).toLowerCase();
-                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-              }).length > 0 ? (
-                completedClients.filter(c => {
+            <ClientCollection
+              clients={completedClients.filter(c => {
                   const name = getClientName(c).toLowerCase();
                   return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-                }).map((client) => (
-                  <ClientCard key={client.id} client={client} />
-                ))
-              ) : (
-                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">No completed client events yet.</p>
+                })}
+              empty={
+                <div className="rounded-lg bg-muted/50 p-8 text-center">
+                  <p className="text-muted-foreground">
+                    No completed client events yet.
+                  </p>
                 </div>
-              )}
-            </div>
+              }
+            />
           </TabsContent>
 
           <TabsContent value="archived">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {archivedClients.filter(c => {
-                const name = getClientName(c).toLowerCase();
-                return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-              }).length > 0 ? (
-                archivedClients.filter(c => {
+            <ClientCollection
+              clients={archivedClients.filter(c => {
                   const name = getClientName(c).toLowerCase();
                   return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-                }).map((client) => (
-                  <ClientCard key={client.id} client={client} />
-                ))
-              ) : (
-                <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">No archived clients.</p>
+                })}
+              empty={
+                <div className="rounded-lg bg-muted/50 p-8 text-center">
+                  <p className="text-muted-foreground">
+                    No archived clients.
+                  </p>
                 </div>
-              )}
-            </div>
+              }
+            />
           </TabsContent>
         </Tabs>
       </main>
