@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatCurrency } from "@/lib/currency";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -340,7 +341,7 @@ const PlannerHomepage = () => {
                           <div className="flex justify-between text-sm pt-2">
                             <span className="text-blue-500 font-medium">Status: {client.status}</span>
                             <span className="text-green-500 font-medium">
-                              Budget: {client.budget ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(client.budget) : "TBD"}
+                              Budget: {client.budget ? formatCurrency(client.budget) : "TBD"}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground">

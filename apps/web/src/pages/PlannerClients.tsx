@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
+import { formatCurrency } from "@/lib/currency";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -181,7 +182,7 @@ const PlannerClients = () => {
   // Format budget for display
   const formatBudget = (budget: number | null): string => {
     if (!budget) return 'TBD';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(budget);
+    return formatCurrency(budget);
   };
 
   // Format date for display
@@ -326,12 +327,24 @@ const PlannerClients = () => {
     </Card>
   );
 
-  /** Compact row for scanning many clients at once. */
+  /**
+   * Column tracks for the list view.
+   *
+   * Every row repeats the same template so the columns line up down the page —
+   * rows are separate containers, so identical tracks are what aligns them. The
+   * action track is a fixed width rather than auto, otherwise a row with a
+   * Todos button would be wider and drag every other column sideways.
+   */
+  const LIST_GRID =
+    "grid items-center gap-x-4 px-4 " +
+    "grid-cols-[minmax(0,1fr)_auto] " +
+    "md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_5.5rem_7.5rem_6.5rem_15rem]";
+
   const ClientRow = ({ client }: { client: PlannerClient }) => (
     <div
-      className={`flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3 last:border-b-0 hover:bg-muted/40 sm:flex-nowrap ${client.status === 'archived' ? 'opacity-70' : ''}`}
+      className={`${LIST_GRID} border-b py-3 last:border-b-0 hover:bg-muted/40 ${client.status === 'archived' ? 'opacity-70' : ''}`}
     >
-      <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-medium">{getClientName(client)}</p>
           {getStatusBadge(client.status)}
@@ -341,28 +354,42 @@ const PlannerClients = () => {
         </p>
       </div>
 
-      <p className="hidden w-40 truncate text-xs text-muted-foreground lg:block" title={client.venue || undefined}>
-        {client.venue || "Venue TBD"}
+      <p className="hidden truncate text-sm text-muted-foreground md:block" title={client.venue || undefined}>
+        {client.venue || "—"}
       </p>
-      <p className="hidden w-20 text-xs text-muted-foreground md:block">
-        {client.guest_count ? `${client.guest_count} guests` : "TBD"}
+      <p className="hidden text-sm tabular-nums text-muted-foreground md:block">
+        {client.guest_count ? client.guest_count : "—"}
       </p>
-      <p className="hidden w-28 truncate text-sm font-medium md:block">{formatBudget(client.budget)}</p>
-      <div className="hidden w-28 md:block"><InviteState client={client} /></div>
+      <p className="hidden truncate text-sm font-medium tabular-nums md:block">
+        {formatBudget(client.budget)}
+      </p>
+      <div className="hidden md:block"><InviteState client={client} /></div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1">
+      <div className="flex items-center justify-end gap-1">
         {client.user_id && (
           <Button variant="ghost" size="sm" onClick={() => openClientTodos(client)} className="gap-1">
             <ClipboardList className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Todos</span>
+            <span className="hidden lg:inline">Todos</span>
           </Button>
         )}
         <Button variant="outline" size="sm" onClick={() => navigate(`/clients/${client.id}/workspace`)} className="gap-1">
           <LayoutDashboard className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Workspace</span>
+          <span className="hidden lg:inline">Workspace</span>
         </Button>
         {clientActions(client)}
       </div>
+    </div>
+  );
+
+  /** Column labels, so the list reads as a table rather than floating values. */
+  const ClientListHeader = () => (
+    <div className={`${LIST_GRID} border-b bg-muted/40 py-2`}>
+      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Client</span>
+      <span className="hidden text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:block">Venue</span>
+      <span className="hidden text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:block">Guests</span>
+      <span className="hidden text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:block">Budget</span>
+      <span className="hidden text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:block">Invite</span>
+      <span className="sr-only">Actions</span>
     </div>
   );
 
@@ -378,6 +405,7 @@ const PlannerClients = () => {
     if (viewMode === "list") {
       return (
         <div className="overflow-hidden rounded-lg border bg-card">
+          <ClientListHeader />
           {list.map((c) => <ClientRow key={c.id} client={c} />)}
         </div>
       );
@@ -609,7 +637,7 @@ const PlannerClients = () => {
                     <p className="text-muted-foreground text-xs">Budget</p>
                     <p className="font-medium">
                       {workspaceData.event.total_budget
-                        ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(workspaceData.event.total_budget)
+                        ? formatCurrency(workspaceData.event.total_budget)
                         : "TBD"}
                     </p>
                   </div>
@@ -637,7 +665,7 @@ const PlannerClients = () => {
                         <div className="text-right flex items-center gap-2">
                           {vendor.amount ? (
                             <span className="text-xs text-muted-foreground">
-                              {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(vendor.amount)}
+                              {formatCurrency(vendor.amount)}
                             </span>
                           ) : null}
                           {(() => {

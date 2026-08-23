@@ -1,4 +1,5 @@
 
+import { formatCurrency } from "@/lib/currency";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -519,11 +520,7 @@ const VendorHomepage = () => {
                                 <div>
                                   <span className="text-muted-foreground">Amount: </span>
                                   <span>
-                                    {new Intl.NumberFormat("en-US", {
-                                      style: "currency",
-                                      currency: "USD",
-                                      maximumFractionDigits: 0,
-                                    }).format(project.amount)}
+                                    {formatCurrency(project.amount)}
                                   </span>
                                 </div>
                               )}

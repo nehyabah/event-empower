@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { formatCurrency } from "@/lib/currency";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,8 +94,6 @@ interface WorkspaceData {
 const formatDate = (d: string | null) =>
   formatDateOnly(d, { month: "long", day: "numeric", year: "numeric" }, "en-US") ?? "TBD";
 
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 const vendorBadge = (status: WorkspaceVendor["status"]) => {
   const map = {
