@@ -129,6 +129,10 @@ const reminderSettingsSchema = z.object({
   targetStatuses: z.array(z.enum(['pending', 'confirmed', 'declined', 'maybe'])).min(1).optional(),
   customMessage: z.string().max(500).nullable().optional(),
   stopDaysBefore: z.number().min(0).max(365).optional(),
+  scheduleMode: z.enum(['recurring', 'custom_dates']).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD').nullable().optional(),
+  /** The exact days to send on, in custom_dates mode. Replaces the list. */
+  dates: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')).max(40).optional(),
 });
 
 // ========== CONTROLLER ==========
@@ -724,8 +728,8 @@ export const userController = {
 
   async getReminderSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { settings, recentLog } = await reminderService.getSettings(req.user!.userId);
-      res.json({ settings, recentLog });
+      const { settings, recentLog, dates } = await reminderService.getSettings(req.user!.userId);
+      res.json({ settings, recentLog, dates });
     } catch (error) {
       next(error);
     }
@@ -740,6 +744,12 @@ export const userController = {
       }
 
       const data = validation.data;
+
+      // Dates first: enabling reads the resulting list to pick the next send.
+      if (data.dates !== undefined) {
+        await reminderService.setDates(req.user!.userId, data.dates);
+      }
+
       const settings = await reminderService.updateSettings(req.user!.userId, {
         enabled: data.enabled,
         frequency: data.frequency,
@@ -747,9 +757,12 @@ export const userController = {
         target_statuses: data.targetStatuses,
         custom_message: data.customMessage,
         stop_days_before: data.stopDaysBefore,
+        schedule_mode: data.scheduleMode,
+        start_date: data.startDate,
       });
 
-      res.json(settings);
+      const dates = await reminderService.getSettings(req.user!.userId);
+      res.json({ ...settings, dates: dates.dates });
     } catch (error) {
       next(error);
     }

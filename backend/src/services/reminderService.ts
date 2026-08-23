@@ -3,6 +3,7 @@ import { GuestModel, Guest, GuestStatus } from '../models/Guest.js';
 import { UserEventModel, UserEvent } from '../models/UserEvent.js';
 import {
   GuestReminderModel,
+  ReminderDate,
   GuestReminderSettings,
   FREQUENCY_DAYS,
   nextSendAt,
@@ -81,17 +82,40 @@ const blockingReason = (event: UserEvent | null, settings: GuestReminderSettings
   return null;
 };
 
+/**
+ * Move a schedule past the send that just happened.
+ *
+ * A recurring schedule jumps forward one cadence; a custom one marks the days
+ * that have arrived as fulfilled, so they cannot fire twice.
+ */
+async function advanceSchedule(userId: string, settings: GuestReminderSettings): Promise<void> {
+  if (settings.schedule_mode === 'custom_dates') {
+    await GuestReminderModel.markDatesSent(userId);
+    return;
+  }
+  await GuestReminderModel.markSent(userId, nextSendAt(settings.frequency));
+}
+
 export const reminderService = {
   async getSettings(userId: string) {
-    const [settings, recentLog] = await Promise.all([
+    const [settings, recentLog, dates] = await Promise.all([
       GuestReminderModel.getOrCreate(userId),
       GuestReminderModel.recentLog(userId, 20),
+      GuestReminderModel.listDates(userId),
     ]);
-    return { settings, recentLog };
+    return { settings, recentLog, dates };
   },
 
   async updateSettings(userId: string, input: Parameters<typeof GuestReminderModel.update>[1]) {
-    return GuestReminderModel.update(userId, input);
+    await GuestReminderModel.update(userId, input);
+    // The next send depends on the settled combination of mode, start date and
+    // chosen days, so it is computed once everything else has been written.
+    await GuestReminderModel.resyncNextSend(userId);
+    return GuestReminderModel.getOrCreate(userId);
+  },
+
+  async setDates(userId: string, dates: string[]): Promise<ReminderDate[]> {
+    return GuestReminderModel.setDates(userId, dates);
   },
 
   /**
@@ -122,7 +146,7 @@ export const reminderService = {
     if (guests.length === 0) {
       // Still advance the schedule. Without this a couple with nobody left to
       // chase would be re-examined on every tick forever.
-      await GuestReminderModel.markSent(userId, nextSendAt(settings.frequency));
+      await advanceSchedule(userId, settings);
       return { sent: 0, skipped: 0, failed: 0, reason: 'No guests are awaiting a response' };
     }
 
@@ -215,7 +239,7 @@ export const reminderService = {
       else failed++;
     }
 
-    await GuestReminderModel.markSent(userId, nextSendAt(settings.frequency));
+    await advanceSchedule(userId, settings);
 
     return { sent, skipped, failed };
   },

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import {
   userService, UserEvent, GuestReminderSettings, ReminderFrequency, ReminderChannel,
+  ReminderScheduleMode, ReminderDate,
 } from "@/services/api/userService";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { toDateInput, formatDateOnly, daysUntilDate } from "@/lib/dates";
@@ -46,6 +47,8 @@ const formatDate = (value: string | null): string | null => formatDateOnly(value
 export const RsvpSettingsCard = () => {
   const [event, setEvent] = useState<UserEvent | null>(null);
   const [settings, setSettings] = useState<GuestReminderSettings | null>(null);
+  const [dates, setDates] = useState<ReminderDate[]>([]);
+  const [newDate, setNewDate] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingDeadline, setIsSavingDeadline] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -62,6 +65,7 @@ export const RsvpSettingsCard = () => {
       ]);
       setEvent(eventData);
       setSettings(reminderData.settings);
+      setDates(reminderData.dates || []);
       setDeadline(toInputValue(eventData?.rsvp_deadline ?? null));
       setMessage(eventData?.rsvp_message ?? "");
     } catch {
@@ -106,11 +110,31 @@ export const RsvpSettingsCard = () => {
 
   const patchSettings = async (input: Parameters<typeof userService.updateReminderSettings>[0]) => {
     try {
-      setSettings(await userService.updateReminderSettings(input));
+      const updated = await userService.updateReminderSettings(input);
+      setSettings(updated);
+      if (updated.dates) setDates(updated.dates);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update reminders");
     }
   };
+
+  const addDate = async () => {
+    if (!newDate) return;
+    if (dates.some((d) => d.send_on === newDate)) {
+      toast.info("That date is already on the list");
+      return;
+    }
+    const next = [...dates.map((d) => d.send_on), newDate].sort();
+    setNewDate("");
+    await patchSettings({ dates: next });
+  };
+
+  const removeDate = async (send_on: string) => {
+    await patchSettings({ dates: dates.filter((d) => d.send_on !== send_on).map((d) => d.send_on) });
+  };
+
+  const mode: ReminderScheduleMode = settings?.schedule_mode ?? "recurring";
+  const today = toDateInput(new Date()) ?? "";
 
   const sendNow = async () => {
     setIsSending(true);
@@ -267,21 +291,115 @@ export const RsvpSettingsCard = () => {
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>How often</Label>
-              <Select
-                value={settings?.frequency ?? "weekly"}
-                onValueChange={(v) => patchSettings({ frequency: v as ReminderFrequency })}
-              >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {FREQUENCIES.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Repeat on a cadence, or name the days yourself */}
+          <div className="space-y-2">
+            <Label>Schedule</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: "recurring" as const,    label: "Repeat",       hint: "Every few days" },
+                { value: "custom_dates" as const, label: "Pick dates",   hint: "Specific days" },
+              ]).map((m) => {
+                const on = mode === m.value;
+                return (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => patchSettings({ scheduleMode: m.value })}
+                    aria-pressed={on}
+                    className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                      on ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className="block text-sm font-medium">{m.label}</span>
+                    <span className="block text-xs text-muted-foreground">{m.hint}</span>
+                  </button>
+                );
+              })}
             </div>
+          </div>
+
+          {mode === "custom_dates" && (
+            <div className="space-y-2">
+              <Label>Send on these days</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  min={today}
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                />
+                <Button size="sm" variant="outline" onClick={addDate} disabled={!newDate} className="shrink-0">
+                  Add
+                </Button>
+              </div>
+
+              {dates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No dates yet — add the days you want reminders to go out.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {dates.map((d) => (
+                    <li
+                      key={d.id || d.send_on}
+                      className="flex items-center justify-between rounded-lg border px-3 py-2"
+                    >
+                      <span className="text-sm">{formatDateOnly(d.send_on)}</span>
+                      <span className="flex items-center gap-2">
+                        {d.sent_at ? (
+                          <Badge variant="secondary" className="text-[10px]">Sent</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px]">Scheduled</Badge>
+                        )}
+                        {/* A day already fulfilled stays on the list as a record. */}
+                        {!d.sent_at && (
+                          <button
+                            onClick={() => removeDate(d.send_on)}
+                            className="text-xs text-muted-foreground hover:text-destructive"
+                            aria-label={`Remove ${d.send_on}`}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {mode === "recurring" && (
+              <>
+                <div className="space-y-2">
+                  <Label>How often</Label>
+                  <Select
+                    value={settings?.frequency ?? "weekly"}
+                    onValueChange={(v) => patchSettings({ frequency: v as ReminderFrequency })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCIES.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reminder-start">Start on</Label>
+                  <Input
+                    id="reminder-start"
+                    type="date"
+                    min={today}
+                    value={toDateInput(settings?.start_date ?? null) ?? ""}
+                    onChange={(e) => patchSettings({ startDate: e.target.value || null })}
+                  />
+                  <p className="text-xs text-muted-foreground">Leave blank to begin right away.</p>
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label>Send by</Label>

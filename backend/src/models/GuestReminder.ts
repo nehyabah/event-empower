@@ -3,6 +3,8 @@ import { GuestStatus } from './Guest.js';
 
 export type ReminderFrequency = 'daily' | 'every_3_days' | 'weekly' | 'biweekly' | 'monthly';
 export type ReminderChannel = 'email' | 'sms' | 'both';
+/** Repeat on a cadence, or send only on days the couple picked. */
+export type ReminderScheduleMode = 'recurring' | 'custom_dates';
 
 /** How many days each cadence waits before the next send. */
 export const FREQUENCY_DAYS: Record<ReminderFrequency, number> = {
@@ -22,6 +24,9 @@ export interface GuestReminderSettings {
   target_statuses: GuestStatus[];
   custom_message: string | null;
   stop_days_before: number;
+  schedule_mode: ReminderScheduleMode;
+  /** First send for a recurring schedule; null means start immediately. */
+  start_date: string | null;
   last_sent_at: Date | null;
   next_send_at: Date | null;
   created_at: Date;
@@ -35,6 +40,14 @@ export interface UpdateGuestReminderInput {
   target_statuses?: GuestStatus[];
   custom_message?: string | null;
   stop_days_before?: number;
+  schedule_mode?: ReminderScheduleMode;
+  start_date?: string | null;
+}
+
+export interface ReminderDate {
+  id: string;
+  send_on: string;
+  sent_at: Date | null;
 }
 
 export interface GuestReminderLogEntry {
@@ -94,8 +107,12 @@ export const GuestReminderModel = {
     if (input.target_statuses !== undefined)  { fields.push(`target_statuses = $${i++}`);  values.push(input.target_statuses); }
     if (input.custom_message !== undefined)   { fields.push(`custom_message = $${i++}`);   values.push(input.custom_message); }
     if (input.stop_days_before !== undefined) { fields.push(`stop_days_before = $${i++}`); values.push(input.stop_days_before); }
+    if (input.schedule_mode !== undefined)     { fields.push(`schedule_mode = $${i++}`);     values.push(input.schedule_mode); }
+    if (input.start_date !== undefined)        { fields.push(`start_date = $${i++}`);        values.push(input.start_date); }
 
-    // Turning reminders on schedules the first send; turning them off clears it.
+    // next_send_at is not derived here: within one UPDATE every SET expression
+    // reads the pre-update row, so a start_date written in this same statement
+    // would not be visible. resyncNextSend() computes it from the settled row.
     if (input.enabled === true) {
       fields.push(`next_send_at = COALESCE(next_send_at, NOW())`);
     } else if (input.enabled === false) {
@@ -116,15 +133,108 @@ export const GuestReminderModel = {
     return updated;
   },
 
-  /** Enabled schedules whose next_send_at has come due. */
+  /**
+   * Schedules that should fire now.
+   *
+   * A recurring schedule is due once next_send_at passes; a custom one is due
+   * when any chosen day has arrived and has not been fulfilled yet.
+   */
   async findDue(limit = 50): Promise<GuestReminderSettings[]> {
     return query<GuestReminderSettings>(
-      `SELECT * FROM guest_reminder_settings
-       WHERE enabled = TRUE AND next_send_at IS NOT NULL AND next_send_at <= NOW()
-       ORDER BY next_send_at ASC
+      `SELECT s.* FROM guest_reminder_settings s
+       WHERE s.enabled = TRUE
+         AND (
+           (s.schedule_mode = 'recurring'
+             AND s.next_send_at IS NOT NULL AND s.next_send_at <= NOW())
+           OR
+           (s.schedule_mode = 'custom_dates' AND EXISTS (
+              SELECT 1 FROM guest_reminder_dates d
+              WHERE d.user_id = s.user_id
+                AND d.sent_at IS NULL
+                AND d.send_on <= CURRENT_DATE
+           ))
+         )
+       ORDER BY s.next_send_at ASC NULLS FIRST
        LIMIT $1`,
       [limit]
     );
+  },
+
+  // ── Custom dates ───────────────────────────────────────────────────────────
+
+  async listDates(userId: string): Promise<ReminderDate[]> {
+    return query<ReminderDate>(
+      `SELECT id, send_on, sent_at FROM guest_reminder_dates
+       WHERE user_id = $1 ORDER BY send_on ASC`,
+      [userId]
+    );
+  },
+
+  /**
+   * Replace the chosen days.
+   *
+   * Dates already fulfilled are preserved rather than wiped, so editing the
+   * list cannot cause a past reminder to fire a second time.
+   */
+  async setDates(userId: string, dates: string[]): Promise<ReminderDate[]> {
+    const wanted = [...new Set(dates)];
+
+    await query(
+      `DELETE FROM guest_reminder_dates
+       WHERE user_id = $1 AND sent_at IS NULL AND NOT (send_on = ANY($2::date[]))`,
+      [userId, wanted]
+    );
+
+    if (wanted.length > 0) {
+      await query(
+        `INSERT INTO guest_reminder_dates (user_id, send_on)
+         SELECT $1, UNNEST($2::date[])
+         ON CONFLICT (user_id, send_on) DO NOTHING`,
+        [userId, wanted]
+      );
+    }
+
+    await this.resyncNextSend(userId);
+    return this.listDates(userId);
+  },
+
+  /**
+   * Derive next_send_at from the row as it now stands.
+   *
+   * Runs after any change, because the answer depends on the combination of
+   * enabled, schedule_mode, start_date and the chosen days — none of which can
+   * be read reliably from inside the UPDATE that sets them.
+   */
+  async resyncNextSend(userId: string): Promise<void> {
+    await query(
+      `UPDATE guest_reminder_settings s
+       SET next_send_at = CASE
+             WHEN NOT s.enabled THEN NULL
+             WHEN s.schedule_mode = 'custom_dates' THEN (
+               SELECT MIN(d.send_on)::timestamptz
+               FROM guest_reminder_dates d
+               WHERE d.user_id = s.user_id AND d.sent_at IS NULL
+             )
+             ELSE GREATEST(
+               COALESCE(s.next_send_at, NOW()),
+               COALESCE(s.start_date::timestamptz, NOW())
+             )
+           END,
+           updated_at = NOW()
+       WHERE s.user_id = $1`,
+      [userId]
+    );
+  },
+
+  /** Mark every arrived-and-unfulfilled day as done. */
+  async markDatesSent(userId: string): Promise<void> {
+    await query(
+      `UPDATE guest_reminder_dates
+       SET sent_at = NOW()
+       WHERE user_id = $1 AND sent_at IS NULL AND send_on <= CURRENT_DATE`,
+      [userId]
+    );
+    await this.resyncNextSend(userId);
   },
 
   async markSent(userId: string, next: Date): Promise<void> {

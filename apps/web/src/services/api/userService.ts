@@ -169,6 +169,16 @@ export const EMPTY_EXPENSE_SUMMARY: ExpenseSummary = {
 
 export type ReminderFrequency = 'daily' | 'every_3_days' | 'weekly' | 'biweekly' | 'monthly';
 export type ReminderChannel = 'email' | 'sms' | 'both';
+/** Repeat on a cadence, or send only on days the couple picked. */
+export type ReminderScheduleMode = 'recurring' | 'custom_dates';
+
+export interface ReminderDate {
+  id: string;
+  /** YYYY-MM-DD */
+  send_on: string;
+  /** Set once this day's reminders have gone out. */
+  sent_at: string | null;
+}
 
 export interface GuestReminderSettings {
   id: string;
@@ -179,6 +189,8 @@ export interface GuestReminderSettings {
   target_statuses: GuestStatus[];
   custom_message: string | null;
   stop_days_before: number;
+  schedule_mode: ReminderScheduleMode;
+  start_date: string | null;
   last_sent_at: string | null;
   next_send_at: string | null;
 }
@@ -201,6 +213,10 @@ export interface UpdateReminderSettingsInput {
   targetStatuses?: GuestStatus[];
   customMessage?: string | null;
   stopDaysBefore?: number;
+  scheduleMode?: ReminderScheduleMode;
+  startDate?: string | null;
+  /** Replaces the chosen days wholesale. */
+  dates?: string[];
 }
 
 export interface ReminderRunResult {
@@ -591,10 +607,12 @@ export const userService = {
   async getReminderSettings(): Promise<{
     settings: GuestReminderSettings;
     recentLog: GuestReminderLogEntry[];
+    dates: ReminderDate[];
   }> {
     const response = await apiClient.get<{
       settings: GuestReminderSettings;
       recentLog: GuestReminderLogEntry[];
+      dates: ReminderDate[];
     }>('/users/guest-reminders');
     if (response.error || !response.data) {
       throw new Error(response.error || 'Failed to load reminder settings');
@@ -602,8 +620,10 @@ export const userService = {
     return response.data;
   },
 
-  async updateReminderSettings(input: UpdateReminderSettingsInput): Promise<GuestReminderSettings> {
-    const response = await apiClient.patch<GuestReminderSettings>('/users/guest-reminders', input);
+  async updateReminderSettings(
+    input: UpdateReminderSettingsInput
+  ): Promise<GuestReminderSettings & { dates: ReminderDate[] }> {
+    const response = await apiClient.patch<GuestReminderSettings & { dates: ReminderDate[] }>('/users/guest-reminders', input);
     if (response.error || !response.data) {
       throw new Error(response.error || 'Failed to update reminder settings');
     }
