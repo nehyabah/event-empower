@@ -30,6 +30,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { useCalendar } from "@/hooks/useCalendar";
 import NextEventCard from "@/components/calendar/NextEventCard";
+import NotificationsCard from "@/components/notifications/NotificationsCard";
 
 const VendorHomepage = () => {
   const { user } = useAuth();
@@ -266,6 +267,10 @@ const VendorHomepage = () => {
                   }
                 />
               </div>
+              <NotificationsCard emptyHint="When a couple adds you to their wedding, it shows up here." />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card className="flex flex-col justify-center">
                 <CardContent className="p-5">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">Calendar</p>

@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import { notificationService } from './notificationService.js';
 import {
   WorkspaceEventModel,
   WorkspaceEvent,
@@ -102,7 +103,16 @@ export const workspaceEventService = {
     });
 
     await WorkspaceEventModel.setParticipants(created.id, eventId, input.participantIds || []);
-    return (await WorkspaceEventModel.findById(created.id))!;
+
+    const saved = (await WorkspaceEventModel.findById(created.id))!;
+    await notificationService.taggedOnEvent({
+      userIds: (saved.participants || []).map((p) => p.user_id),
+      workspaceEventId: saved.id,
+      eventTitle: saved.title,
+      date: saved.event_date,
+      actorId: userId,
+    });
+    return saved;
   },
 
   /**

@@ -16,6 +16,7 @@ import publicRoutes from './routes/publicRoutes.js';
 import visionBoardRoutes from './routes/visionBoardRoutes.js';
 import calendarRoutes from './routes/calendarRoutes.js';
 import workspaceEventRoutes from './routes/workspaceEventRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import { scheduler } from './services/scheduler.js';
 import { vendorController } from './controllers/vendorController.js';
@@ -55,6 +56,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/vision-board', visionBoardRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/workspace-events', workspaceEventRoutes);
+app.use('/api/notifications', notificationRoutes);
 // Re-signing proxy for stored images; see storageService for why URLs point here.
 app.use('/api/media', mediaRoutes);
 

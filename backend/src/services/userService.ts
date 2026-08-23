@@ -1,4 +1,5 @@
 import { UserEventModel, UserEvent, CreateUserEventInput, UpdateUserEventInput } from '../models/UserEvent.js';
+import { notificationService } from './notificationService.js';
 import { query } from '../config/database.js';
 import { GuestModel, Guest, CreateGuestInput, UpdateGuestInput, GuestStatus } from '../models/Guest.js';
 import { ExpenseModel, Expense, CreateExpenseInput, UpdateExpenseInput, ExpenseCategory } from '../models/Expense.js';
@@ -106,7 +107,14 @@ export const userService = {
     const existing = await ProjectVendorModel.findByEventAndVendor(event.id, input.vendor_profile_id);
     if (existing) throw new Error('Vendor already on project');
 
-    return ProjectVendorModel.create({ ...input, event_id: event.id, added_by: userId });
+    const created = await ProjectVendorModel.create({ ...input, event_id: event.id, added_by: userId });
+    // Tell the vendor, so they are not left to notice it themselves.
+    await notificationService.vendorAddedToRoster({
+      vendorProfileId: input.vendor_profile_id,
+      eventId: event.id,
+      addedBy: userId,
+    });
+    return created;
   },
 
   async updateProjectVendor(userId: string, projectVendorId: string, input: UpdateProjectVendorInput): Promise<ProjectVendor | null> {
@@ -126,6 +134,7 @@ export const userService = {
     const pv = await ProjectVendorModel.findById(projectVendorId);
     if (!pv || pv.event_id !== event.id) return false;
 
+    await notificationService.vendorRemovedFromRoster(pv.vendor_profile_id, pv.event_id);
     return ProjectVendorModel.delete(projectVendorId);
   },
 

@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { notificationService } from './notificationService.js';
 import { userService } from './userService.js';
 import { PlannerClientModel, PlannerClient, ClientStatus, CreatePlannerClientInput, UpdatePlannerClientInput } from '../models/PlannerClient.js';
 import { PlannerTaskModel, PlannerTask, CreatePlannerTaskInput, UpdatePlannerTaskInput } from '../models/PlannerTask.js';
@@ -386,11 +387,17 @@ export const plannerService = {
     const client = await this.getClient(clientId, plannerId);
     if (!client || !client.event_id) throw new Error('Client project not found');
 
-    return ProjectVendorModel.create({
+    const created = await ProjectVendorModel.create({
       ...input,
       event_id: client.event_id,
       added_by: plannerId,
     });
+    await notificationService.vendorAddedToRoster({
+      vendorProfileId: input.vendor_profile_id,
+      eventId: client.event_id,
+      addedBy: plannerId,
+    });
+    return created;
   },
 
   async updateClientProjectVendor(plannerId: string, clientId: string, projectVendorId: string, input: UpdateProjectVendorInput): Promise<ProjectVendor | null> {
@@ -410,6 +417,7 @@ export const plannerService = {
     const pv = await ProjectVendorModel.findById(projectVendorId);
     if (!pv || pv.event_id !== client.event_id) return false;
 
+    await notificationService.vendorRemovedFromRoster(pv.vendor_profile_id, pv.event_id);
     return ProjectVendorModel.delete(projectVendorId);
   },
 
