@@ -95,8 +95,52 @@ export const storyService = {
     };
   },
 
+  /**
+   * Turn a couple's names into a usable site address.
+   *
+   * Falls back to a short random code when there are no names to work with, so
+   * publishing always yields something reachable.
+   */
+  async generateSlug(userId: string): Promise<string> {
+    const [story, event] = await Promise.all([
+      CoupleStoryModel.findByUserId(userId),
+      UserEventModel.findByUserId(userId),
+    ]);
+
+    const names = [
+      story?.bride_name || event?.partner1_name,
+      story?.groom_name || event?.partner2_name,
+    ].filter(Boolean).join('-and-');
+
+    const base =
+      (names || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')   // strip accents so "Àjọyọ̀" slugs cleanly
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'our-wedding';
+
+    // First free variant wins; the suffix only appears on a genuine collision.
+    for (let i = 0; i < 50; i++) {
+      const candidate = i === 0 ? base : `${base}-${i + 1}`;
+      if (await CoupleStoryModel.isSlugAvailable(candidate, userId)) return candidate;
+    }
+    return `${base}-${Math.random().toString(36).slice(2, 7)}`;
+  },
+
   async upsertStory(userId: string, input: UpsertCoupleStoryInput) {
-    return CoupleStoryModel.upsert(userId, input);
+    const story = await CoupleStoryModel.upsert(userId, input);
+
+    // A published site with no slug has no address: /s/:slug cannot resolve it,
+    // and the post-RSVP redirect has nowhere to send guests. Publishing now
+    // always produces one, which the couple can still change afterwards.
+    if (story.site_published && !story.slug) {
+      const slug = await this.generateSlug(userId);
+      return CoupleStoryModel.upsert(userId, { slug });
+    }
+
+    return story;
   },
 
   // --- Images ---
