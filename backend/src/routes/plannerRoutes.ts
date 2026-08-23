@@ -39,6 +39,7 @@ router.patch('/clients/:clientId/project/vendors/:vendorId', plannerController.u
 router.delete('/clients/:clientId/project/vendors/:vendorId', plannerController.removeClientProjectVendor);
 
 // Client vision board (shared)
+router.get('/clients/:clientId/expenses', plannerController.getClientExpenses);
 router.get('/clients/:clientId/vision-board', plannerController.getClientVisionBoard);
 router.post('/clients/:clientId/vision-board', plannerController.addClientVisionBoardItem);
 router.post('/clients/:clientId/vision-board/upload', upload.single('file'), plannerController.uploadClientVisionBoardImage);

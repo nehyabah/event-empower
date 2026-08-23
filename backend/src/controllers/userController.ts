@@ -475,7 +475,16 @@ export const userController = {
         return;
       }
 
-      const item = await userService.addTodoItem(req.params.id, req.user!.userId, validation.data);
+      const data = validation.data;
+      // Map explicitly rather than spreading: the request uses camelCase while
+      // the model expects snake_case, so a spread silently dropped the due date
+      // and the item never reached anyone's calendar.
+      const item = await userService.addTodoItem(req.params.id, req.user!.userId, {
+        text: data.text,
+        completed: data.completed,
+        status: data.status,
+        due_date: data.dueDate ?? null,
+      });
       res.status(201).json(item);
     } catch (error) {
       if (error instanceof Error && error.message === 'Todo list not found') {

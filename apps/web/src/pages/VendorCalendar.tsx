@@ -22,6 +22,7 @@ import { Clock, Loader2, MapPin, Plus, Trash2, User } from "lucide-react";
 import MonthCalendar from "@/components/calendar/MonthCalendar";
 import NextEventCard from "@/components/calendar/NextEventCard";
 import CalendarSyncCard from "@/components/calendar/CalendarSyncCard";
+import AddWorkspaceEventDialog from "@/components/calendar/AddWorkspaceEventDialog";
 import { useCalendar } from "@/hooks/useCalendar";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
@@ -75,6 +76,7 @@ const VendorCalendar = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<VendorBooking | null>(null);
+  const [addingOn, setAddingOn] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
@@ -269,6 +271,9 @@ const VendorCalendar = () => {
                       <Plus className="mr-1.5 h-3.5 w-3.5" />
                       Add event
                     </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setAddingOn(selectedDate)}>
+                      Add shared event &amp; tag people
+                    </Button>
                   </div>
                 ) : (
                   <>
@@ -326,6 +331,9 @@ const VendorCalendar = () => {
                       <Plus className="mr-1.5 h-3.5 w-3.5" />
                       Add another
                     </Button>
+                    <Button size="sm" variant="ghost" className="w-full" onClick={() => setAddingOn(selectedDate)}>
+                      Add shared event &amp; tag people
+                    </Button>
                   </>
                 )}
               </CardContent>
@@ -339,6 +347,13 @@ const VendorCalendar = () => {
           </div>
         </div>
       </main>
+
+      <AddWorkspaceEventDialog
+        open={!!addingOn}
+        onOpenChange={(o) => !o && setAddingOn(null)}
+        date={addingOn}
+        onCreated={() => { void refresh(); void loadBookings(); }}
+      />
 
       {/* Create / edit */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

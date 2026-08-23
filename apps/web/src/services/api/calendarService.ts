@@ -6,7 +6,8 @@ export type CalendarSource =
   | 'todo_due'
   | 'vendor_booking'
   | 'expense_due'
-  | 'rsvp_deadline';
+  | 'rsvp_deadline'
+  | 'workspace_event';
 
 export interface CalendarEntry {
   id: string;

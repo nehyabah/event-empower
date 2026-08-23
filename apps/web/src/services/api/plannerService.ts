@@ -521,6 +521,22 @@ export const plannerService = {
 
   // ========== CLIENT VISION BOARD (shared) ==========
 
+  /**
+   * A client's budget — the same expenses and summary the couple sees on their
+   * own budget screen, so the planner reads identical figures.
+   */
+  async getClientExpenses(clientId: string): Promise<{
+    expenses: import('./userService').Expense[];
+    summary: import('./userService').ExpenseSummary;
+  }> {
+    const r = await apiClient.get<{
+      expenses: import('./userService').Expense[];
+      summary: import('./userService').ExpenseSummary;
+    }>(`/planner/clients/${clientId}/expenses`);
+    if (r.error || !r.data) throw new Error(r.error || 'Failed to load client budget');
+    return r.data;
+  },
+
   async getClientVisionBoard(clientId: string): Promise<import('./visionBoardService').VisionBoardItem[]> {
     const r = await apiClient.get<import('./visionBoardService').VisionBoardItem[]>(`/planner/clients/${clientId}/vision-board`);
     if (r.error) throw new Error(r.error);

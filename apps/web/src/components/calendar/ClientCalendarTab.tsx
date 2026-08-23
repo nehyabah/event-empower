@@ -7,6 +7,9 @@ import NextEventCard from "./NextEventCard";
 import CalendarSyncCard from "./CalendarSyncCard";
 import { useCalendar } from "@/hooks/useCalendar";
 import { CalendarEntry } from "@/services/api/calendarService";
+import AddWorkspaceEventDialog from "./AddWorkspaceEventDialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 const SOURCE_LABELS: Record<string, string> = {
   wedding: "Wedding",
@@ -15,6 +18,7 @@ const SOURCE_LABELS: Record<string, string> = {
   todo_due: "Task",
   expense_due: "Payment",
   rsvp_deadline: "RSVP",
+  workspace_event: "Shared",
 };
 
 const SOURCE_BADGES: Record<string, string> = {
@@ -24,6 +28,7 @@ const SOURCE_BADGES: Record<string, string> = {
   todo_due: "bg-emerald-100 text-emerald-800",
   expense_due: "bg-amber-100 text-amber-900",
   rsvp_deadline: "bg-rose-100 text-rose-800",
+  workspace_event: "bg-indigo-100 text-indigo-800",
 };
 
 const formatTime = (time: string | null): string => {
@@ -43,11 +48,13 @@ const formatTime = (time: string | null): string => {
 export const ClientCalendarTab = () => {
   const {
     entries, upcoming, nextEvent, feedUrl, webcalUrl,
-    isLoading, error, month, setMonth, applyFeedUrls,
+    isLoading, error, month, setMonth, applyFeedUrls, refresh,
   } = useCalendar();
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [viewing, setViewing] = useState<CalendarEntry | null>(null);
+  // Day the user clicked "add" on; also drives the dialog being open.
+  const [addingOn, setAddingOn] = useState<string | null>(null);
 
   const dayEntries = useMemo(
     () => (selectedDate ? entries.filter((e) => e.date === selectedDate) : []),
@@ -107,9 +114,21 @@ export const ClientCalendarTab = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            {selectedDate && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full"
+                onClick={() => setAddingOn(selectedDate)}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add event on this day
+              </Button>
+            )}
+
             {listed.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {selectedDate ? "Nothing on this day." : "Nothing scheduled yet."}
+                {selectedDate ? "Nothing on this day." : "Pick a day to add an event."}
               </p>
             ) : (
               listed.map((entry) => (
@@ -156,6 +175,13 @@ export const ClientCalendarTab = () => {
 
         <CalendarSyncCard feedUrl={feedUrl} webcalUrl={webcalUrl} onRotated={applyFeedUrls} />
       </div>
+
+      <AddWorkspaceEventDialog
+        open={!!addingOn}
+        onOpenChange={(o) => !o && setAddingOn(null)}
+        date={addingOn}
+        onCreated={refresh}
+      />
 
       {/* Detail popover-in-place, kept simple since entries are read-only here */}
       {viewing && (

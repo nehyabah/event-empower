@@ -12,7 +12,7 @@ const fmt = (n: number) =>
 const ExpenseSummary = () => {
   const {
     totalBudget, setTotalBudget, totalSpent, remainingBudget, expenses,
-    totalOwed, overdueTotal, overdueCount, nextDue,
+    totalOwed, overdueTotal, overdueCount, nextDue, readOnly,
   } = useExpenses();
   const [isEditing, setIsEditing] = useState(false);
   const [draftBudget, setDraftBudget] = useState(totalBudget);
@@ -38,7 +38,7 @@ const ExpenseSummary = () => {
         <div className="relative px-7 py-7">
           <p className="text-xs uppercase tracking-[0.2em] text-stone-400 mb-1 font-medium">Total Budget</p>
           <div className="flex items-end gap-3 mb-5">
-            {isEditing ? (
+            {isEditing && !readOnly ? (
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold text-stone-300">₦</span>
                 <Input
@@ -56,12 +56,15 @@ const ExpenseSummary = () => {
             ) : (
               <>
                 <span className="text-3xl md:text-4xl font-bold tracking-tight">{fmt(totalBudget)}</span>
-                <button
-                  onClick={() => { setDraftBudget(totalBudget); setIsEditing(true); }}
-                  className="mb-1 text-stone-400 hover:text-stone-200 transition-colors"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => { setDraftBudget(totalBudget); setIsEditing(true); }}
+                    className="mb-1 text-stone-400 hover:text-stone-200 transition-colors"
+                    aria-label="Edit budget"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                )}
               </>
             )}
           </div>

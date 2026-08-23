@@ -45,12 +45,14 @@ const ExpenseCard = ({
   onToggleExpand,
   onEdit,
   onDelete,
+  readOnly,
 }: {
   expense: Expense;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  readOnly: boolean;
 }) => {
   const status = getPaymentStatus(expense);
   const noteItems = getNoteItems(expense);
@@ -96,14 +98,16 @@ const ExpenseCard = ({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-              <Edit2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDelete}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          {!readOnly && (
+            <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+                <Edit2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Expand toggle for notes */}
@@ -156,7 +160,7 @@ const getNoteItems = (expense: Expense) =>
     .filter(Boolean);
 
 const ExpenseList = () => {
-  const { expenses, deleteExpense } = useExpenses();
+  const { expenses, deleteExpense, readOnly } = useExpenses();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [expandedExpenseId, setExpandedExpenseId] = useState<string | null>(null);
 
@@ -192,6 +196,7 @@ const ExpenseList = () => {
             }
             onEdit={() => handleEdit(expense)}
             onDelete={() => handleDelete(expense.id)}
+            readOnly={readOnly}
           />
         ))}
       </div>
@@ -246,6 +251,7 @@ const ExpenseList = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end space-x-1">
+                        {readOnly ? <span className="text-xs text-muted-foreground">—</span> : <>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -266,6 +272,7 @@ const ExpenseList = () => {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                        </>}
                       </div>
                     </td>
                   </tr>

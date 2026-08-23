@@ -19,6 +19,7 @@ import {
   EMPTY_EXPENSE_SUMMARY,
 } from "@/services/api/userService";
 import { toast } from "sonner";
+import plannerService from "@/services/api/plannerService";
 
 export type { ExpenseCategory };
 
@@ -65,6 +66,8 @@ interface ExpenseContextType {
   overdueCount: number;
   nextDue: ExpenseSummary["next_due"];
   refresh: () => Promise<void>;
+  /** True when viewing someone else's budget — hides every edit control. */
+  readOnly: boolean;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -116,7 +119,18 @@ const toLocalExpense = (apiExpense: ApiExpense): Expense => ({
   notes: apiExpense.notes || undefined,
 });
 
-export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
+interface ExpenseProviderProps {
+  children: ReactNode;
+  /**
+   * View a planner client's budget instead of your own. The figures are the
+   * same ones the couple sees — same endpoint composition, same maths — but
+   * presented read-only.
+   */
+  clientId?: string;
+}
+
+export const ExpenseProvider = ({ children, clientId }: ExpenseProviderProps) => {
+  const readOnly = Boolean(clientId);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<ExpenseSummary>(EMPTY_EXPENSE_SUMMARY);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,10 +143,12 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       // Only the first load blanks the screen; background refreshes swap the
       // data in place so the page never flickers.
       if (!hasLoadedRef.current) setIsLoading(true);
-      const [expensesData, summaryData] = await Promise.all([
-        userService.getExpenses(),
-        userService.getExpenseSummary(),
-      ]);
+      const [expensesData, summaryData] = clientId
+        ? await plannerService.getClientExpenses(clientId).then((d) => [d.expenses, d.summary] as const)
+        : await Promise.all([
+            userService.getExpenses(),
+            userService.getExpenseSummary(),
+          ]);
       setExpenses(expensesData.map(toLocalExpense));
       setSummary(normalizeSummary(summaryData));
       setError(null);
@@ -146,7 +162,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       hasLoadedRef.current = true;
       setIsLoading(false);
     }
-  }, []);
+  }, [clientId]);
 
   useEffect(() => {
     void fetchData();
@@ -277,6 +293,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
     overdueCount: summary.overdue_count,
     nextDue: summary.next_due,
     refresh: fetchData,
+    readOnly,
   };
 
   return (

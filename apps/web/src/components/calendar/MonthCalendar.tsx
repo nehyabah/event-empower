@@ -36,6 +36,7 @@ const SOURCE_STYLES: Record<string, string> = {
   todo_due: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
   expense_due: "bg-amber-100 text-amber-900 hover:bg-amber-200",
   rsvp_deadline: "bg-rose-100 text-rose-800 hover:bg-rose-200",
+  workspace_event: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
 };
 
 const chipStyle = (source?: string | null) =>

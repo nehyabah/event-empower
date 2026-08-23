@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import MonthCalendar from "@/components/calendar/MonthCalendar";
 import CalendarSyncCard from "@/components/calendar/CalendarSyncCard";
+import AddWorkspaceEventDialog from "@/components/calendar/AddWorkspaceEventDialog";
 import { useCalendar } from "@/hooks/useCalendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -78,6 +79,7 @@ const PlannerCalendar = () => {
   );
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [addingOn, setAddingOn] = useState<string | null>(null);
 
   // Feed URLs for the "sync to Google/Apple" panel.
   const { feedUrl, webcalUrl, applyFeedUrls } = useCalendar();
@@ -85,7 +87,7 @@ const PlannerCalendar = () => {
   const {
     events, weddingDates, todoDueDates,
     isLoading, error,
-    upcomingEvents,
+    upcomingEvents, fetchEvents,
     createEvent, updateEvent, deleteEvent,
   } = usePlannerEvents();
 
@@ -314,10 +316,16 @@ const PlannerCalendar = () => {
             <h1 className="text-3xl font-serif">Calendar</h1>
             <p className="text-muted-foreground">Your events, client weddings, and shared to-do deadlines</p>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Event
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setAddingOn(selectedDay || new Date().toISOString().split("T")[0])}>
+              <Plus className="mr-2 h-4 w-4" />
+              Shared event
+            </Button>
+            <Button onClick={openCreateDialog}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Event
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -403,6 +411,13 @@ const PlannerCalendar = () => {
           </div>
         </div>
       </main>
+
+      <AddWorkspaceEventDialog
+        open={!!addingOn}
+        onOpenChange={(o) => !o && setAddingOn(null)}
+        date={addingOn}
+        onCreated={fetchEvents}
+      />
 
       {/* View Entry Dialog */}
       <Dialog open={!!viewingEntry} onOpenChange={(open) => !open && setViewingEntry(null)}>

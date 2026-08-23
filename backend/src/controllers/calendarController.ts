@@ -23,8 +23,11 @@ export const calendarController = {
   async getMyCalendar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { userId, userType } = req.user!;
-      const entries = await calendarService.getEntries(userId, userType);
-      const token = await calendarService.getCalendarToken(userId);
+      // Independent reads; overlapping them removes a whole round trip.
+      const [entries, token] = await Promise.all([
+        calendarService.getEntries(userId, userType),
+        calendarService.getCalendarToken(userId),
+      ]);
 
       const base = apiBaseUrl(req);
       const feedUrl = token ? `${base}/api/calendar/feed/${token}.ics` : null;

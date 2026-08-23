@@ -17,6 +17,7 @@ const SOURCE_LABELS: Record<string, string> = {
   todo_due: "Task due",
   expense_due: "Payment due",
   rsvp_deadline: "RSVP deadline",
+  workspace_event: "Shared event",
 };
 
 const formatTime = (time: string | null): string | null => {

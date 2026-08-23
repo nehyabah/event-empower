@@ -3,6 +3,7 @@ import { PlannerEventModel } from '../models/PlannerEvent.js';
 import { VendorBookingModel, VendorProfileModel } from '../models/VendorProfile.js';
 import { UserEventModel } from '../models/UserEvent.js';
 import { plannerService } from './plannerService.js';
+import { WorkspaceEventModel } from '../models/WorkspaceEvent.js';
 
 /** Where a calendar entry came from. Drives colour and filtering in the UI. */
 export type CalendarSource =
@@ -11,7 +12,8 @@ export type CalendarSource =
   | 'todo_due'
   | 'vendor_booking'
   | 'expense_due'
-  | 'rsvp_deadline';
+  | 'rsvp_deadline'
+  | 'workspace_event';
 
 export interface CalendarEntry {
   /** Stable across requests — used as the ICS UID. */
@@ -52,9 +54,43 @@ const todayString = () => new Date().toISOString().split('T')[0];
 // ── Per-role collectors ──────────────────────────────────────────────────────
 
 async function clientEntries(userId: string): Promise<CalendarEntry[]> {
-  const entries: CalendarEntry[] = [];
+  // Every source is independent, so they are fetched concurrently. The database
+  // is remote (~340ms per round trip), which makes the number of sequential
+  // queries — not the amount of data — the thing that decides how fast the
+  // calendar loads.
+  const [event, plannerEvents, bookings, todos, expenses] = await Promise.all([
+    UserEventModel.findByUserId(userId),
+    PlannerEventModel.findVisibleForClientUser(userId),
+    query<{
+      id: string; title: string | null; client_name: string; event_date: Date;
+      start_time: string | null; end_time: string | null; location: string | null;
+      event_type: string | null; booking_kind: string; status: string; business_name: string | null;
+    }>(
+      `SELECT vb.id, vb.title, vb.client_name, vb.event_date, vb.start_time, vb.end_time,
+              vb.location, vb.event_type, vb.booking_kind, vb.status, vp.business_name
+       FROM vendor_bookings vb
+       LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
+       WHERE vb.client_id = $1 AND vb.status <> 'cancelled'`,
+      [userId]
+    ),
+    query<{ id: string; text: string; due_date: Date; list_title: string }>(
+      `SELECT ti.id, ti.text, ti.due_date, tl.title AS list_title
+       FROM todo_items ti
+       JOIN todo_lists tl ON tl.id = ti.list_id
+       WHERE tl.user_id = $1 AND ti.due_date IS NOT NULL AND ti.completed = FALSE`,
+      [userId]
+    ),
+    query<{
+      id: string; name: string; due_date: Date; amount: string; amount_paid: string; category: string;
+    }>(
+      `SELECT id, name, due_date, amount, amount_paid, category
+       FROM expenses
+       WHERE user_id = $1 AND due_date IS NOT NULL AND amount_paid < amount`,
+      [userId]
+    ),
+  ]);
 
-  const event = await UserEventModel.findByUserId(userId);
+  const entries: CalendarEntry[] = [];
   const coupleNames =
     [event?.partner1_name, event?.partner2_name].filter(Boolean).join(' & ') || 'Our wedding';
 
@@ -97,7 +133,6 @@ async function clientEntries(userId: string): Promise<CalendarEntry[]> {
   }
 
   // Meetings the planner scheduled and chose to share.
-  const plannerEvents = await PlannerEventModel.findVisibleForClientUser(userId);
   for (const pe of plannerEvents) {
     const date = toDateString(pe.event_date);
     if (!date) continue;
@@ -118,18 +153,6 @@ async function clientEntries(userId: string): Promise<CalendarEntry[]> {
   }
 
   // Bookings a vendor made against this couple.
-  const bookings = await query<{
-    id: string; title: string | null; client_name: string; event_date: Date;
-    start_time: string | null; end_time: string | null; location: string | null;
-    event_type: string | null; booking_kind: string; status: string; business_name: string | null;
-  }>(
-    `SELECT vb.id, vb.title, vb.client_name, vb.event_date, vb.start_time, vb.end_time,
-            vb.location, vb.event_type, vb.booking_kind, vb.status, vp.business_name
-     FROM vendor_bookings vb
-     LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
-     WHERE vb.client_id = $1 AND vb.status <> 'cancelled'`,
-    [userId]
-  );
   for (const b of bookings) {
     const date = toDateString(b.event_date);
     if (!date) continue;
@@ -149,13 +172,6 @@ async function clientEntries(userId: string): Promise<CalendarEntry[]> {
   }
 
   // Task deadlines from the couple's own checklists.
-  const todos = await query<{ id: string; text: string; due_date: Date; list_title: string }>(
-    `SELECT ti.id, ti.text, ti.due_date, tl.title AS list_title
-     FROM todo_items ti
-     JOIN todo_lists tl ON tl.id = ti.list_id
-     WHERE tl.user_id = $1 AND ti.due_date IS NOT NULL AND ti.completed = FALSE`,
-    [userId]
-  );
   for (const t of todos) {
     const date = toDateString(t.due_date);
     if (!date) continue;
@@ -175,14 +191,6 @@ async function clientEntries(userId: string): Promise<CalendarEntry[]> {
   }
 
   // Payments falling due, so money shows up alongside the schedule.
-  const expenses = await query<{
-    id: string; name: string; due_date: Date; amount: string; amount_paid: string; category: string;
-  }>(
-    `SELECT id, name, due_date, amount, amount_paid, category
-     FROM expenses
-     WHERE user_id = $1 AND due_date IS NOT NULL AND amount_paid < amount`,
-    [userId]
-  );
   for (const e of expenses) {
     const date = toDateString(e.due_date);
     if (!date) continue;
@@ -208,9 +216,29 @@ async function clientEntries(userId: string): Promise<CalendarEntry[]> {
 async function plannerEntries(plannerId: string): Promise<CalendarEntry[]> {
   const entries: CalendarEntry[] = [];
 
-  // One call covers the planner's own events, client wedding days and the
-  // shared task deadlines.
-  const { events, weddingDates, todoDueDates } = await plannerService.getCalendarData(plannerId);
+  // Two independent reads, overlapped: the planner's own calendar data, and
+  // the vendor bookings against their clients.
+  const [calendarData, vendorRows] = await Promise.all([
+    plannerService.getCalendarData(plannerId),
+    query<{
+      id: string; title: string | null; client_name: string; event_date: Date;
+      start_time: string | null; end_time: string | null; location: string | null;
+      event_type: string | null; booking_kind: string; business_name: string | null;
+      couple_names: string | null;
+    }>(
+      `SELECT vb.id, vb.title, vb.client_name, vb.event_date, vb.start_time, vb.end_time,
+              vb.location, vb.event_type, vb.booking_kind, vp.business_name,
+              CONCAT_WS(' & ', pc.partner1_name, pc.partner2_name) AS couple_names
+       FROM vendor_bookings vb
+       JOIN planner_clients pc ON pc.user_id = vb.client_id
+       LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
+       WHERE pc.planner_id = $1
+         AND pc.invite_status = 'accepted'
+         AND vb.status <> 'cancelled'`,
+      [plannerId]
+    ),
+  ]);
+  const { events, weddingDates, todoDueDates } = calendarData;
 
   for (const pe of events) {
     const date = toDateString(pe.event_date);
@@ -262,26 +290,7 @@ async function plannerEntries(plannerId: string): Promise<CalendarEntry[]> {
     });
   }
 
-  // Vendor bookings against any of this planner's linked clients, so the
-  // planner can see what their couples' vendors have scheduled.
-  const vendorRows = await query<{
-    id: string; title: string | null; client_name: string; event_date: Date;
-    start_time: string | null; end_time: string | null; location: string | null;
-    event_type: string | null; booking_kind: string; business_name: string | null;
-    couple_names: string | null;
-  }>(
-    `SELECT vb.id, vb.title, vb.client_name, vb.event_date, vb.start_time, vb.end_time,
-            vb.location, vb.event_type, vb.booking_kind, vp.business_name,
-            CONCAT_WS(' & ', pc.partner1_name, pc.partner2_name) AS couple_names
-     FROM vendor_bookings vb
-     JOIN planner_clients pc ON pc.user_id = vb.client_id
-     LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
-     WHERE pc.planner_id = $1
-       AND pc.invite_status = 'accepted'
-       AND vb.status <> 'cancelled'`,
-    [plannerId]
-  );
-
+  // Vendor bookings against this planner's linked clients (fetched above).
   for (const b of vendorRows) {
     const date = toDateString(b.event_date);
     if (!date) continue;
@@ -308,7 +317,23 @@ async function vendorEntries(userId: string): Promise<CalendarEntry[]> {
   const profile = await VendorProfileModel.findByUserId(userId);
   if (!profile) return [];
 
-  const bookings = await VendorBookingModel.findByVendorId(profile.id);
+  // Independent of each other, so overlapped.
+  const [bookings, weddings] = await Promise.all([
+    VendorBookingModel.findByVendorId(profile.id),
+    query<{
+      event_id: string; user_id: string; event_date: Date; venue: string | null;
+      partner1_name: string | null; partner2_name: string | null;
+    }>(
+      `SELECT DISTINCT ue.id AS event_id, ue.user_id, ue.event_date, ue.venue,
+              ue.partner1_name, ue.partner2_name
+       FROM project_vendors pv
+       JOIN user_events ue ON ue.id = pv.event_id
+       WHERE pv.vendor_profile_id = $1
+         AND pv.status <> 'cancelled'
+         AND ue.event_date IS NOT NULL`,
+      [profile.id]
+    ),
+  ]);
 
   const entries: CalendarEntry[] = bookings
     .filter((b) => b.status !== 'cancelled')
@@ -330,22 +355,7 @@ async function vendorEntries(userId: string): Promise<CalendarEntry[]> {
       }];
     });
 
-  // Wedding days of the couples this vendor is booked for. A vendor needs the
-  // event itself on their calendar, not just their own appointments.
-  const weddings = await query<{
-    event_id: string; user_id: string; event_date: Date; venue: string | null;
-    partner1_name: string | null; partner2_name: string | null;
-  }>(
-    `SELECT DISTINCT ue.id AS event_id, ue.user_id, ue.event_date, ue.venue,
-            ue.partner1_name, ue.partner2_name
-     FROM project_vendors pv
-     JOIN user_events ue ON ue.id = pv.event_id
-     WHERE pv.vendor_profile_id = $1
-       AND pv.status <> 'cancelled'
-       AND ue.event_date IS NOT NULL`,
-    [profile.id]
-  );
-
+  // Wedding days of the couples this vendor is booked for (fetched above).
   for (const w of weddings) {
     const date = toDateString(w.event_date);
     if (!date) continue;
@@ -368,17 +378,56 @@ async function vendorEntries(userId: string): Promise<CalendarEntry[]> {
   return entries;
 }
 
+
+/**
+ * Shared workspace events, for whichever role is asking.
+ *
+ * The model decides visibility: couples and planners see everything on their
+ * wedding, vendors only what they created or were tagged in.
+ */
+async function workspaceEventEntries(userId: string): Promise<CalendarEntry[]> {
+  const events = await WorkspaceEventModel.findVisibleTo(userId);
+
+  return events.flatMap((e) => {
+    const date = toDateString(e.event_date);
+    if (!date) return [];
+
+    const tagged = (e.participants || []).map((p) => p.name).filter(Boolean);
+
+    return [{
+      id: `workspace-event-${e.id}`,
+      source: 'workspace_event' as const,
+      title: e.title,
+      description: [e.description, tagged.length ? `With: ${tagged.join(', ')}` : null]
+        .filter(Boolean)
+        .join('\n') || null,
+      date,
+      start_time: e.start_time,
+      end_time: e.end_time,
+      location: e.location,
+      category: e.event_type,
+      counterparty: e.couple_names || e.created_by_name || null,
+      // Only the creator may change it; everyone else sees it read-only.
+      editable: e.created_by === userId,
+    }];
+  });
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export const calendarService = {
   /** Every calendar entry visible to a user, whatever their role. */
   async getEntries(userId: string, userType: string): Promise<CalendarEntry[]> {
-    let entries: CalendarEntry[];
-    if (userType === 'planner') entries = await plannerEntries(userId);
-    else if (userType === 'vendor') entries = await vendorEntries(userId);
-    else entries = await clientEntries(userId);
+    // The role's own sources and the shared workspace events are independent,
+    // so both run at once.
+    const roleEntries =
+      userType === 'planner' ? plannerEntries(userId)
+      : userType === 'vendor' ? vendorEntries(userId)
+      : clientEntries(userId);
 
-    return entries.sort(byDateThenTime);
+    const [own, shared] = await Promise.all([roleEntries, workspaceEventEntries(userId)]);
+
+    return own.concat(shared).sort(byDateThenTime);
   },
 
   /** Entries from today onward. */

@@ -555,6 +555,18 @@ export const plannerController = {
 
   // ========== CLIENT VISION BOARD (shared) ==========
 
+  /** A client's budget: expenses plus the paid/owed/overdue summary. */
+  async getClientExpenses(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = await plannerService.getClientExpenses(req.user!.userId, String(req.params.clientId));
+      if (!data) {
+        res.status(404).json({ error: 'Client not found or not linked' });
+        return;
+      }
+      res.json(data);
+    } catch (error) { next(error); }
+  },
+
   async getClientVisionBoard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const items = await plannerService.getClientVisionBoard(req.user!.userId, String(req.params.clientId));

@@ -21,6 +21,10 @@ import {
 } from "@/services/api/plannerService";
 import { usePlannerClients } from "@/hooks/usePlannerClients";
 import { VisionBoardCanvas } from "@/components/workspace/VisionBoardCanvas";
+import { ExpenseProvider } from "@/context/ExpenseContext";
+import ExpenseSummary from "@/components/expenses/ExpenseSummary";
+import ExpenseList from "@/components/expenses/ExpenseList";
+import ExpenseCategories from "@/components/expenses/ExpenseCategories";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -131,6 +135,7 @@ const PlannerClientWorkspace = () => {
   const coupleNames = workspace
     ? [workspace.event.partner1_name, workspace.event.partner2_name].filter(Boolean).join(" & ") || "Unnamed Couple"
     : client ? getClientName(client) : "Client Workspace";
+  const [expenseTab, setExpenseTab] = useState<"all" | "categories">("all");
 
   // Vision board service scoped to this client
   const visionBoardService = useMemo(() => ({
@@ -196,8 +201,9 @@ const PlannerClientWorkspace = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={(v) => { if (v === "todos" && todos.length === 0 && !todosLoading) loadTodos(); }}>
-          <TabsList className="grid grid-cols-4 w-full mb-8 h-10 p-1 bg-muted/60 rounded-lg">
+          <TabsList className="grid grid-cols-5 w-full mb-8 h-10 p-1 bg-muted/60 rounded-lg">
             <TabsTrigger value="overview"     className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
+            <TabsTrigger value="budget"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
             <TabsTrigger value="todos"        className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
             <TabsTrigger value="vision-board" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Mood Board</TabsTrigger>
             <TabsTrigger value="guests"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Guests</TabsTrigger>
@@ -376,6 +382,26 @@ const PlannerClientWorkspace = () => {
           </TabsContent>
 
           {/* ── To-Do Lists ── */}
+          {/* ── Budget ───────────────────────────────────────────────────── */}
+          <TabsContent value="budget" className="space-y-5">
+            {/* The couple's own budget components, pointed at this client and
+                rendered read-only, so both sides read identical figures. */}
+            <ExpenseProvider clientId={clientId}>
+              <ExpenseSummary />
+              <Tabs value={expenseTab} onValueChange={v => setExpenseTab(v as typeof expenseTab)}>
+                <TabsList className="grid grid-cols-2 w-full sm:w-64 mb-4 h-9 p-1 bg-muted/60 rounded-lg">
+                  <TabsTrigger value="all"        className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">All Expenses</TabsTrigger>
+                  <TabsTrigger value="categories" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">By Category</TabsTrigger>
+                </TabsList>
+                <TabsContent value="all"><ExpenseList /></TabsContent>
+                <TabsContent value="categories"><ExpenseCategories /></TabsContent>
+              </Tabs>
+              <p className="text-xs text-muted-foreground">
+                Read-only — only the couple can change their budget.
+              </p>
+            </ExpenseProvider>
+          </TabsContent>
+
           <TabsContent value="todos" className="space-y-4">
             {todosLoading ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>

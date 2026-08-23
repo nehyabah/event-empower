@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto';
+import { userService } from './userService.js';
 import { PlannerClientModel, PlannerClient, ClientStatus, CreatePlannerClientInput, UpdatePlannerClientInput } from '../models/PlannerClient.js';
 import { PlannerTaskModel, PlannerTask, CreatePlannerTaskInput, UpdatePlannerTaskInput } from '../models/PlannerTask.js';
 import { PlannerEventModel, PlannerEvent, CreatePlannerEventInput, UpdatePlannerEventInput } from '../models/PlannerEvent.js';
@@ -443,6 +444,22 @@ export const plannerService = {
     return TodoItemModel.delete(itemId);
   },
 
+  // ========== CLIENT BUDGET ==========
+
+  /**
+   * A client's expenses and budget summary, in exactly the shape the couple's
+   * own budget screen consumes — same figures, same maths, one implementation.
+   */
+  async getClientExpenses(plannerId: string, clientId: string) {
+    const client = await this.getClient(clientId, plannerId);
+    if (!client || !client.user_id) return null;
+
+    return {
+      expenses: await userService.getExpenses(client.user_id),
+      summary: await userService.getExpenseSummary(client.user_id),
+    };
+  },
+
   // ========== CLIENT VISION BOARD (shared) ==========
 
   async getClientVisionBoard(plannerId: string, clientId: string): Promise<VisionBoardItem[]> {
@@ -556,8 +573,8 @@ export const plannerService = {
         partner2_name: client.partner2_name,
         event_date: client.event_date || undefined,
         venue: client.venue || undefined,
-        total_budget: client.budget || 0,
-        guest_count_estimate: client.guest_count || 0,
+        total_budget: client.budget ?? undefined,
+        guest_count_estimate: client.guest_count ?? undefined,
         notes: client.notes || undefined,
       });
       return client;
@@ -591,8 +608,8 @@ export const plannerService = {
       partner2_name: updated.partner2_name,
       event_date: updated.event_date || undefined,
       venue: updated.venue || undefined,
-      total_budget: updated.budget || 0,
-      guest_count_estimate: updated.guest_count || 0,
+      total_budget: updated.budget ?? undefined,
+      guest_count_estimate: updated.guest_count ?? undefined,
       notes: updated.notes || undefined,
     });
 
