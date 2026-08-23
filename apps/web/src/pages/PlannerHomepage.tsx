@@ -295,7 +295,7 @@ const PlannerHomepage = () => {
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
-              <Button onClick={() => navigate("/planner-clients")} className="flex-1">
+              <Button onClick={() => navigate("/clients")} className="flex-1">
                 <Users className="mr-2 h-4 w-4" />
                 Manage Clients
               </Button>
@@ -313,7 +313,7 @@ const PlannerHomepage = () => {
           <TabsContent value="clients" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-medium">Your Client List</h2>
-              <Button onClick={() => navigate("/planner-clients")}>
+              <Button onClick={() => navigate("/clients")}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add New Client
               </Button>
@@ -347,7 +347,7 @@ const PlannerHomepage = () => {
                           <p className="text-xs text-muted-foreground">
                             Tasks: {taskCountMap.get(client.id) ?? 0}
                           </p>
-                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate("/planner-clients")}>
+                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate("/clients")}>
                             View Details
                           </Button>
                         </div>
@@ -384,7 +384,7 @@ const PlannerHomepage = () => {
               </div>
             )}
             
-            <Button variant="outline" className="w-full" onClick={() => navigate("/planner-clients")}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/clients")}>
               View All Clients
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -454,7 +454,7 @@ const PlannerHomepage = () => {
                           Tasks: {taskCountMap.get(client.id) ?? 0}
                         </p>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => navigate("/planner-clients")}>Details</Button>
+                      <Button size="sm" variant="outline" onClick={() => navigate("/clients")}>Details</Button>
                     </div>
                   ))
                 ) : (
