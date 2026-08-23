@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import EnvelopeIntro from "@/components/invitations/EnvelopeIntro";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -95,13 +96,6 @@ const InvitationPage = () => {
     return () => clearTimeout(timer);
   }, [isFlipped, isLoading, envelopeStage]);
 
-  const openEnvelope = () => {
-    if (envelopeStage !== "sealed") return;
-    setEnvelopeStage("opening");
-    // flap lifts (.8s) → card rises (.9s, delayed .55s) → envelope fades → swap in real card
-    setTimeout(() => setEnvelopeStage("done"), 1900);
-  };
-
   // Use event data from backend, or fall back to localStorage
   const partner1Name = eventData?.partner1Name || localPartner1Name;
   const partner2Name = eventData?.partner2Name || localPartner2Name;
@@ -121,129 +115,14 @@ const InvitationPage = () => {
 
   // ── Envelope intro ──
   if (envelopeStage !== "done") {
-    const t = resolveTemplate(templateId);
-    const opening = envelopeStage === "opening";
-    const initial = (n: string) => (n.trim()[0] || "").toUpperCase();
-
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-zinc-100 via-zinc-50 to-zinc-100">
-        <style>{`@keyframes envelopeIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }`}</style>
-
-        {/* Outer wrapper fades the whole scene away once the card has risen */}
-        <div
-          className="w-full max-w-[300px] sm:max-w-sm"
-          style={{ opacity: opening ? 0 : 1, transition: "opacity .6s ease 1.25s" }}
-        >
-          <div style={{ animation: "envelopeIn .8s cubic-bezier(.2,.7,.3,1) both" }}>
-            <p className="text-center text-[10px] sm:text-xs uppercase tracking-[0.3em] text-zinc-400 mb-5"
-              style={{ opacity: opening ? 0 : 1, transition: "opacity .4s ease" }}>
-              You're Invited
-            </p>
-
-            {/* Envelope */}
-            <div
-              onClick={openEnvelope}
-              className="relative w-full h-[440px] sm:h-[520px] md:h-[600px] cursor-pointer select-none"
-              style={{ perspective: "1200px" }}
-            >
-              {/* Back panel */}
-              <div className="absolute inset-0 rounded-xl shadow-2xl"
-                style={{
-                  background: `linear-gradient(165deg, ${t.accentBg}, ${t.paper})`,
-                  border: `1px solid ${t.frame}`,
-                }} />
-
-              {/* Card inside — rises out on open */}
-              <div className="absolute rounded-lg shadow-lg flex flex-col items-center justify-start text-center px-6 pt-10"
-                style={{
-                  left: "6%", right: "6%", top: "5%", bottom: "5%",
-                  zIndex: 10,
-                  backgroundColor: t.paper,
-                  border: `1px solid ${t.frame}`,
-                  transform: opening ? "translateY(-56%)" : "translateY(0)",
-                  transition: "transform .9s cubic-bezier(.22,.9,.34,1) .55s",
-                }}>
-                <p className="uppercase text-[9px] sm:text-[10px]"
-                  style={{ fontFamily: t.headerFont, letterSpacing: t.headerTracking, color: t.inkSoft }}>
-                  Save the Date
-                </p>
-                <p className="text-lg sm:text-xl mt-1.5" style={{ fontFamily: t.scriptFont, color: t.accent }}>
-                  for the wedding of
-                </p>
-                <p className="text-xl sm:text-2xl mt-2 leading-tight" style={{ fontFamily: t.nameFont, color: t.ink }}>
-                  {partner1Name}
-                </p>
-                <p className="text-lg sm:text-xl" style={{ fontFamily: t.scriptFont, color: t.accent }}>&amp;</p>
-                <p className="text-xl sm:text-2xl leading-tight" style={{ fontFamily: t.nameFont, color: t.ink }}>
-                  {partner2Name}
-                </p>
-              </div>
-
-              {/* Pocket — V-notched front of the envelope */}
-              <div className="absolute inset-0 rounded-xl"
-                style={{
-                  zIndex: 20,
-                  clipPath: "polygon(0 15%, 50% 42%, 100% 15%, 100% 100%, 0 100%)",
-                  background: `linear-gradient(180deg, ${t.accentBg} 0%, ${t.paper} 55%)`,
-                  boxShadow: `inset 0 1px 0 ${t.frame}`,
-                  borderLeft: `1px solid ${t.frame}`,
-                  borderRight: `1px solid ${t.frame}`,
-                  borderBottom: `1px solid ${t.frame}`,
-                  borderRadius: "12px",
-                }} />
-
-              {/* Addressed-in-calligraphy names on the envelope front */}
-              <div className="absolute inset-x-0 text-center pointer-events-none" style={{ top: "58%", zIndex: 25 }}>
-                <p className="text-2xl sm:text-3xl" style={{ fontFamily: t.scriptFont, color: t.ink }}>
-                  {partner1Name} &amp; {partner2Name}
-                </p>
-                <p className="mt-2 uppercase text-[8px] sm:text-[9px] tracking-[0.35em]"
-                  style={{ fontFamily: t.headerFont, color: t.inkSoft }}>
-                  {formattedDate}
-                </p>
-              </div>
-
-              {/* Flap — lifts open */}
-              <div className="absolute inset-x-0 top-0 h-full"
-                style={{
-                  zIndex: 30,
-                  clipPath: "polygon(0 0, 100% 0, 50% 46%)",
-                  background: `linear-gradient(180deg, ${t.frame}, ${t.accentBg})`,
-                  borderRadius: "12px 12px 0 0",
-                  transformOrigin: "top center",
-                  transform: opening ? "rotateX(180deg)" : "rotateX(0deg)",
-                  transition: "transform .8s cubic-bezier(.4,0,.2,1)",
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
-                }} />
-
-              {/* Wax seal at the flap tip */}
-              <div className="absolute left-1/2 flex items-center justify-center"
-                style={{
-                  zIndex: 40,
-                  top: "46%",
-                  width: 58, height: 58,
-                  borderRadius: "50%",
-                  background: t.accent,
-                  color: "#fff",
-                  fontFamily: t.scriptFont,
-                  fontSize: 20,
-                  boxShadow: "0 3px 10px rgba(0,0,0,.2), inset 0 0 0 3px rgba(255,255,255,.28)",
-                  transform: opening ? "translate(-50%,-50%) scale(.5)" : "translate(-50%,-50%)",
-                  opacity: opening ? 0 : 1,
-                  transition: "transform .45s ease, opacity .45s ease",
-                }}>
-                {initial(partner1Name)}&nbsp;&amp;&nbsp;{initial(partner2Name)}
-              </div>
-            </div>
-
-            <p className="text-center text-[10px] sm:text-xs uppercase tracking-[0.25em] text-zinc-400 mt-6 animate-pulse"
-              style={{ opacity: opening ? 0 : 1, transition: "opacity .3s ease" }}>
-              Tap to open
-            </p>
-          </div>
-        </div>
-      </div>
+      <EnvelopeIntro
+        template={resolveTemplate(templateId)}
+        partner1Name={partner1Name}
+        partner2Name={partner2Name}
+        formattedDate={formattedDate}
+        onOpened={() => setEnvelopeStage("done")}
+      />
     );
   }
 
