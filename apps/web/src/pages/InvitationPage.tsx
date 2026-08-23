@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import EnvelopeIntro from "@/components/invitations/EnvelopeIntro";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import SaveTheDateCard, { CardAlign, resolveTemplate } from "@/components/dashboard/SaveTheDateCard";
+import SaveTheDateCard, { CardAlign } from "@/components/dashboard/SaveTheDateCard";
 import { rsvpService } from "@/services/api/rsvpService";
 
 const InvitationPage = () => {
@@ -13,7 +12,6 @@ const InvitationPage = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoading, setIsLoading] = useState(!!rsvpCode);
   // Envelope intro: sealed → opening (flap lifts, card rises) → done (real card)
-  const [envelopeStage, setEnvelopeStage] = useState<"sealed" | "opening" | "done">("sealed");
   const [eventData, setEventData] = useState<{
     partner1Name: string;
     partner2Name: string;
@@ -83,7 +81,7 @@ const InvitationPage = () => {
 
   // Show swipe hint after a few seconds for better UX
   useEffect(() => {
-    if (isLoading || envelopeStage !== "done") return;
+    if (isLoading) return;
 
     const timer = setTimeout(() => {
       if (!isFlipped) {
@@ -94,7 +92,7 @@ const InvitationPage = () => {
       }
     }, 4000);
     return () => clearTimeout(timer);
-  }, [isFlipped, isLoading, envelopeStage]);
+  }, [isFlipped, isLoading]);
 
   // Use event data from backend, or fall back to localStorage
   const partner1Name = eventData?.partner1Name || localPartner1Name;
@@ -110,19 +108,6 @@ const InvitationPage = () => {
           <p className="text-zinc-500">Loading invitation...</p>
         </div>
       </div>
-    );
-  }
-
-  // ── Envelope intro ──
-  if (envelopeStage !== "done") {
-    return (
-      <EnvelopeIntro
-        template={resolveTemplate(templateId)}
-        partner1Name={partner1Name}
-        partner2Name={partner2Name}
-        formattedDate={formattedDate}
-        onOpened={() => setEnvelopeStage("done")}
-      />
     );
   }
 
