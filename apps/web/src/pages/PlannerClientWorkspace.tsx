@@ -138,6 +138,20 @@ const PlannerClientWorkspace = () => {
     : client ? getClientName(client) : "Client Workspace";
   const [expenseTab, setExpenseTab] = useState<"all" | "categories">("all");
   const [isAddingVendor, setIsAddingVendor] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
+
+  const handleResendInvite = useCallback(async () => {
+    if (!clientId) return;
+    setIsInviting(true);
+    try {
+      await plannerService.createClientInvite(clientId);
+      toast.success("Invite sent");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send invite");
+    } finally {
+      setIsInviting(false);
+    }
+  }, [clientId]);
 
   // Re-read the workspace so the roster, counts and spend all move together.
   const reloadWorkspace = useCallback(async () => {
@@ -193,9 +207,22 @@ const PlannerClientWorkspace = () => {
           <div className="text-4xl">🌿</div>
           <h2 className="text-xl font-serif font-medium">No workspace yet</h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            This client hasn't linked their account yet. Once they accept your invite their workspace will appear here.
+            {client?.invite_status === "accepted"
+              ? "This client's invite is marked accepted, but no couple account is attached to it — so there's no wedding to build a workspace around. Re-sending the invite will relink it."
+              : "This client hasn't accepted your invite yet. Their workspace — budget, vendors, checklists and calendar — appears here once they do."}
           </p>
-          <Button variant="outline" asChild><Link to="/clients">Back to clients</Link></Button>
+          <p className="text-xs text-muted-foreground">
+            Vendors, budget and shared events all attach to the couple's wedding,
+            so they only become available after the invite is accepted.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="outline" asChild><Link to="/clients">Back to clients</Link></Button>
+            {client && client.invite_status !== "accepted" && (
+              <Button size="default" onClick={handleResendInvite} disabled={isInviting}>
+                {isInviting ? "Sending…" : "Resend invite"}
+              </Button>
+            )}
+          </div>
         </div>
       </main>
     </div>
@@ -224,9 +251,10 @@ const PlannerClientWorkspace = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={(v) => { if (v === "todos" && todos.length === 0 && !todosLoading) loadTodos(); }}>
-          <TabsList className="grid grid-cols-5 w-full mb-8 h-10 p-1 bg-muted/60 rounded-lg">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full mb-8 h-auto sm:h-10 p-1 bg-muted/60 rounded-lg">
             <TabsTrigger value="overview"     className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
             <TabsTrigger value="budget"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
+            <TabsTrigger value="vendors"      className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Vendors</TabsTrigger>
             <TabsTrigger value="todos"        className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
             <TabsTrigger value="vision-board" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Mood Board</TabsTrigger>
             <TabsTrigger value="guests"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Guests</TabsTrigger>
@@ -426,6 +454,61 @@ const PlannerClientWorkspace = () => {
           </TabsContent>
 
           {/* ── To-Do Lists ── */}
+          {/* ── Vendors ──────────────────────────────────────────────────── */}
+          <TabsContent value="vendors" className="space-y-5">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-sm font-semibold">Vendor Roster</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Vendors here can schedule against this wedding and be tagged on shared events.
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={() => setIsAddingVendor(true)}>
+                    <PlusCircle className="mr-1.5 h-4 w-4" />
+                    Add vendor
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {vendors.length === 0 ? (
+                  <div className="px-6 pb-6 space-y-3">
+                    <p className="text-sm text-muted-foreground">No vendors on this roster yet.</p>
+                    <Button size="sm" variant="outline" onClick={() => setIsAddingVendor(true)}>
+                      <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+                      Add the first vendor
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    {vendors.map((v, i) => (
+                      <div key={v.id} className={`flex items-center gap-3 px-6 py-3 hover:bg-muted/30 transition-colors ${i < vendors.length - 1 ? "border-b border-border/40" : ""}`}>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{v.business_name || "Unnamed Vendor"}</p>
+                          {v.vendor_category && <p className="text-xs text-muted-foreground capitalize">{v.vendor_category}</p>}
+                        </div>
+                        {v.amount != null && v.amount > 0 && (
+                          <p className="text-sm tabular-nums text-muted-foreground shrink-0">{fmtCurrency(v.amount)}</p>
+                        )}
+                        {statusBadge(v.status)}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveVendor(v)}
+                          aria-label={`Remove ${v.business_name || "vendor"}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* ── Budget ───────────────────────────────────────────────────── */}
           <TabsContent value="budget" className="space-y-5">
             {/* The couple's own budget components, pointed at this client and
@@ -440,16 +523,6 @@ const PlannerClientWorkspace = () => {
                 <TabsContent value="all"><ExpenseList /></TabsContent>
                 <TabsContent value="categories"><ExpenseCategories /></TabsContent>
               </Tabs>
-
-        {clientId && (
-          <AddVendorToRosterDialog
-            open={isAddingVendor}
-            onOpenChange={setIsAddingVendor}
-            clientId={clientId}
-            existingVendorIds={vendors.map(v => v.vendor_profile_id)}
-            onAdded={reloadWorkspace}
-          />
-        )}
               <p className="text-xs text-muted-foreground">
                 Read-only — only the couple can change their budget.
               </p>
@@ -543,6 +616,20 @@ const PlannerClientWorkspace = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+      {/* Mounted at page level: a dialog nested inside a TabsContent only
+          exists while that tab is open, so it could never be opened from
+          another tab. */}
+      {clientId && (
+        <AddVendorToRosterDialog
+          open={isAddingVendor}
+          onOpenChange={setIsAddingVendor}
+          clientId={clientId}
+          existingVendorIds={vendors.map(v => v.vendor_profile_id)}
+          onAdded={reloadWorkspace}
+        />
+      )}
+
       </main>
     </div>
   );
