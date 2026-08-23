@@ -50,7 +50,7 @@ const PlannerClients = () => {
   useEffect(() => {
     localStorage.setItem("planr:clients-view", viewMode);
   }, [viewMode]);
-  const { clients, isLoading, error, activeClients, upcomingClients, completedClients, archivedClients, getClientName, createClient, createInvite, deleteClient, archiveClient, unarchiveClient } = usePlannerClients();
+  const { clients, isLoading, error, activeClients, completedClients, archivedClients, getClientName, createClient, updateClient, createInvite, deleteClient, archiveClient, unarchiveClient } = usePlannerClients();
 
   // Delete/archive confirmation state
   const [confirmDelete, setConfirmDelete] = useState<PlannerClient | null>(null);
@@ -159,7 +159,7 @@ const PlannerClients = () => {
     phone: "",
     eventType: "Wedding",
     eventDate: "",
-    status: "upcoming",
+    status: "active",
     budget: "",
     venue: "",
     guestCount: "",
@@ -194,9 +194,10 @@ const PlannerClients = () => {
   // Get status badge with appropriate color
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':    return <Badge variant="default" className="bg-blue-500">Active</Badge>;
+      // The brand gold, matching the primary buttons and nav — not the
+      // brighter wedding-gold used in marketing.
+      case 'active':    return <Badge variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90">Active</Badge>;
       case 'completed': return <Badge variant="outline" className="text-green-500 border-green-500">Completed</Badge>;
-      case 'upcoming':  return <Badge variant="outline" className="text-amber-500 border-amber-500">Upcoming</Badge>;
       case 'archived':  return <Badge variant="outline" className="text-muted-foreground">Archived</Badge>;
       default:          return null;
     }
@@ -217,9 +218,23 @@ const PlannerClients = () => {
             <ArchiveRestore className="mr-2 h-4 w-4" />Restore
           </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem onClick={() => setConfirmArchive(client)}>
-            <Archive className="mr-2 h-4 w-4" />Archive
-          </DropdownMenuItem>
+          <>
+            {/* Without this, nothing could move a client between statuses and
+                the Completed view stayed permanently empty. */}
+            {client.status === 'completed' ? (
+              <DropdownMenuItem onClick={() => updateClient(client.id, { status: 'active' })}>
+                <Circle className="mr-2 h-4 w-4" />Mark as active
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onClick={() => updateClient(client.id, { status: 'completed' })}>
+                <CheckCircle2 className="mr-2 h-4 w-4" />Mark as completed
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setConfirmArchive(client)}>
+              <Archive className="mr-2 h-4 w-4" />Archive
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -499,10 +514,9 @@ const PlannerClients = () => {
         </div>
 
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-4 w-full max-w-xl">
             <TabsTrigger value="all">All ({clients.filter(c => c.status !== 'archived').length})</TabsTrigger>
             <TabsTrigger value="active">Active ({activeClients.length})</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming ({upcomingClients.length})</TabsTrigger>
             <TabsTrigger value="completed">Completed ({completedClients.length})</TabsTrigger>
             <TabsTrigger value="archived">Archived ({archivedClients.length})</TabsTrigger>
           </TabsList>
@@ -530,22 +544,6 @@ const PlannerClients = () => {
                 <div className="rounded-lg bg-muted/50 p-8 text-center">
                   <p className="text-muted-foreground">
                     No active clients.
-                  </p>
-                </div>
-              }
-            />
-          </TabsContent>
-
-          <TabsContent value="upcoming">
-            <ClientCollection
-              clients={upcomingClients.filter(c => {
-                  const name = getClientName(c).toLowerCase();
-                  return name.includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase());
-                })}
-              empty={
-                <div className="rounded-lg bg-muted/50 p-8 text-center">
-                  <p className="text-muted-foreground">
-                    No upcoming clients.
                   </p>
                 </div>
               }
@@ -918,7 +916,6 @@ const PlannerClients = () => {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
@@ -975,7 +972,7 @@ const PlannerClients = () => {
                   phone: newClient.phone.trim() || undefined,
                   eventType: newClient.eventType.trim() || undefined,
                   eventDate: newClient.eventDate || undefined,
-                  status: newClient.status as "active" | "upcoming" | "completed",
+                  status: newClient.status as "active" | "completed",
                   budget: newClient.budget ? Number(newClient.budget) : undefined,
                   venue: newClient.venue.trim() || undefined,
                   guestCount: newClient.guestCount ? Number(newClient.guestCount) : undefined,
@@ -991,7 +988,7 @@ const PlannerClients = () => {
                     phone: "",
                     eventType: "Wedding",
                     eventDate: "",
-                    status: "upcoming",
+                    status: "active",
                     budget: "",
                     venue: "",
                     guestCount: "",

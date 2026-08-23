@@ -16,7 +16,7 @@ const createClientSchema = z.object({
   phone: z.string().optional(),
   eventType: z.string().default('Wedding'),
   eventDate: z.string().optional(),
-  status: z.enum(['active', 'completed', 'upcoming']).default('upcoming'),
+  status: z.enum(['active', 'completed']).default('active'),
   budget: z.number().optional(),
   venue: z.string().optional(),
   guestCount: z.number().optional(),
@@ -30,7 +30,8 @@ const updateClientSchema = z.object({
   phone: z.string().optional(),
   eventType: z.string().optional(),
   eventDate: z.string().nullable().optional(),
-  status: z.enum(['active', 'completed', 'upcoming']).optional(),
+  // Archiving has its own endpoint, so it is not settable here.
+  status: z.enum(['active', 'completed']).optional(),
   budget: z.number().nullable().optional(),
   venue: z.string().nullable().optional(),
   guestCount: z.number().nullable().optional(),

@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // ========== TYPES ==========
 
-export type ClientStatus = 'active' | 'completed' | 'upcoming' | 'archived';
+export type ClientStatus = 'active' | 'completed' | 'archived';
 export type TaskStatus = 'pending' | 'in-progress' | 'completed';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type EventType = 'meeting' | 'visit' | 'rehearsal' | 'wedding' | 'consultation' | 'other';
@@ -53,7 +53,7 @@ export interface UpdateClientInput {
   phone?: string | null;
   eventType?: string;
   eventDate?: string | null;
-  status?: ClientStatus;
+  status?: Exclude<ClientStatus, 'archived'>;
   budget?: number | null;
   venue?: string | null;
   guestCount?: number | null;
@@ -225,8 +225,8 @@ export interface DashboardStats {
   clients: {
     total: number;
     active: number;
-    upcoming: number;
     completed: number;
+    archived: number;
   };
   tasks: {
     total: number;

@@ -1,6 +1,6 @@
 import { query, queryOne } from '../config/database.js';
 
-export type ClientStatus = 'active' | 'completed' | 'upcoming' | 'archived';
+export type ClientStatus = 'active' | 'completed' | 'archived';
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired' | null;
 
 export interface PlannerClient {
@@ -156,7 +156,7 @@ export const PlannerClientModel = {
         input.phone || null,
         input.event_type || 'Wedding',
         input.event_date || null,
-        input.status || 'upcoming',
+        input.status || 'active',
         input.budget || null,
         input.venue || null,
         input.guest_count || null,
@@ -270,12 +270,12 @@ export const PlannerClientModel = {
     return result.length > 0;
   },
 
-  async countByPlannerId(plannerId: string): Promise<{ total: number; active: number; upcoming: number; completed: number }> {
-    const result = await queryOne<{ total: string; active: string; upcoming: string; completed: string }>(
+  async countByPlannerId(plannerId: string): Promise<{ total: number; active: number; completed: number; archived: number }> {
+    const result = await queryOne<{ total: string; active: string; completed: string; archived: string }>(
       `SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE status = 'active') as active,
-        COUNT(*) FILTER (WHERE status = 'upcoming') as upcoming,
+        COUNT(*) FILTER (WHERE status = 'archived') as archived,
         COUNT(*) FILTER (WHERE status = 'completed') as completed
        FROM planner_clients WHERE planner_id = $1`,
       [plannerId]
@@ -284,7 +284,7 @@ export const PlannerClientModel = {
     return {
       total: parseInt(result?.total || '0'),
       active: parseInt(result?.active || '0'),
-      upcoming: parseInt(result?.upcoming || '0'),
+      archived: parseInt(result?.archived || '0'),
       completed: parseInt(result?.completed || '0'),
     };
   },

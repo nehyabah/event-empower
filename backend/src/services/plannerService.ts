@@ -76,7 +76,7 @@ export const plannerService = {
     return PlannerClientModel.update(id, { status: 'archived' });
   },
 
-  async unarchiveClient(id: string, plannerId: string, status: ClientStatus = 'upcoming'): Promise<PlannerClient | null> {
+  async unarchiveClient(id: string, plannerId: string, status: ClientStatus = 'active'): Promise<PlannerClient | null> {
     const client = await this.getClient(id, plannerId);
     if (!client) return null;
     return PlannerClientModel.update(id, { status });

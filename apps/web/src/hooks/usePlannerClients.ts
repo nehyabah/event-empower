@@ -117,7 +117,7 @@ export function usePlannerClients() {
     return `${client.partner1_name} & ${client.partner2_name}`;
   }, []);
 
-  const clientsByStatus = useCallback((status: 'active' | 'completed' | 'upcoming' | 'archived') => {
+  const clientsByStatus = useCallback((status: 'active' | 'completed' | 'archived') => {
     return clients.filter(c => c.status === status);
   }, [clients]);
 
@@ -135,7 +135,6 @@ export function usePlannerClients() {
     getClientName,
     clientsByStatus,
     activeClients:   clients.filter(c => c.status === 'active'),
-    upcomingClients: clients.filter(c => c.status === 'upcoming'),
     completedClients: clients.filter(c => c.status === 'completed'),
     archivedClients: clients.filter(c => c.status === 'archived'),
   };
