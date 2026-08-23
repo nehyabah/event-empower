@@ -86,9 +86,11 @@ const PlannerHomepage = () => {
   const [eventsPage, setEventsPage] = useState(1);
   const [upcomingClientsPage, setUpcomingClientsPage] = useState(1);
 
-  const combinedClients = useMemo(() => {
-    return [...(stats?.activeClients || []), ...(stats?.upcomingClients || [])];
-  }, [stats]);
+  // Was activeClients + upcomingClients, which could both be empty: nothing sets
+  // status 'active', and 'upcoming' only matches weddings still in the future,
+  // so a planner whose weddings had passed saw "No clients yet". It also listed
+  // a client twice when they matched both.
+  const combinedClients = useMemo(() => stats?.dashboardClients || [], [stats]);
 
   const clientPageCount = Math.max(1, Math.ceil(combinedClients.length / clientsPageSize));
   const pagedClients = combinedClients.slice(
