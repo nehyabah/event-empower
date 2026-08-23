@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useGuests } from "@/hooks/useGuests";
 import RsvpSettingsCard from "@/components/invitations/RsvpSettingsCard";
+import InvitationCardDesigner from "@/components/invitations/InvitationCardDesigner";
 import { Guest } from "@/services/api/userService";
 import {
   Copy,
@@ -269,6 +270,10 @@ const Dashboard = () => {
               Manage your guest list and track RSVPs.
             </p>
           </div>
+
+          {/* Design the card, then share it — the invitation and its RSVP
+              settings now live together rather than on separate pages. */}
+          <InvitationCardDesigner />
 
           {/* RSVP link, deadline and reminder schedule */}
           <RsvpSettingsCard />

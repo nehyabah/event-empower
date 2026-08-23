@@ -2,10 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import ProjectStats from "@/components/dashboard/ProjectStats";
 import WeddingCountdown from "@/components/dashboard/WeddingCountdown";
-import SaveTheDateCard, {
-  saveTheDateTemplates,
-  CardAlign,
-} from "@/components/dashboard/SaveTheDateCard";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,13 +15,7 @@ import {
   CreditCard,
   Users,
   Pencil,
-  Copy,
   X,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  ChevronDown,
-  ChevronUp,
   UserCheck,
   CalendarHeart,
   ArrowRight,
@@ -89,16 +79,6 @@ const UserHomepage = () => {
     return localStorage.getItem("hidePlannerLink") === "true";
   });
   const [plannerName, setPlannerName] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState(() => {
-    return localStorage.getItem("saveTheDateTemplate") || "dusty-blue-romance";
-  });
-  const [textAlign, setTextAlign] = useState<CardAlign>(() => {
-    const saved = localStorage.getItem("saveTheDateAlign");
-    return saved === "left" || saved === "right" ? saved : "center";
-  });
-  const [showRsvpBack, setShowRsvpBack] = useState(false);
-  const [showCardDesigner, setShowCardDesigner] = useState(false);
-  const [rsvpCode, setRsvpCode] = useState<string | null>(null);
 
   const handleDateChange = (newDate: Date | undefined) => {
     setWeddingDate(newDate);
@@ -132,14 +112,6 @@ const UserHomepage = () => {
 
   useEffect(() => {
     let mounted = true;
-    rsvpService.getRsvpCode()
-      .then(code => { if (mounted) setRsvpCode(code); })
-      .catch(console.error);
-    return () => { mounted = false; };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
     const load = async () => {
       try {
         const event = await userService.getUserEvent();
@@ -163,8 +135,6 @@ const UserHomepage = () => {
             venue: localStorage.getItem("venue") || "The Grand Estate",
             eventDate: localDate || undefined,
           });
-          const code = await rsvpService.getRsvpCode();
-          if (mounted) setRsvpCode(code);
         }
       } catch { /* silent */ }
     };
@@ -172,38 +142,6 @@ const UserHomepage = () => {
     return () => { mounted = false; };
   }, [displayName]);
 
-  const formattedWeddingDate = weddingDate
-    ? weddingDate.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
-    : "Date TBD";
-
-  const updateTemplate = (id: string) => {
-    setSelectedTemplate(id);
-    localStorage.setItem("saveTheDateTemplate", id);
-  };
-
-  const updateAlign = (a: CardAlign) => {
-    setTextAlign(a);
-    localStorage.setItem("saveTheDateAlign", a);
-  };
-
-  // Design choices ride along in the link so guests see the same card
-  const buildInvitationLink = () => {
-    const base = rsvpCode
-      ? `${window.location.origin}/invitation/${rsvpCode}`
-      : `${window.location.origin}/invitation`;
-    return `${base}?t=${selectedTemplate}&a=${textAlign}`;
-  };
-
-  const copyInvitationLink = () => {
-    navigator.clipboard.writeText(buildInvitationLink());
-    toast.success("Invitation link copied!");
-  };
-
-  const alignOptions: { value: CardAlign; icon: React.ElementType }[] = [
-    { value: "left", icon: AlignLeft },
-    { value: "center", icon: AlignCenter },
-    { value: "right", icon: AlignRight },
-  ];
 
   const showPlannerPrompt = !plannerName && !plannerDismissed;
 
@@ -338,208 +276,6 @@ const UserHomepage = () => {
           </section>
 
           {/* Invitation Card Designer */}
-          <section>
-            <Card className="overflow-hidden">
-              {/* Mobile: Collapsible */}
-              <div className="lg:hidden">
-                <button
-                  onClick={() => setShowCardDesigner(!showCardDesigner)}
-                  className="w-full p-4 flex items-center justify-between text-left"
-                >
-                  <div>
-                    <CardTitle className="text-base font-serif">Invitation Card</CardTitle>
-                    <CardDescription className="text-xs">Design and share your save-the-date</CardDescription>
-                  </div>
-                  {showCardDesigner
-                    ? <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                    : <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  }
-                </button>
-
-                {showCardDesigner && (
-                  <div className="border-t">
-                    <div className="bg-gradient-to-br from-zinc-100 to-zinc-200/80 p-3 flex items-center justify-center">
-                      <div className="w-full max-w-[260px] h-[340px] sm:max-w-[280px] sm:h-[380px]">
-                        <SaveTheDateCard
-                          templateId={selectedTemplate}
-                          names={{ partner1: partner1Name, partner2: partner2Name }}
-                          date={formattedWeddingDate}
-                          venue={venue}
-                          design={{ align: textAlign }}
-                          isEditable={true}
-                          isFlipped={showRsvpBack}
-                          onFlip={() => setShowRsvpBack(!showRsvpBack)}
-                        />
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label htmlFor="p1-mobile" className="text-xs text-muted-foreground">Partner 1</Label>
-                          <Input id="p1-mobile" value={partner1Name} onChange={(e) => setPartner1Name(e.target.value)} className="h-9 text-sm" />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="p2-mobile" className="text-xs text-muted-foreground">Partner 2</Label>
-                          <Input id="p2-mobile" value={partner2Name} onChange={(e) => setPartner2Name(e.target.value)} className="h-9 text-sm" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="venue-mobile" className="text-xs text-muted-foreground">Venue</Label>
-                        <Input id="venue-mobile" value={venue} onChange={(e) => setVenue(e.target.value)} className="h-9 text-sm" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Design</Label>
-                        <div className="flex gap-2.5 overflow-x-auto pb-2">
-                          {saveTheDateTemplates.map((template) => (
-                            <button
-                              key={template.id}
-                              type="button"
-                              onClick={() => updateTemplate(template.id)}
-                              className={`shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                                selectedTemplate === template.id
-                                  ? "border-zinc-900 shadow-md"
-                                  : "border-zinc-200 opacity-75 hover:opacity-100"
-                              }`}
-                            >
-                              <div className="relative w-14 h-[72px] overflow-hidden" style={{ backgroundColor: template.paper }}>
-                                <template.Decor />
-                                <span
-                                  className="absolute inset-0 flex items-center justify-center text-[10px]"
-                                  style={{ fontFamily: template.nameFont, color: template.ink }}
-                                >
-                                  A&nbsp;&amp;&nbsp;J
-                                </span>
-                              </div>
-                              <p className="text-[9px] py-0.5 px-1 truncate w-14 bg-white text-zinc-600">{template.name}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Text Alignment</Label>
-                        <div className="flex gap-1.5">
-                          {alignOptions.map(({ value, icon: Icon }) => (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => updateAlign(value)}
-                              className={`flex-1 flex items-center justify-center h-9 rounded-md border transition-all ${
-                                textAlign === value
-                                  ? "border-zinc-900 bg-zinc-100 text-zinc-900"
-                                  : "border-zinc-200 text-zinc-400 hover:border-zinc-300"
-                              }`}
-                            >
-                              <Icon className="h-4 w-4" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <Button className="w-full gap-2" onClick={copyInvitationLink}>
-                        <Copy className="h-4 w-4" />
-                        Copy Invitation Link
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Desktop: Side-by-side */}
-              <div className="hidden lg:grid lg:grid-cols-[380px_1fr]">
-                <div className="bg-white p-6 border-r flex flex-col gap-5">
-                  <div>
-                    <CardTitle className="font-serif">Design your Card</CardTitle>
-                    <CardDescription>Customize your save-the-date</CardDescription>
-                  </div>
-                  <div className="space-y-4 flex-1">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="p1" className="text-xs font-medium text-muted-foreground">Partner 1</Label>
-                        <Input id="p1" value={partner1Name} onChange={(e) => setPartner1Name(e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="p2" className="text-xs font-medium text-muted-foreground">Partner 2</Label>
-                        <Input id="p2" value={partner2Name} onChange={(e) => setPartner2Name(e.target.value)} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="venue" className="text-xs font-medium text-muted-foreground">Venue</Label>
-                      <Input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground">Choose Design</Label>
-                      <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-1">
-                        {saveTheDateTemplates.map((template) => (
-                          <button
-                            key={template.id}
-                            type="button"
-                            onClick={() => updateTemplate(template.id)}
-                            className={`rounded-lg overflow-hidden border-2 transition-all text-left ${
-                              selectedTemplate === template.id
-                                ? "border-zinc-900 shadow-md"
-                                : "border-zinc-200 opacity-80 hover:opacity-100 hover:border-zinc-400"
-                            }`}
-                          >
-                            <div className="relative w-full h-24 overflow-hidden" style={{ backgroundColor: template.paper }}>
-                              <template.Decor />
-                              <span
-                                className="absolute inset-0 flex items-center justify-center text-xs"
-                                style={{ fontFamily: template.nameFont, color: template.ink }}
-                              >
-                                A&nbsp;&amp;&nbsp;J
-                              </span>
-                            </div>
-                            <p className="text-[10px] py-1 px-1.5 truncate bg-white text-zinc-600 font-medium">{template.name}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-medium text-muted-foreground">Text Alignment</Label>
-                      <div className="flex gap-1.5">
-                        {alignOptions.map(({ value, icon: Icon }) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => updateAlign(value)}
-                            className={`flex-1 flex items-center justify-center h-9 rounded-md border transition-all ${
-                              textAlign === value
-                                ? "border-zinc-900 bg-zinc-100 text-zinc-900"
-                                : "border-zinc-200 text-zinc-400 hover:border-zinc-300"
-                            }`}
-                          >
-                            <Icon className="h-4 w-4" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button className="w-full gap-2" onClick={copyInvitationLink}>
-                      <Copy className="h-4 w-4" />
-                      Copy Invitation Link
-                    </Button>
-                    <p className="text-xs text-center text-muted-foreground mt-2">
-                      Tap card to preview RSVP form
-                    </p>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-zinc-100 to-zinc-200/80 p-8 flex items-center justify-center min-h-[520px]">
-                  <div className="w-full max-w-sm h-[480px]">
-                    <SaveTheDateCard
-                      templateId={selectedTemplate}
-                      names={{ partner1: partner1Name, partner2: partner2Name }}
-                      date={formattedWeddingDate}
-                      venue={venue}
-                      design={{ align: textAlign }}
-                      isEditable={true}
-                      isFlipped={showRsvpBack}
-                      onFlip={() => setShowRsvpBack(!showRsvpBack)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </section>
 
         </div>
       </main>
