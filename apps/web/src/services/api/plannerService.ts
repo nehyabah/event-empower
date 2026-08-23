@@ -525,6 +525,44 @@ export const plannerService = {
    * A client's budget — the same expenses and summary the couple sees on their
    * own budget screen, so the planner reads identical figures.
    */
+  // ========== CLIENT VENDOR ROSTER ==========
+
+  /** The couple's event plus their vendor roster, as the planner sees it. */
+  async getClientProject(clientId: string): Promise<{ event: unknown; vendors: WorkspaceVendor[] }> {
+    const r = await apiClient.get<{ event: unknown; vendors: WorkspaceVendor[] }>(`/planner/clients/${clientId}/project`);
+    if (r.error || !r.data) throw new Error(r.error || 'Failed to load client project');
+    return r.data;
+  },
+
+  /** Put a vendor on the couple's roster. */
+  async addClientProjectVendor(clientId: string, input: {
+    vendorProfileId: string;
+    category?: string;
+    status?: WorkspaceVendor['status'];
+    amount?: number;
+    notes?: string;
+  }): Promise<WorkspaceVendor> {
+    const r = await apiClient.post<WorkspaceVendor>(`/planner/clients/${clientId}/project/vendors`, input);
+    if (r.error || !r.data) throw new Error(r.error || 'Failed to add vendor');
+    return r.data;
+  },
+
+  async updateClientProjectVendor(clientId: string, projectVendorId: string, input: {
+    status?: WorkspaceVendor['status'];
+    amount?: number | null;
+    notes?: string | null;
+    category?: string | null;
+  }): Promise<WorkspaceVendor> {
+    const r = await apiClient.patch<WorkspaceVendor>(`/planner/clients/${clientId}/project/vendors/${projectVendorId}`, input);
+    if (r.error || !r.data) throw new Error(r.error || 'Failed to update vendor');
+    return r.data;
+  },
+
+  async removeClientProjectVendor(clientId: string, projectVendorId: string): Promise<void> {
+    const r = await apiClient.delete(`/planner/clients/${clientId}/project/vendors/${projectVendorId}`);
+    if (r.error) throw new Error(r.error);
+  },
+
   async getClientExpenses(clientId: string): Promise<{
     expenses: import('./userService').Expense[];
     summary: import('./userService').ExpenseSummary;

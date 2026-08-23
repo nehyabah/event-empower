@@ -11,6 +11,29 @@ import { VisionBoardItemModel, VisionBoardItem, CreateVisionBoardItemInput, Upda
 import { query, queryOne } from '../config/database.js';
 import { emailService } from './emailService.js';
 
+/**
+ * Point a planner's CRM record at the couple's canonical event, in both
+ * directions.
+ *
+ * planner_clients.event_id is what the client-project endpoints key off — the
+ * vendor roster in particular — and user_events.planner_id is what the
+ * calendar and workspace access checks read. Neither was ever written, so a
+ * planner could not manage a linked couple's vendors at all.
+ */
+async function linkClientToEvent(
+  client: PlannerClient,
+  eventId: string,
+  userId: string
+): Promise<PlannerClient | null> {
+  const [linked] = await Promise.all([
+    client.event_id === eventId
+      ? Promise.resolve(client)
+      : PlannerClientModel.update(client.id, { event_id: eventId }),
+    UserEventModel.setPlanner(userId, client.planner_id),
+  ]);
+  return linked;
+}
+
 export const plannerService = {
   // ========== CLIENTS ==========
 
@@ -339,17 +362,22 @@ export const plannerService = {
     const event = await UserEventModel.findByUserId(client.user_id);
     if (!event) return null;
 
+    // The roster lives in project_vendors. This previously read
+    // vendor_bookings, which only holds appointments a vendor happened to link,
+    // so a roster managed by the planner never appeared here.
     const vendors = await query<{
-      id: string; vendor_id: string; business_name: string | null;
+      id: string; vendor_profile_id: string; business_name: string | null;
       vendor_category: string | null; status: string;
       amount: number | null; notes: string | null;
     }>(
-      `SELECT vb.id, vb.vendor_id, vp.business_name, vp.category AS vendor_category,
-              vb.status, vb.total_amount AS amount, vb.notes
-       FROM vendor_bookings vb
-       LEFT JOIN vendor_profiles vp ON vp.id = vb.vendor_id
-       WHERE vb.client_id = $1`,
-      [client.user_id]
+      `SELECT pv.id, pv.vendor_profile_id, vp.business_name,
+              COALESCE(pv.category, vp.category) AS vendor_category,
+              pv.status, pv.amount, pv.notes
+       FROM project_vendors pv
+       LEFT JOIN vendor_profiles vp ON vp.id = pv.vendor_profile_id
+       WHERE pv.event_id = $1
+       ORDER BY pv.created_at ASC`,
+      [event.id]
     );
     return { event, vendors };
   },
@@ -567,7 +595,7 @@ export const plannerService = {
 
     // Idempotent: if this user is already linked to this client record, return it
     if (client.user_id === userId && client.invite_status === 'accepted') {
-      await UserEventModel.upsert({
+      const event = await UserEventModel.upsert({
         user_id: userId,
         partner1_name: client.partner1_name,
         partner2_name: client.partner2_name,
@@ -577,7 +605,10 @@ export const plannerService = {
         guest_count_estimate: client.guest_count ?? undefined,
         notes: client.notes || undefined,
       });
-      return client;
+      // Re-link on every accept: records created before this link existed
+      // still have a null event_id, which left the planner unable to manage
+      // the couple's vendor roster.
+      return (await linkClientToEvent(client, event.id, userId)) ?? client;
     }
 
     // If the invite was accepted by a different user, block it
@@ -602,7 +633,7 @@ export const plannerService = {
     }
 
     // Create or update the couple's event record from the planner's client data
-    await UserEventModel.upsert({
+    const event = await UserEventModel.upsert({
       user_id: userId,
       partner1_name: updated.partner1_name,
       partner2_name: updated.partner2_name,
@@ -613,6 +644,6 @@ export const plannerService = {
       notes: updated.notes || undefined,
     });
 
-    return updated;
+    return (await linkClientToEvent(updated, event.id, userId)) ?? updated;
   },
 };

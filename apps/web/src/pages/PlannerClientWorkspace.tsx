@@ -21,6 +21,7 @@ import {
 } from "@/services/api/plannerService";
 import { usePlannerClients } from "@/hooks/usePlannerClients";
 import { VisionBoardCanvas } from "@/components/workspace/VisionBoardCanvas";
+import AddVendorToRosterDialog from "@/components/vendors/AddVendorToRosterDialog";
 import { ExpenseProvider } from "@/context/ExpenseContext";
 import ExpenseSummary from "@/components/expenses/ExpenseSummary";
 import ExpenseList from "@/components/expenses/ExpenseList";
@@ -136,6 +137,28 @@ const PlannerClientWorkspace = () => {
     ? [workspace.event.partner1_name, workspace.event.partner2_name].filter(Boolean).join(" & ") || "Unnamed Couple"
     : client ? getClientName(client) : "Client Workspace";
   const [expenseTab, setExpenseTab] = useState<"all" | "categories">("all");
+  const [isAddingVendor, setIsAddingVendor] = useState(false);
+
+  // Re-read the workspace so the roster, counts and spend all move together.
+  const reloadWorkspace = useCallback(async () => {
+    if (!clientId) return;
+    try {
+      setWorkspace(await plannerService.getClientWorkspace(clientId));
+    } catch {
+      toast.error("Failed to refresh the roster");
+    }
+  }, [clientId]);
+
+  const handleRemoveVendor = useCallback(async (v: { id: string; business_name?: string }) => {
+    if (!clientId) return;
+    try {
+      await plannerService.removeClientProjectVendor(clientId, v.id);
+      toast.success(`${v.business_name || "Vendor"} removed from the roster`);
+      await reloadWorkspace();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove vendor");
+    }
+  }, [clientId, reloadWorkspace]);
 
   // Vision board service scoped to this client
   const visionBoardService = useMemo(() => ({
@@ -296,12 +319,24 @@ const PlannerClientWorkspace = () => {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold">Vendor Roster</CardTitle>
-                    <span className="text-xs text-muted-foreground">{vendors.length} {vendors.length === 1 ? "vendor" : "vendors"}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{vendors.length} {vendors.length === 1 ? "vendor" : "vendors"}</span>
+                      <Button size="sm" variant="outline" className="h-7" onClick={() => setIsAddingVendor(true)}>
+                        <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+                        Add vendor
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   {vendors.length === 0 ? (
-                    <p className="text-sm text-muted-foreground px-6 pb-6">No vendors added yet.</p>
+                    <div className="px-6 pb-6 space-y-3">
+                      <p className="text-sm text-muted-foreground">No vendors added yet.</p>
+                      <p className="text-xs text-muted-foreground">
+                        Adding a vendor lets them schedule against this wedding and be
+                        tagged on shared calendar events.
+                      </p>
+                    </div>
                   ) : (
                     <div>
                       {vendors.map((v, i) => (
@@ -312,6 +347,15 @@ const PlannerClientWorkspace = () => {
                           </div>
                           {v.amount != null && v.amount > 0 && <p className="text-sm tabular-nums text-muted-foreground shrink-0">{fmtCurrency(v.amount)}</p>}
                           {statusBadge(v.status)}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveVendor(v)}
+                            aria-label={`Remove ${v.business_name || "vendor"}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -396,6 +440,16 @@ const PlannerClientWorkspace = () => {
                 <TabsContent value="all"><ExpenseList /></TabsContent>
                 <TabsContent value="categories"><ExpenseCategories /></TabsContent>
               </Tabs>
+
+        {clientId && (
+          <AddVendorToRosterDialog
+            open={isAddingVendor}
+            onOpenChange={setIsAddingVendor}
+            clientId={clientId}
+            existingVendorIds={vendors.map(v => v.vendor_profile_id)}
+            onAdded={reloadWorkspace}
+          />
+        )}
               <p className="text-xs text-muted-foreground">
                 Read-only — only the couple can change their budget.
               </p>
