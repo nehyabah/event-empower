@@ -79,24 +79,10 @@ const PlannerHomepage = () => {
     return map;
   }, [stats]);
 
-  const clientsPageSize = 6;
   const eventsPageSize = 5;
   const upcomingClientsPageSize = 5;
-  const [clientsPage, setClientsPage] = useState(1);
   const [eventsPage, setEventsPage] = useState(1);
   const [upcomingClientsPage, setUpcomingClientsPage] = useState(1);
-
-  // Was activeClients + upcomingClients, which could both be empty: nothing sets
-  // status 'active', and 'upcoming' only matches weddings still in the future,
-  // so a planner whose weddings had passed saw "No clients yet". It also listed
-  // a client twice when they matched both.
-  const combinedClients = useMemo(() => stats?.dashboardClients || [], [stats]);
-
-  const clientPageCount = Math.max(1, Math.ceil(combinedClients.length / clientsPageSize));
-  const pagedClients = combinedClients.slice(
-    (clientsPage - 1) * clientsPageSize,
-    clientsPage * clientsPageSize
-  );
 
   const upcomingEvents = stats?.upcomingEvents || [];
   const eventsPageCount = Math.max(1, Math.ceil(upcomingEvents.length / eventsPageSize));
@@ -153,7 +139,6 @@ const PlannerHomepage = () => {
         <Tabs defaultValue="overview" className="space-y-8">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
           </TabsList>
 
@@ -310,86 +295,6 @@ const PlannerHomepage = () => {
                 Calendar
               </Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="clients" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-medium">Your Client List</h2>
-              <Button onClick={() => navigate("/clients")}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Client
-              </Button>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {isLoading && (
-                <div className="col-span-full text-sm text-muted-foreground">Loading clients...</div>
-              )}
-              {!isLoading && pagedClients.length ? (
-                pagedClients.map((client) => (
-                    <Card key={client.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">
-                          {client.partner1_name} & {client.partner2_name}
-                        </CardTitle>
-                        <CardDescription>
-                          Event Date: {client.event_date ? new Date(client.event_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "TBD"}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">Venue: {client.venue || "Venue TBD"}</p>
-                          <p className="text-sm text-muted-foreground">Guests: {client.guest_count || "TBD"}</p>
-                          <div className="flex justify-between text-sm pt-2">
-                            <span className="text-blue-500 font-medium">Status: {client.status}</span>
-                            <span className="text-green-500 font-medium">
-                              Budget: {client.budget ? formatCurrency(client.budget) : "TBD"}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            Tasks: {taskCountMap.get(client.id) ?? 0}
-                          </p>
-                          <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => navigate("/clients")}>
-                            View Details
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-              ) : (
-                !isLoading && (
-                  <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg">
-                    <p className="text-muted-foreground">No clients yet. Add your first client.</p>
-                  </div>
-                )
-              )}
-            </div>
-
-            {clientPageCount > 1 && (
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setClientsPage((prev) => Math.max(1, prev - 1))}
-                  disabled={clientsPage === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setClientsPage((prev) => Math.min(clientPageCount, prev + 1))}
-                  disabled={clientsPage === clientPageCount}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-            
-            <Button variant="outline" className="w-full" onClick={() => navigate("/clients")}>
-              View All Clients
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
           </TabsContent>
 
           <TabsContent value="upcoming" className="space-y-6">

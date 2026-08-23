@@ -243,8 +243,6 @@ export interface DashboardStats {
   };
   upcomingEvents: PlannerEvent[];
   activeClients: PlannerClient[];
-  /** Everything not archived — what the dashboard list shows. */
-  dashboardClients: PlannerClient[];
   upcomingClients: PlannerClient[];
   overdueTasks: PlannerTask[];
   dueSoonTasks: PlannerTask[];

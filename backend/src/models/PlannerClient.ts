@@ -142,29 +142,6 @@ export const PlannerClientModel = {
     );
   },
 
-  /**
-   * Clients for the dashboard list.
-   *
-   * findActive keys on a status nothing in the app can set, and findUpcoming
-   * only matches weddings still in the future — so combining them left a
-   * planner with past weddings looking like they had no clients at all. This
-   * returns everything not archived, soonest upcoming wedding first.
-   */
-  async findForDashboard(plannerId: string, limit: number = 6): Promise<PlannerClient[]> {
-    return query<PlannerClient>(
-      `SELECT *
-       FROM planner_clients
-       WHERE planner_id = $1 AND status <> 'archived'
-       ORDER BY
-         (event_date IS NOT NULL AND event_date >= CURRENT_DATE) DESC,
-         CASE WHEN event_date >= CURRENT_DATE THEN event_date END ASC,
-         event_date DESC NULLS LAST,
-         created_at DESC
-       LIMIT $2`,
-      [plannerId, limit]
-    );
-  },
-
   async create(input: CreatePlannerClientInput): Promise<PlannerClient> {
     const result = await queryOne<PlannerClient>(
       `INSERT INTO planner_clients (planner_id, user_id, partner1_name, partner2_name, email, phone, event_type, event_date, status, budget, venue, guest_count, notes, invite_code, invite_status, invite_sent_at, invite_accepted_at)
