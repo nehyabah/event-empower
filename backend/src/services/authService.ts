@@ -60,10 +60,10 @@ export const authService = {
       user_type: input.userType || 'client',
       auth_provider: 'email',
       approval_status: needsApproval ? 'pending' : 'approved',
-      business_name: input.businessName || null,
-      instagram_handle: input.instagramHandle || null,
-      whatsapp_phone: input.whatsappPhone || null,
-      city: input.city || null,
+      business_name: input.businessName,
+      instagram_handle: input.instagramHandle,
+      whatsapp_phone: input.whatsappPhone,
+      city: input.city,
     });
 
     // Generate tokens

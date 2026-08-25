@@ -31,7 +31,7 @@ export interface CreatePlannerTaskInput {
 export interface UpdatePlannerTaskInput {
   client_id?: string | null;
   title?: string;
-  description?: string;
+  description?: string | null;
   due_date?: Date | string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
@@ -222,7 +222,7 @@ export const PlannerTaskModel = {
     };
   },
 
-  async countByClientForPlanner(plannerId: string): Promise<{ client_id: string | null; total: number }> {
+  async countByClientForPlanner(plannerId: string): Promise<{ client_id: string | null; total: number }[]> {
     const rows = await query<{ client_id: string | null; total: string }>(
       `SELECT client_id, COUNT(*) as total
        FROM planner_tasks

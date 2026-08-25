@@ -38,12 +38,12 @@ export interface CreatePlannerEventInput {
 export interface UpdatePlannerEventInput {
   client_id?: string | null;
   title?: string;
-  description?: string;
+  description?: string | null;
   event_date?: Date | string;
   start_time?: string | null;
   end_time?: string | null;
   event_type?: EventType;
-  location?: string;
+  location?: string | null;
   visible_to_client?: boolean;
 }
 

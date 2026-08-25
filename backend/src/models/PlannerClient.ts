@@ -61,12 +61,12 @@ export interface UpdatePlannerClientInput {
   email?: string;
   phone?: string;
   event_type?: string;
-  event_date?: Date | string;
+  event_date?: Date | string | null;
   status?: ClientStatus;
-  budget?: number;
-  venue?: string;
-  guest_count?: number;
-  notes?: string;
+  budget?: number | null;
+  venue?: string | null;
+  guest_count?: number | null;
+  notes?: string | null;
   invite_code?: string | null;
   invite_status?: InviteStatus;
   invite_sent_at?: Date | string | null;

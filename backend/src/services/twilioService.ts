@@ -12,7 +12,14 @@ let twilioClient: ReturnType<typeof twilio> | null = null;
 function getTwilioClient() {
   if (!twilioClient) {
     if (!env.TWILIO_ACCOUNT_SID.startsWith('AC')) {
-      throw new Error('Twilio is not configured. Please set valid TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.');
+      // Twilio is optional: without it the app runs fine, minus phone sign-in and
+      // SMS reminders. Tagged 503 so callers get that message rather than an
+      // opaque 500 (errorHandler hides the text of untagged errors).
+      const err: Error & { statusCode?: number } = new Error(
+        'Phone sign-in is unavailable because SMS is not configured.'
+      );
+      err.statusCode = 503;
+      throw err;
     }
     twilioClient = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
   }
