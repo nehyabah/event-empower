@@ -1,4 +1,5 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import sharp from 'sharp';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../config/env.js';
 import { randomUUID } from 'crypto';
@@ -106,22 +107,60 @@ const isForeignUrl = (value: string): boolean => {
   }
 };
 
+/** Longest edge kept for stored images; enough for a full-bleed hero on retina. */
+const MAX_IMAGE_EDGE = 1600;
+const IMAGE_QUALITY = 80;
+
+/**
+ * Downscale and re-encode an upload to WebP.
+ *
+ * `.rotate()` with no argument applies the EXIF orientation and then drops the
+ * tag, so portrait phone photos do not come back sideways once metadata is
+ * stripped. Animated GIFs pass through untouched — re-encoding kills the
+ * animation — as does anything sharp cannot decode.
+ */
+async function normaliseImage(file: { buffer: Buffer; mimetype: string; originalname: string }): Promise<{
+  body: Buffer;
+  contentType: string;
+  extension: string;
+}> {
+  const fallbackExtension =
+    (file.originalname.split('.').pop()?.toLowerCase() || 'jpg').replace(/[^a-z0-9]/g, '') || 'jpg';
+
+  if (file.mimetype === 'image/gif' || !file.mimetype.startsWith('image/')) {
+    return { body: file.buffer, contentType: file.mimetype, extension: fallbackExtension };
+  }
+
+  try {
+    const body = await sharp(file.buffer)
+      .rotate()
+      .resize(MAX_IMAGE_EDGE, MAX_IMAGE_EDGE, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: IMAGE_QUALITY })
+      .toBuffer();
+    return { body, contentType: 'image/webp', extension: 'webp' };
+  } catch {
+    return { body: file.buffer, contentType: file.mimetype, extension: fallbackExtension };
+  }
+}
+
 export const storageService = {
   async uploadImage(folder: string, file: { buffer: Buffer; mimetype: string; originalname: string }) {
     if (!s3 || !env.STORAGE_BUCKET) {
       throw new Error('Storage is not configured');
     }
 
-    const extension = file.originalname.split('.').pop()?.toLowerCase() || 'jpg';
-    const safeExtension = extension.replace(/[^a-z0-9]/g, '') || 'jpg';
-    const key = `${folder}/${randomUUID()}.${safeExtension}`;
+    // Phone cameras produce 3-8MB files; served straight back they dominate page
+    // weight. Every upload route funnels through here, so normalising once
+    // covers all of them.
+    const { body, contentType, extension } = await normaliseImage(file);
+    const key = `${folder}/${randomUUID()}.${extension}`;
 
     await s3.send(
       new PutObjectCommand({
         Bucket: env.STORAGE_BUCKET,
         Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
+        Body: body,
+        ContentType: contentType,
       })
     );
 

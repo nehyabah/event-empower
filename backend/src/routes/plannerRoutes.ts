@@ -3,7 +3,7 @@ import multer from 'multer';
 import { plannerController } from '../controllers/plannerController.js';
 import { authenticate, requireUserType } from '../middleware/auth.js';
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
 
 const router = Router();
 

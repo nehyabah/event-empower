@@ -3,7 +3,7 @@ import multer from 'multer';
 import { authenticate, requireUserType } from '../middleware/auth.js';
 import { visionBoardController } from '../controllers/visionBoardController.js';
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
 
 const router = Router();
 router.use(authenticate, requireUserType('client'));
