@@ -27,6 +27,14 @@ import { optionalAuth } from './middleware/auth.js';
 
 const app = express();
 
+// Railway terminates TLS at its edge and forwards over plain HTTP, setting
+// X-Forwarded-*. Without this Express reports every request as insecure, so
+// `secure: true` cookies are silently dropped (breaking login) and
+// express-rate-limit throws because it cannot identify the caller. One hop.
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
