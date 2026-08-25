@@ -697,6 +697,8 @@ export const resolveTemplate = (templateId: string): CardTemplate => {
 // MAIN COMPONENT
 // ============================================================
 
+type StoredRsvp = { name: string; status: "confirmed" | "declined"; email?: string };
+
 interface SaveTheDateCardProps {
   templateId: string;
   names: { partner1: string; partner2: string };
@@ -719,11 +721,12 @@ const SaveTheDateCard = ({
   const [rsvpStatus, setRsvpStatus] = useState<"attending" | "declined" | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [guestCount, setGuestCount] = useState("1");
   // One response per guest per invitation — remembered on this device.
   // A guest may only flip their answer afterwards (also enforced server-side).
   const rsvpStorageKey = rsvpCode ? `rsvp-response:${rsvpCode}` : null;
-  const [priorResponse, setPriorResponse] = useState<{ name: string; status: "confirmed" | "declined" } | null>(() => {
+  const [priorResponse, setPriorResponse] = useState<StoredRsvp | null>(() => {
     if (!rsvpStorageKey) return null;
     try { return JSON.parse(localStorage.getItem(rsvpStorageKey) || "null"); } catch { return null; }
   });
@@ -789,22 +792,29 @@ const SaveTheDateCard = ({
     e.preventDefault();
     if (!guestName.trim()) { toast.error("Please enter your name"); return; }
     if (!rsvpStatus) { toast.error("Please select if you're attending"); return; }
+    // Accepting guests get reminders and day-of updates, so an address is
+    // required; someone declining will never be written to.
+    if (rsvpStatus === "attending" && !guestEmail.trim()) {
+      toast.error("Please add your email so we can send you updates");
+      return;
+    }
     setIsSubmitting(true);
     try {
       if (rsvpCode) {
         const status = rsvpStatus === "attending" ? "confirmed" : "declined";
         const res = await rsvpService.submitRsvp({
           rsvpCode, name: guestName.trim(),
+          email: guestEmail.trim() || undefined,
           status,
           guestCount: parseInt(guestCount, 10),
         });
         toast.success(res.message);
         if (rsvpStorageKey) {
-          const stored = { name: guestName.trim(), status } as const;
+          const stored: StoredRsvp = { name: guestName.trim(), status, email: guestEmail.trim() || undefined };
           localStorage.setItem(rsvpStorageKey, JSON.stringify(stored));
           setPriorResponse(stored);
         }
-        setGuestName(""); setGuestCount("1"); setRsvpStatus(null);
+        setGuestName(""); setGuestEmail(""); setGuestCount("1"); setRsvpStatus(null);
         // Straight to the couple's website; the site acknowledges the response
         // from the query param, so there's no need to linger here first.
         if (storySlug) navigate(`/s/${storySlug}?rsvp=${status}`, { replace: true });
@@ -812,7 +822,7 @@ const SaveTheDateCard = ({
         toast.success(rsvpStatus === "attending"
           ? "Thank you! We can't wait to celebrate with you!"
           : "Thank you for letting us know. We'll miss you!");
-        setGuestName(""); setGuestCount("1"); setRsvpStatus(null);
+        setGuestName(""); setGuestEmail(""); setGuestCount("1"); setRsvpStatus(null);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to submit RSVP");
@@ -823,16 +833,25 @@ const SaveTheDateCard = ({
   const handleChangeResponse = async () => {
     if (!priorResponse || !rsvpCode || !rsvpStorageKey) return;
     const newStatus = priorResponse.status === "confirmed" ? "declined" : "confirmed";
+    // Switching to attending needs an email; reuse the stored one if this guest
+    // already gave it, otherwise send them back to the form for it.
+    if (newStatus === "confirmed" && !priorResponse.email) {
+      toast.error("Please use the RSVP form so we can take your email");
+      setPriorResponse(null);
+      if (rsvpStorageKey) localStorage.removeItem(rsvpStorageKey);
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await rsvpService.submitRsvp({
         rsvpCode,
         name: priorResponse.name,
+        email: priorResponse.email,
         status: newStatus,
         guestCount: newStatus === "confirmed" ? parseInt(guestCount, 10) : undefined,
       });
       toast.success(res.message);
-      const stored = { name: priorResponse.name, status: newStatus } as const;
+      const stored: StoredRsvp = { name: priorResponse.name, status: newStatus, email: priorResponse.email };
       localStorage.setItem(rsvpStorageKey, JSON.stringify(stored));
       setPriorResponse(stored);
       if (storySlug) navigate(`/s/${storySlug}?rsvp=${newStatus}`, { replace: true });
@@ -1111,6 +1130,29 @@ const SaveTheDateCard = ({
                   })}
                 </div>
               </div>
+
+              {rsvpStatus === "attending" && (
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest mb-0.5"
+                    style={{ fontFamily: template.bodyFont, color: template.inkSoft }}>
+                    Your email
+                  </p>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={guestEmail}
+                    onChange={e => setGuestEmail(e.target.value)}
+                    required
+                    className="w-full bg-transparent text-xs sm:text-sm outline-none pb-0.5"
+                    style={{
+                      fontFamily: template.bodyFont,
+                      color: template.dark ? "#4d4a43" : template.ink,
+                      borderBottom: `1px solid ${template.frame}`,
+                      caretColor: template.accent,
+                    }}
+                  />
+                </div>
+              )}
 
               {rsvpStatus === "attending" && (
                 <div>

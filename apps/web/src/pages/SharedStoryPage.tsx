@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Send,
   Pin,
-  Mail,
 } from "lucide-react";
 import { type Comment } from "@/components/couple-story/CommentsSection";
 import { StoryImage } from "@/components/couple-story/StoryEditor";
@@ -27,7 +26,7 @@ import FaqSection from "@/components/couple-story/sections/FaqSection";
 import { Button } from "@/components/ui/button";
 import storyService from "@/services/api/storyService";
 import { WishlistItem as WishlistItemType, BankDetail } from "@/context/types";
-import type { TimelineEvent, WeddingPartyMember, TravelInfoItem, FaqItem, StoryBundle } from "@/services/api/storyService";
+import type { TimelineEvent, WeddingPartyMember, TravelInfoItem, FaqItem } from "@/services/api/storyService";
 import { getTheme, isDarkTheme, DEFAULT_SECTION_ORDER } from "@/lib/siteThemes";
 import { getSiteFlorals, FloralGroup, Sprig } from "@/components/couple-story/FloralDecor";
 
@@ -98,7 +97,6 @@ const SharedStoryPage = () => {
   // Premium fields
   const [sectionOrder, setSectionOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
-  const [rsvp, setRsvp] = useState<StoryBundle["rsvp"]>(null);
 
   // Guests land here straight after answering; ?rsvp= carries what they said so
   // the redirect still acknowledges them.
@@ -192,7 +190,6 @@ const SharedStoryPage = () => {
         setComments(bundle.comments.map((c) => ({ id: c.id, name: c.name, text: c.text, date: c.created_at })));
         setWishlistItems(bundle.wishlist.map((item) => ({ id: item.id, name: item.name, price: item.price || undefined, link: item.link || undefined, priority: item.priority, purchasedBy: item.purchased_by || undefined, isAnonymous: item.is_anonymous || undefined })));
         setBankDetails(bundle.bankDetails.map((d) => ({ id: d.id, bankName: d.bank_name, accountName: d.account_name, accountNumber: d.account_number, sortCode: d.sort_code || undefined, iban: d.iban || undefined, swift: d.swift || undefined, description: d.description || undefined })));
-        setRsvp(bundle.rsvp ?? null);
         setTimeline(bundle.timeline || []);
         setWeddingParty(bundle.weddingParty || []);
         setTravelInfo(bundle.travelInfo || []);
@@ -554,53 +551,6 @@ const SharedStoryPage = () => {
 
       <div className={`relative z-20 transition-colors duration-700 ${s.bg}`}>
         {visibleSections.filter((id) => id !== "hero").map(renderSection)}
-
-        {/* RSVP — the wedding site is where most guests arrive, so the
-            invitation response lives here rather than only in the email. */}
-        {rsvp && (
-          <section className={`${s.sectionPadding} ${s.sectionBgAlt} relative overflow-hidden`}>
-            <div className="container mx-auto px-4 relative z-10">
-              <div className="max-w-xl mx-auto text-center">
-                <div className={`p-3 rounded-full bg-current/5 mb-4 inline-flex ${s.accent}`}>
-                  <Mail className="w-6 h-6" />
-                </div>
-                <h3 className={`text-4xl md:text-5xl ${s.fontHeading} ${s.text}`}>RSVP</h3>
-
-                {rsvp.closed ? (
-                  <>
-                    <p className={`mt-4 text-lg ${s.subtext}`}>
-                      Responses are now closed
-                      {rsvp.deadline
-                        ? ` — the deadline was ${new Date(rsvp.deadline).toLocaleDateString("en-GB", {
-                            day: "numeric", month: "long", year: "numeric",
-                          })}.`
-                        : "."}
-                    </p>
-                    <p className={`mt-2 text-sm ${s.subtext} opacity-70`}>
-                      Please reach out to the couple directly.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className={`mt-3 text-lg ${s.subtext}`}>
-                      {rsvp.deadline
-                        ? `Kindly respond by ${new Date(rsvp.deadline).toLocaleDateString("en-GB", {
-                            day: "numeric", month: "long", year: "numeric",
-                          })}`
-                        : "We would love to know if you can join us"}
-                    </p>
-                    <Link
-                      to={`/rsvp/${rsvp.code}`}
-                      className={`mt-8 inline-block px-10 py-4 text-sm font-bold uppercase tracking-widest transition-transform hover:scale-105 ${s.button}`}
-                    >
-                      Respond to invitation
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
 
         <footer className={`py-16 text-center text-sm relative overflow-hidden ${s.subtext}`}>
           <FloralGroup items={florals?.footer} />

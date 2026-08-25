@@ -115,10 +115,20 @@ const sendMessageSchema = z.object({
 const publicRsvpSchema = z.object({
   rsvpCode: z.string().min(1, 'RSVP code is required'),
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
   status: z.enum(['confirmed', 'declined']),
   guestCount: z.number().min(1).max(2).optional(),
   dietaryNotes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Reminders and day-of updates are only deliverable if an attending guest
+  // leaves an address; someone who has declined will never be written to.
+  if (data.status === 'confirmed' && !data.email) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['email'],
+      message: 'Email is required so we can send you wedding updates',
+    });
+  }
 });
 
 // Guest reminder schedule

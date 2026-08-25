@@ -79,6 +79,11 @@ const RsvpPage = () => {
 
     if (!code || !attending || !name.trim()) return;
 
+    if (attending === "confirmed" && !email.trim()) {
+      setSubmitError("Please add your email so we can send you wedding updates.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const result = await rsvpService.submitRsvp({
@@ -239,14 +244,23 @@ const RsvpPage = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="rsvp-email">Email (optional)</Label>
+          <Label htmlFor="rsvp-email">
+            Email {attending === "confirmed" ? "" : "(optional)"}
+          </Label>
           <Input
             id="rsvp-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            required={attending === "confirmed"}
+            aria-describedby="rsvp-email-hint"
           />
+          {attending === "confirmed" && (
+            <p id="rsvp-email-hint" className="text-xs text-muted-foreground">
+              We'll send your confirmation and any updates here.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
