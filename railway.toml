@@ -1,0 +1,11 @@
+# One service serves both the API and the SPA, so the session cookie stays
+# same-site. Build context is the repo root because the image needs every
+# workspace manifest to run `npm ci`.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

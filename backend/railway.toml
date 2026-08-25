@@ -1,6 +1,0 @@
-[build]
-buildCommand = "cd .. && npm install && npm run build:backend"
-
-[deploy]
-startCommand = "node dist/app.js"
-healthcheckPath = "/health"

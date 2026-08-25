@@ -35,3 +35,6 @@ apps/mobile/ios/
 
 # Misc
 nul
+
+# SPA bundled into the backend image at build time
+backend/web

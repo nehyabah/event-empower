@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -26,7 +28,23 @@ import { optionalAuth } from './middleware/auth.js';
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      // Radix/shadcn set inline styles at runtime; fonts come from Google Fonts.
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+      // Uploads are proxied through /api/media ('self'); the rest are stock photos.
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com',
+               'https://picsum.photos', 'https://res.cloudinary.com'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+}));
 app.use(cors({
   origin: env.ALLOWED_ORIGINS.split(','),
   credentials: true,
@@ -66,6 +84,29 @@ app.post('/api/inquiries', optionalAuth, vendorController.createInquiry);
 // Public RSVP endpoints (no auth required)
 app.get('/api/rsvp/:code', userController.getEventInfo);
 app.post('/api/rsvp', userController.submitPublicRsvp);
+
+// Single-domain deploy: the built SPA is bundled next to the compiled API.
+// Absent in local dev (frontend runs on Vite :8080), so this is skipped there.
+const webDist = path.resolve(__dirname, '../web');
+if (fs.existsSync(path.join(webDist, 'index.html'))) {
+  app.use(express.static(webDist, {
+    index: false,
+    setHeaders: (res, filePath) => {
+      // Asset filenames are content-hashed, so they can be cached indefinitely.
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
+
+  // Client-side routes (/s/:slug, /rsvp/:code, ...) must survive a hard refresh.
+  // Anything not under /api or /health returns the shell; a real RegExp is used
+  // because path-to-regexp has no negative lookahead.
+  app.get(/^\/(?!api\/|health$).*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(webDist, 'index.html'));
+  });
+}
 
 // Error handling
 app.use(notFoundHandler);
