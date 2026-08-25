@@ -35,6 +35,16 @@ if (env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
+// Uploads are handed out as presigned URLs on the storage host, so that origin
+// has to be allowed explicitly — it is never present in the frontend source.
+const storageOrigins = [env.STORAGE_PUBLIC_URL, env.STORAGE_ENDPOINT]
+  .filter((v): v is string => Boolean(v))
+  .map((v) => {
+    try { return new URL(v).origin; } catch { return null; }
+  })
+  .filter((v): v is string => Boolean(v));
+const uniqueStorageOrigins = [...new Set(storageOrigins)];
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -46,7 +56,10 @@ app.use(helmet({
       fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
       // Uploads are proxied through /api/media ('self'); the rest are stock photos.
       imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com',
-               'https://picsum.photos', 'https://res.cloudinary.com'],
+               'https://picsum.photos', 'https://res.cloudinary.com',
+               ...uniqueStorageOrigins],
+      // Videos fall back to default-src without this, which would block them.
+      mediaSrc: ["'self'", 'data:', 'blob:', ...uniqueStorageOrigins],
       connectSrc: ["'self'"],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
