@@ -22,6 +22,12 @@ const envSchema = z.object({
   STORAGE_REGION: z.string().default('us-east-1'),
   STORAGE_PUBLIC_URL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
+  // Any SMTP provider (Amazon SES, Brevo, Mailgun, Postmark...). Set these and
+  // they take precedence over Resend, so switching provider is config-only.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.string().default('587'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
   APP_URL: z.string().default('http://localhost:8083'),
   EMAIL_FROM: z.string().default('Planr <onboarding@resend.dev>'),
 });

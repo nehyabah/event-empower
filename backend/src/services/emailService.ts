@@ -1,7 +1,40 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+
+/**
+ * SMTP takes precedence over Resend when configured, so moving to a
+ * pay-as-you-go provider (Amazon SES, Brevo, Mailgun...) is a config change
+ * rather than a code change. With neither set, sends are logged instead —
+ * useful in development, and it keeps a missing key from breaking a signup.
+ */
+const smtp = env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD
+  ? nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: Number(env.SMTP_PORT),
+      // 465 is implicit TLS; 587 starts plaintext and upgrades via STARTTLS.
+      secure: Number(env.SMTP_PORT) === 465,
+      auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD },
+    })
+  : null;
+
+export const emailTransport = smtp ? 'smtp' : resend ? 'resend' : 'none';
+
+/** Deliver through whichever provider is configured. */
+async function deliver(message: { to: string; subject: string; html: string }): Promise<void> {
+  if (smtp) {
+    await smtp.sendMail({ from: env.EMAIL_FROM, ...message });
+    return;
+  }
+
+  const { error } = await resend!.emails.send({ from: env.EMAIL_FROM, ...message });
+  if (error) {
+    console.error('[email] Resend error:', error);
+    throw new Error('Failed to send email');
+  }
+}
 
 export const emailService = {
   async sendPlannerInvite({
@@ -17,22 +50,16 @@ export const emailService = {
   }): Promise<void> {
     const acceptUrl = `${env.APP_URL}/accept-invite?code=${inviteCode}`;
 
-    if (!resend) {
-      console.log(`[email] RESEND_API_KEY not set — invite link for ${toEmail}: ${acceptUrl}`);
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — invite link for ${toEmail}: ${acceptUrl}`);
       return;
     }
 
-    const { error } = await resend.emails.send({
-      from: env.EMAIL_FROM,
+    await deliver({
       to: toEmail,
       subject: `${plannerName} is ready to plan your wedding`,
       html: buildInviteHtml({ toName, plannerName, acceptUrl, inviteCode }),
     });
-
-    if (error) {
-      console.error('[email] Resend error:', error);
-      throw new Error('Failed to send invite email');
-    }
   },
 
   /** RSVP nudge for a guest who has not responded yet. */
@@ -55,13 +82,12 @@ export const emailService = {
     deadline: string | null;
     customMessage?: string | null;
   }): Promise<void> {
-    if (!resend) {
-      console.log(`[email] RESEND_API_KEY not set — RSVP reminder for ${toEmail}: ${rsvpUrl}`);
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — RSVP reminder for ${toEmail}: ${rsvpUrl}`);
       return;
     }
 
-    const { error } = await resend.emails.send({
-      from: env.EMAIL_FROM,
+    await deliver({
       to: toEmail,
       subject: deadline
         ? `Reminder: RSVP for ${coupleNames} by ${deadline}`
@@ -76,11 +102,6 @@ export const emailService = {
         customMessage,
       }),
     });
-
-    if (error) {
-      console.error('[email] Resend error:', error);
-      throw new Error('Failed to send RSVP reminder');
-    }
   },
 };
 
