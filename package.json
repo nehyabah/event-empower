@@ -13,10 +13,5 @@
     "dev:backend": "npm run dev --workspace=backend",
     "build:web": "npm run build --workspace=apps/web",
     "build:backend": "npm run build --workspace=backend"
-  },
-  "dependencies": {
-    "@hookform/resolvers": "^5.4.0",
-    "@swc/core": "^1.15.41",
-    "react-hook-form": "^7.78.0"
   }
 }
