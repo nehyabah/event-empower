@@ -20,10 +20,48 @@ const smtp = env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD
     })
   : null;
 
-export const emailTransport = smtp ? 'smtp' : resend ? 'resend' : 'none';
+const brevoApiKey = env.BREVO_API_KEY || null;
+
+export const emailTransport = brevoApiKey
+  ? 'brevo'
+  : smtp
+  ? 'smtp'
+  : resend
+  ? 'resend'
+  : 'none';
+
+/** Split "Name <a@b.com>" into the shape Brevo's API expects. */
+function parseSender(value: string): { name?: string; email: string } {
+  const match = value.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  return match ? { name: match[1] || undefined, email: match[2] } : { email: value.trim() };
+}
 
 /** Deliver through whichever provider is configured. */
 async function deliver(message: { to: string; subject: string; html: string }): Promise<void> {
+  if (brevoApiKey) {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': brevoApiKey,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: parseSender(env.EMAIL_FROM),
+        to: [{ email: message.to }],
+        subject: message.subject,
+        htmlContent: message.html,
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      console.error('[email] Brevo error:', response.status, detail.slice(0, 300));
+      throw new Error('Failed to send email');
+    }
+    return;
+  }
+
   if (smtp) {
     await smtp.sendMail({ from: env.EMAIL_FROM, ...message });
     return;

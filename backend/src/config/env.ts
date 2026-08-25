@@ -24,6 +24,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   // Any SMTP provider (Amazon SES, Brevo, Mailgun, Postmark...). Set these and
   // they take precedence over Resend, so switching provider is config-only.
+  // Brevo over HTTPS. Preferred over SMTP because Railway (like most hosts)
+  // blocks outbound SMTP ports, so nodemailer just times out.
+  BREVO_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().default('587'),
   SMTP_USER: z.string().optional(),
