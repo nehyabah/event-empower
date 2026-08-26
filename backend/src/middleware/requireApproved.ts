@@ -40,3 +40,31 @@ export async function requireApproved(req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+/**
+ * Router-level guard: blocks every write by an unapproved vendor or planner.
+ *
+ * Applied with `router.use` so routes added later are covered by default —
+ * annotating each one individually means the next route added is unprotected
+ * and nobody notices.
+ *
+ * Reads pass through, and so do the paths a pending professional needs in
+ * order to become approved: we are asking them to fill in their profile, so
+ * blocking the save would be a deadlock.
+ *
+ * Only safe on a router that has already run `authenticate`; without req.user
+ * this cannot tell who is calling and would let everything past.
+ */
+export function blockUnapprovedWrites(exempt: RegExp[] = []) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+    if (exempt.some((pattern) => pattern.test(req.path))) {
+      next();
+      return;
+    }
+    await requireApproved(req, res, next);
+  };
+}

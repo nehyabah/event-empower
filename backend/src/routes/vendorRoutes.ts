@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireApproved } from '../middleware/requireApproved.js';
 import multer from 'multer';
 import { vendorController } from '../controllers/vendorController.js';
 import { authenticate, requireUserType } from '../middleware/auth.js';
@@ -17,15 +18,15 @@ router.get('/me/projects', authenticate, requireUserType('vendor'), vendorContro
 router.get('/workspace', authenticate, requireUserType('vendor'), vendorController.getVendorWorkspace);
 router.get('/bookings', authenticate, requireUserType('vendor'), vendorController.listVendorBookings);
 router.get('/bookable-clients', authenticate, requireUserType('vendor'), vendorController.listBookableClients);
-router.post('/bookings', authenticate, requireUserType('vendor'), vendorController.createVendorBooking);
-router.patch('/bookings/:id', authenticate, requireUserType('vendor'), vendorController.updateVendorBooking);
-router.delete('/bookings/:id', authenticate, requireUserType('vendor'), vendorController.deleteVendorBooking);
+router.post('/bookings', authenticate, requireUserType('vendor'), requireApproved, vendorController.createVendorBooking);
+router.patch('/bookings/:id', authenticate, requireUserType('vendor'), requireApproved, vendorController.updateVendorBooking);
+router.delete('/bookings/:id', authenticate, requireUserType('vendor'), requireApproved, vendorController.deleteVendorBooking);
 router.get('/inquiries', authenticate, requireUserType('vendor'), vendorController.listVendorInquiries);
 router.get('/inquiries/:id', authenticate, requireUserType('vendor'), vendorController.getInquiryWithMessages);
-router.patch('/inquiries/:id', authenticate, requireUserType('vendor'), vendorController.updateVendorInquiry);
-router.delete('/inquiries/:id', authenticate, requireUserType('vendor'), vendorController.deleteVendorInquiry);
+router.patch('/inquiries/:id', authenticate, requireUserType('vendor'), requireApproved, vendorController.updateVendorInquiry);
+router.delete('/inquiries/:id', authenticate, requireUserType('vendor'), requireApproved, vendorController.deleteVendorInquiry);
 router.get('/inquiries/:id/messages', authenticate, requireUserType('vendor'), vendorController.getInquiryMessages);
-router.post('/inquiries/:id/messages', authenticate, requireUserType('vendor'), vendorController.sendInquiryMessage);
+router.post('/inquiries/:id/messages', authenticate, requireUserType('vendor'), requireApproved, vendorController.sendInquiryMessage);
 router.post(
   '/uploads',
   authenticate,

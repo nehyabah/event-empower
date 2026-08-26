@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireApproved } from '../middleware/requireApproved.js';
+import { blockUnapprovedWrites } from '../middleware/requireApproved.js';
 import multer from 'multer';
 import { plannerController } from '../controllers/plannerController.js';
 import { authenticate, requireUserType } from '../middleware/auth.js';
@@ -11,6 +11,10 @@ const router = Router();
 // All routes require authentication and planner role
 router.use(authenticate);
 router.use(requireUserType('planner'));
+
+// An unapproved planner can read, and can edit their own profile — that is the
+// thing we are asking them to do. Everything else waits for approval.
+router.use(blockUnapprovedWrites([/^\/profile(\/|$)/]));
 
 // Profile
 router.get('/profile', plannerController.getMyProfile);
@@ -26,7 +30,7 @@ router.get('/clients/:id', plannerController.getClient);
 router.post('/clients', plannerController.createClient);
 router.patch('/clients/:id', plannerController.updateClient);
 router.delete('/clients/:id', plannerController.deleteClient);
-router.post('/clients/:id/invite', requireApproved, plannerController.createInvite);
+router.post('/clients/:id/invite', plannerController.createInvite);
 router.post('/clients/:id/archive', plannerController.archiveClient);
 router.post('/clients/:id/unarchive', plannerController.unarchiveClient);
 
