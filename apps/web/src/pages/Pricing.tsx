@@ -195,21 +195,6 @@ const PricingPage = () => {
               onSelect={setSelectedTier}
             />
           </div>
-
-          {/* FAQ Link / Contact */}
-          <div className="mt-24 text-center">
-            <div className="inline-flex flex-col items-center">
-              <p className="text-zinc-500 mb-4 font-light text-lg">
-                Need a custom solution for a multi-day event?
-              </p>
-              <Button
-                variant="outline"
-                className="rounded-full px-8 py-6 text-zinc-900 border-zinc-200 hover:bg-white hover:border-zinc-900 transition-colors"
-              >
-                Contact our Events Team
-              </Button>
-            </div>
-          </div>
         </div>
       </main>
 
