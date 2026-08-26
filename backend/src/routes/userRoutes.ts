@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { blockUnapprovedWrites } from '../middleware/requireApproved.js';
 import multer from 'multer';
 import { userController } from '../controllers/userController.js';
 import { storyController } from '../controllers/storyController.js';
@@ -10,6 +11,10 @@ const router = Router();
 
 // All user routes require authentication
 router.use(authenticate);
+
+// No requireUserType here, so a pending vendor or planner can otherwise reach
+// every write below. Couples and admins pass straight through.
+router.use(blockUnapprovedWrites());
 
 // Dashboard
 router.get('/dashboard', userController.getDashboard);
