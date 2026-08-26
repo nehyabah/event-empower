@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -74,6 +75,19 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
           <LoginFormFields control={form.control} isLoading={isLoading} />
         </form>
       </Form>
+
+      {/* Renders nothing unless VITE_GOOGLE_CLIENT_ID is configured. */}
+      <div className="space-y-4">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <GoogleSignInButton />
+      </div>
     </div>
   );
 };

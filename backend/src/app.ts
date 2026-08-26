@@ -50,17 +50,22 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      // Google Identity Services ships the sign-in button from Google's origin.
+      scriptSrc: ["'self'", 'https://accounts.google.com', 'https://apis.google.com'],
+      // The button and One Tap render inside a Google-hosted iframe.
+      frameSrc: ["'self'", 'https://accounts.google.com'],
       // Radix/shadcn set inline styles at runtime; fonts come from Google Fonts.
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
       // Uploads are proxied through /api/media ('self'); the rest are stock photos.
       imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com',
                'https://picsum.photos', 'https://res.cloudinary.com',
+               // Google account avatars.
+               'https://lh3.googleusercontent.com', 'https://accounts.google.com',
                ...uniqueStorageOrigins],
       // Videos fall back to default-src without this, which would block them.
       mediaSrc: ["'self'", 'data:', 'blob:', ...uniqueStorageOrigins],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", 'https://accounts.google.com'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
     },
