@@ -12,6 +12,8 @@ export interface GoogleAuthResult {
     name: string | null;
     userType: UserType;
     avatarUrl: string | null;
+    approvalStatus: string;
+    onboardingSubmittedAt: string | null;
   };
   tokens: TokenPair;
   isNewUser: boolean;
@@ -86,6 +88,13 @@ export const googleAuthService = {
         name: user.name,
         userType: user.user_type,
         avatarUrl: user.avatar_url,
+        // Without these the UI cannot tell a pending professional from an
+        // approved one: no banner, no disabled actions, and every write
+        // failing with a 403 the page never predicted.
+        approvalStatus: user.approval_status,
+        onboardingSubmittedAt: user.onboarding_submitted_at
+          ? new Date(user.onboarding_submitted_at).toISOString()
+          : null,
       },
       tokens,
       isNewUser,
