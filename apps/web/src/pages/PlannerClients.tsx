@@ -256,7 +256,15 @@ const PlannerClients = () => {
     const result = await createInvite(client.id);
     if (result?.inviteCode) {
       await navigator.clipboard.writeText(result.inviteCode);
-      toast.success("Invite code copied");
+      // The invite exists either way, but saying "sent" when the mail bounced
+      // leaves the planner waiting on a reply that can never come.
+      if (result.emailSent) {
+        toast.success("Invite emailed and code copied");
+      } else {
+        toast.warning("Invite code copied — but the email could not be sent", {
+          description: "Share the code with your client directly.",
+        });
+      }
     }
   };
 

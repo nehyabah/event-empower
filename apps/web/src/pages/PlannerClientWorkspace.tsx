@@ -145,8 +145,14 @@ const PlannerClientWorkspace = () => {
     if (!clientId) return;
     setIsInviting(true);
     try {
-      await plannerService.createClientInvite(clientId);
-      toast.success("Invite sent");
+      const result = await plannerService.createClientInvite(clientId);
+      if (result.emailSent) {
+        toast.success("Invite sent");
+      } else {
+        toast.warning("Invite created, but the email could not be sent", {
+          description: `Share this code with your client: ${result.inviteCode}`,
+        });
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send invite");
     } finally {

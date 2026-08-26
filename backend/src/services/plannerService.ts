@@ -259,7 +259,7 @@ export const plannerService = {
     };
   },
 
-  async createInvite(plannerId: string, clientId: string): Promise<{ inviteCode: string; inviteStatus: string; inviteSentAt: string }> {
+  async createInvite(plannerId: string, clientId: string): Promise<{ inviteCode: string; inviteStatus: string; inviteSentAt: string; emailSent: boolean; emailError?: string }> {
     const client = await this.getClient(clientId, plannerId);
     if (!client) {
       throw new Error('Client not found');
@@ -291,6 +291,12 @@ export const plannerService = {
       throw new Error('Failed to create invite');
     }
 
+    // A failed send must not lose the invite — the code is valid either way and
+    // the planner can share the link by hand. But the caller has to be told, or
+    // the UI reports success for mail that never left.
+    let emailSent = false;
+    let emailError: string | undefined;
+
     // Send email if client has an email address on file
     if (client.email) {
       const planner = await queryOne<{ name: string }>('SELECT name FROM users WHERE id = $1', [plannerId]);
@@ -301,16 +307,24 @@ export const plannerService = {
         toName,
         plannerName,
         inviteCode,
-      }).catch((err) => {
-        // Non-fatal: log but don't block the response
-        console.error('[createInvite] email send failed:', err);
-      });
+      })
+        .then(() => {
+          emailSent = true;
+        })
+        .catch((err) => {
+          emailError = err instanceof Error ? err.message : 'Unknown error';
+          console.error('[createInvite] email send failed:', err);
+        });
+    } else {
+      emailError = 'No email address on file for this client';
     }
 
     return {
       inviteCode: updated.invite_code || inviteCode,
       inviteStatus: updated.invite_status || 'pending',
       inviteSentAt: updated.invite_sent_at ? new Date(updated.invite_sent_at).toISOString() : new Date().toISOString(),
+      emailSent,
+      ...(emailError ? { emailError } : {}),
     };
   },
 

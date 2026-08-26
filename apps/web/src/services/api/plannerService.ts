@@ -360,8 +360,8 @@ export const plannerService = {
     return response.data;
   },
 
-  async createClientInvite(id: string): Promise<{ inviteCode: string; inviteStatus: string; inviteSentAt: string }> {
-    const response = await apiClient.post<{ inviteCode: string; inviteStatus: string; inviteSentAt: string }>(`/planner/clients/${id}/invite`);
+  async createClientInvite(id: string): Promise<{ inviteCode: string; inviteStatus: string; inviteSentAt: string; emailSent: boolean; emailError?: string }> {
+    const response = await apiClient.post<{ inviteCode: string; inviteStatus: string; inviteSentAt: string; emailSent: boolean; emailError?: string }>(`/planner/clients/${id}/invite`);
     if (response.error) {
       throw new Error(response.error);
     }

@@ -93,7 +93,7 @@ export function usePlannerClients() {
     }
   }, []);
 
-  const createInvite = useCallback(async (id: string): Promise<{ inviteCode: string } | null> => {
+  const createInvite = useCallback(async (id: string): Promise<{ inviteCode: string; emailSent: boolean; emailError?: string } | null> => {
     try {
       const result = await plannerService.createClientInvite(id);
       setClients(prev => prev.map(c => c.id === id ? {
@@ -102,8 +102,11 @@ export function usePlannerClients() {
         invite_status: result.inviteStatus as PlannerClient['invite_status'],
         invite_sent_at: result.inviteSentAt,
       } : c));
-      toast.success('Invite code generated');
-      return { inviteCode: result.inviteCode };
+      return {
+        inviteCode: result.inviteCode,
+        emailSent: result.emailSent,
+        ...(result.emailError ? { emailError: result.emailError } : {}),
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate invite code';
       toast.error(message);
