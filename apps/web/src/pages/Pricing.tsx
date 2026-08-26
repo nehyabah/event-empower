@@ -158,7 +158,7 @@ const PricingPage = () => {
             <PricingTier
               id="premium"
               title="Premium"
-              price="9,999"
+              price="15,000"
               description="Everything you need to plan the day yourself, without the spreadsheets."
               features={[
                 "Everything in Basic",
@@ -180,7 +180,7 @@ const PricingPage = () => {
             <PricingTier
               id="luxury"
               title="Luxury"
-              price="24,999"
+              price="30,000"
               description="For multi-day celebrations and couples working with a planner."
               features={[
                 "Everything in Premium",
