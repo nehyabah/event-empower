@@ -1,5 +1,6 @@
 
 import { formatCurrency } from "@/lib/currency";
+import ApprovalGate from "@/components/auth/ApprovalGate";
 import ApprovalCelebration from "@/components/auth/ApprovalCelebration";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
@@ -343,10 +344,12 @@ const VendorHomepage = () => {
                         <CardTitle>Upcoming Events</CardTitle>
                         <CardDescription>Manage your booked events</CardDescription>
                       </div>
-                      <Button className="flex items-center gap-1" onClick={() => setIsAddingEvent(true)}>
-                        <Plus className="h-4 w-4" />
-                        Add Event
-                      </Button>
+                      <ApprovalGate>
+                        <Button className="flex items-center gap-1" onClick={() => setIsAddingEvent(true)}>
+                          <Plus className="h-4 w-4" />
+                          Add Event
+                        </Button>
+                      </ApprovalGate>
                     </div>
                   </CardHeader>
                   <CardContent>
