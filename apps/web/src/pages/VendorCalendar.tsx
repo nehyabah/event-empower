@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import useApproval from "@/hooks/useApproval";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ const VendorCalendar = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
+  const { blocked } = useApproval();
   const loadBookings = useCallback(async () => {
     try {
       const [b, c] = await Promise.all([
@@ -207,7 +209,7 @@ const VendorCalendar = () => {
               Your bookings, meetings and site visits in one place
             </p>
           </div>
-          <Button onClick={() => openCreate()}>
+          <Button disabled={blocked} onClick={() => openCreate()}>
             <Plus className="mr-2 h-4 w-4" />
             Add event
           </Button>
@@ -267,11 +269,11 @@ const VendorCalendar = () => {
                 ) : dayBookings.length === 0 ? (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">Nothing booked this day.</p>
-                    <Button size="sm" variant="outline" onClick={() => openCreate(selectedDate)}>
+                    <Button disabled={blocked} size="sm" variant="outline" onClick={() => openCreate(selectedDate)}>
                       <Plus className="mr-1.5 h-3.5 w-3.5" />
                       Add event
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setAddingOn(selectedDate)}>
+                    <Button disabled={blocked} size="sm" variant="ghost" onClick={() => setAddingOn(selectedDate)}>
                       Add shared event &amp; tag people
                     </Button>
                   </div>
@@ -327,11 +329,11 @@ const VendorCalendar = () => {
                         </div>
                       </div>
                     ))}
-                    <Button size="sm" variant="outline" className="w-full" onClick={() => openCreate(selectedDate)}>
+                    <Button disabled={blocked} size="sm" variant="outline" className="w-full" onClick={() => openCreate(selectedDate)}>
                       <Plus className="mr-1.5 h-3.5 w-3.5" />
                       Add another
                     </Button>
-                    <Button size="sm" variant="ghost" className="w-full" onClick={() => setAddingOn(selectedDate)}>
+                    <Button disabled={blocked} size="sm" variant="ghost" className="w-full" onClick={() => setAddingOn(selectedDate)}>
                       Add shared event &amp; tag people
                     </Button>
                   </>
@@ -503,7 +505,7 @@ const VendorCalendar = () => {
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={blocked || isSaving}>
               {isSaving ? "Saving…" : editingId ? "Update event" : "Create event"}
             </Button>
           </div>

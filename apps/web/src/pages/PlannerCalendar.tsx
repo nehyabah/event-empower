@@ -1,5 +1,6 @@
 
 import { useMemo, useState } from "react";
+import useApproval from "@/hooks/useApproval";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -111,6 +112,7 @@ const PlannerCalendar = () => {
     visibleToClient: true,
   });
 
+  const { blocked } = useApproval();
   const canSubmit = useMemo(
     () => eventForm.title.trim() && eventForm.eventDate,
     [eventForm.title, eventForm.eventDate],
@@ -317,11 +319,11 @@ const PlannerCalendar = () => {
             <p className="text-muted-foreground">Your events, client weddings, and shared to-do deadlines</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setAddingOn(selectedDay || new Date().toISOString().split("T")[0])}>
+            <Button disabled={blocked} variant="outline" onClick={() => setAddingOn(selectedDay || new Date().toISOString().split("T")[0])}>
               <Plus className="mr-2 h-4 w-4" />
               Shared event
             </Button>
-            <Button onClick={openCreateDialog}>
+            <Button disabled={blocked} onClick={openCreateDialog}>
               <Plus className="mr-2 h-4 w-4" />
               Add Event
             </Button>
@@ -510,12 +512,12 @@ const PlannerCalendar = () => {
           <div className="flex justify-between pt-4 border-t">
             {viewingEntry?.kind === "event" ? (
               <>
-                <Button variant="destructive" size="sm" onClick={() => setDeletingEvent(viewingEntry.data)}>
+                <Button disabled={blocked} variant="destructive" size="sm" onClick={() => setDeletingEvent(viewingEntry.data)}>
                   <Trash2 className="h-4 w-4 mr-1" />Delete
                 </Button>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => setViewingEntry(null)}>Close</Button>
-                  <Button size="sm" onClick={() => viewingEntry && openEditDialog(viewingEntry.data)}>
+                  <Button disabled={blocked} size="sm" onClick={() => viewingEntry && openEditDialog(viewingEntry.data)}>
                     <Pencil className="h-4 w-4 mr-1" />Edit
                   </Button>
                 </div>
@@ -605,7 +607,7 @@ const PlannerCalendar = () => {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button disabled={!canSubmit || isSubmitting} onClick={handleSubmit}>
+            <Button disabled={blocked || !canSubmit || isSubmitting} onClick={handleSubmit}>
               {isSubmitting ? "Saving..." : editingEvent ? "Update event" : "Create event"}
             </Button>
           </div>

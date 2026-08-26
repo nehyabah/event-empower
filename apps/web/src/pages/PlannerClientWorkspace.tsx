@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
+import useApproval from "@/hooks/useApproval";
 import { formatCurrency } from "@/lib/currency";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -51,6 +52,7 @@ const statusBadge = (status: string) => {
 
 const PlannerClientWorkspace = () => {
   const { clientId } = useParams<{ clientId: string }>();
+  const { blocked } = useApproval();
   const navigate = useNavigate();
   const { clients, getClientName } = usePlannerClients();
 
@@ -225,7 +227,7 @@ const PlannerClientWorkspace = () => {
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="outline" asChild><Link to="/clients">Back to clients</Link></Button>
             {client && client.invite_status !== "accepted" && (
-              <Button size="default" onClick={handleResendInvite} disabled={isInviting}>
+              <Button size="default" onClick={handleResendInvite} disabled={blocked || isInviting}>
                 {isInviting ? "Sending…" : "Resend invite"}
               </Button>
             )}
@@ -356,7 +358,7 @@ const PlannerClientWorkspace = () => {
                     <CardTitle className="text-sm font-semibold">Vendor Roster</CardTitle>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted-foreground">{vendors.length} {vendors.length === 1 ? "vendor" : "vendors"}</span>
-                      <Button size="sm" variant="outline" className="h-7" onClick={() => setIsAddingVendor(true)}>
+                      <Button disabled={blocked} size="sm" variant="outline" className="h-7" onClick={() => setIsAddingVendor(true)}>
                         <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
                         Add vendor
                       </Button>
@@ -472,7 +474,7 @@ const PlannerClientWorkspace = () => {
                       Vendors here can schedule against this wedding and be tagged on shared events.
                     </p>
                   </div>
-                  <Button size="sm" onClick={() => setIsAddingVendor(true)}>
+                  <Button disabled={blocked} size="sm" onClick={() => setIsAddingVendor(true)}>
                     <PlusCircle className="mr-1.5 h-4 w-4" />
                     Add vendor
                   </Button>
@@ -482,7 +484,7 @@ const PlannerClientWorkspace = () => {
                 {vendors.length === 0 ? (
                   <div className="px-6 pb-6 space-y-3">
                     <p className="text-sm text-muted-foreground">No vendors on this roster yet.</p>
-                    <Button size="sm" variant="outline" onClick={() => setIsAddingVendor(true)}>
+                    <Button disabled={blocked} size="sm" variant="outline" onClick={() => setIsAddingVendor(true)}>
                       <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
                       Add the first vendor
                     </Button>
@@ -588,7 +590,7 @@ const PlannerClientWorkspace = () => {
                           onKeyDown={e => { if (e.key === "Enter") handleAddItem(list); }}
                           className="h-8 text-sm"
                         />
-                        <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => handleAddItem(list)}>
+                        <Button disabled={blocked} size="sm" variant="ghost" className="h-8 px-2" onClick={() => handleAddItem(list)}>
                           <PlusCircle className="h-4 w-4" />
                         </Button>
                       </div>
