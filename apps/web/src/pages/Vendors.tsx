@@ -91,7 +91,7 @@ const VendorCard = ({
           <div className="flex items-center shrink-0">
             <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400 mr-0.5" />
             <span className="text-sm font-medium">{rating.toFixed(1)}</span>
-            <span className="text-muted-foreground text-xs ml-1">({reviewCount})</span>
+            <span className="text-muted-foreground text-xs ml-1">({reviewCount.toLocaleString()})</span>
           </div>
         </div>
         <p className="text-muted-foreground text-xs sm:text-sm mb-2">{category}</p>
@@ -287,7 +287,7 @@ const VendorsPage = () => {
 
             {/* Results count */}
             <p className="text-xs text-muted-foreground">
-              {filteredVendors.length} vendor{filteredVendors.length !== 1 ? "s" : ""} found
+              {filteredVendors.length.toLocaleString()} vendor{filteredVendors.length !== 1 ? "s" : ""} found
             </p>
           </div>
 

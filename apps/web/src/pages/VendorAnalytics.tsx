@@ -55,7 +55,7 @@ const VendorAnalytics = () => {
       {
         title: "New Inquiries",
         value: dashboard.stats.inquiries_new,
-        description: `${dashboard.stats.inquiries_total} total inquiries`,
+        description: `${dashboard.stats.inquiries_total.toLocaleString()} total inquiries`,
         icon: MessageSquare,
       },
     ];
