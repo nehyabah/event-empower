@@ -1,41 +1,11 @@
-import { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Features from "@/components/home/Features";
 import Footer from "@/components/home/Footer";
-import { Calendar as CalendarIcon, Sparkles, Heart } from "lucide-react";
+import { Sparkles, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/auth/AuthModal";
-import { format } from "date-fns";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 
 const FeaturesPage = () => {
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Initialize date on mount (client-side) to prevent hydration mismatch
-  useEffect(() => {
-    const stored = localStorage.getItem("weddingDate");
-    if (stored) {
-      setDate(new Date(stored));
-    } else {
-      const d = new Date();
-      d.setMonth(d.getMonth() + 6);
-      setDate(d);
-    }
-  }, []);
-
-  const handleDateSelect = (newDate: Date | undefined) => {
-    if (!newDate) return;
-    setDate(newDate);
-    localStorage.setItem("weddingDate", newDate.toISOString());
-    setIsEditing(false);
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50">
       <Navbar />
@@ -61,35 +31,6 @@ const FeaturesPage = () => {
               cohesive, intelligent system that adapts to your unique vision.
             </p>
 
-            {/* Interactive Date Pill */}
-            <div className="flex justify-center pt-8">
-              <Popover open={isEditing} onOpenChange={setIsEditing}>
-                <PopoverTrigger asChild>
-                  <button className="group flex items-center gap-4 p-2 pr-6 pl-2 rounded-full bg-white border border-zinc-200 hover:border-zinc-300 shadow-sm hover:shadow-md transition-all duration-300 outline-none ring-offset-2 focus:ring-2 focus:ring-zinc-900">
-                    <div className="w-12 h-12 rounded-full bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-colors duration-300">
-                      <CalendarIcon className="w-5 h-5" />
-                    </div>
-                    <div className="flex flex-col items-start text-left">
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold">
-                        Wedding Date
-                      </span>
-                      <span className="text-zinc-900 font-serif text-lg font-medium min-w-[140px]">
-                        {date ? format(date, "MMMM d, yyyy") : "Select a date"}
-                      </span>
-                    </div>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="center">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                    className="p-3 pointer-events-auto border-none shadow-xl rounded-xl"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
         </section>
 
