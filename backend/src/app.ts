@@ -70,6 +70,15 @@ app.use(helmet({
       frameAncestors: ["'none'"],
     },
   },
+  // helmet defaults to same-origin, which severs window.opener between this
+  // page and Google's sign-in popup — the popup completes and then has no way
+  // to hand the credential back, so the flow simply stops. Popups it opens are
+  // still isolated from the rest of the origin.
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  // no-referrer strips the Origin that Google matches against the client's
+  // authorised JavaScript origins. This still sends nothing on downgrade and
+  // only the origin cross-site, never the path.
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 app.use(cors({
   origin: env.ALLOWED_ORIGINS.split(','),
