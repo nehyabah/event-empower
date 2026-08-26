@@ -50,6 +50,12 @@ export const googleAuthService = {
         throw new Error('An account with this email already exists. Please login with your password.');
       }
 
+      // Professionals are reviewed before they get access. Email signup
+      // enforces this; without it here, choosing Google was a way to
+      // self-approve, since UserModel.create defaults to 'approved'.
+      const resolvedType = userType || 'client';
+      const needsApproval = resolvedType === 'vendor' || resolvedType === 'planner';
+
       // Create new user
       user = await UserModel.create({
         email,
@@ -57,18 +63,18 @@ export const googleAuthService = {
         avatar_url: picture,
         auth_provider: 'google',
         google_id: googleId,
-        user_type: userType || 'client',
+        user_type: resolvedType,
+        approval_status: needsApproval ? 'pending' : 'approved',
       });
       isNewUser = true;
     } else if (user.deleted_at || !user.is_active) {
       throw new Error('Account is inactive. Please contact support.');
-    } else if (userType && userType !== user.user_type) {
-      // Update user type if provided and different
-      const updatedUser = await UserModel.update(user.id, { user_type: userType });
-      if (updatedUser) {
-        user = updatedUser;
-      }
     }
+    // userType is deliberately ignored for existing accounts. It comes from a
+    // dropdown on the sign-in page, so honouring it let anyone promote
+    // themselves — a client signing in with "planner" selected became one,
+    // skipping approval. Changing account type is an explicit action, not a
+    // side effect of logging in.
 
     // Generate tokens
     const tokens = await tokenService.generateTokenPair(user);

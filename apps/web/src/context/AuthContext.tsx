@@ -28,7 +28,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthUser>;
   register: (email: string, password: string, name: string, userType?: UserType, extra?: RegisterExtraFields) => Promise<void>;
   logout: () => Promise<void>;
-  loginWithGoogle: (idToken: string, userType?: UserType) => Promise<void>;
+  loginWithGoogle: (idToken: string, userType?: UserType) => Promise<{ isNewUser: boolean }>;
   sendPhoneOtp: (phone: string, channel: 'sms' | 'whatsapp') => Promise<void>;
   verifyPhoneOtp: (phone: string, code: string, userType?: UserType) => Promise<void>;
   updateUser: (updates: { name?: string; userType?: UserType }) => Promise<void>;
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryClient.clear();
   };
 
-  const loginWithGoogle = async (idToken: string, userType?: UserType) => {
+  const loginWithGoogle = async (idToken: string, userType?: UserType): Promise<{ isNewUser: boolean }> => {
     const response = await apiClient.post<{
       user: AuthUser;
       accessToken: string;
@@ -155,10 +155,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(response.error);
     }
 
-    if (response.data) {
-      setUser(response.data.user);
-      apiClient.setAccessToken(response.data.accessToken);
+    if (!response.data) {
+      throw new Error('Failed to sign in with Google');
     }
+
+    setUser(response.data.user);
+    apiClient.setAccessToken(response.data.accessToken);
+    // A professional signing up this way still owes us their business details.
+    return { isNewUser: response.data.isNewUser };
   };
 
   const sendPhoneOtp = async (phone: string, channel: 'sms' | 'whatsapp') => {

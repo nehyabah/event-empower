@@ -569,6 +569,13 @@ export const adminController = {
         email: z.string().email().optional(),
         phone: z.string().optional(),
         user_type: z.enum(['client', 'vendor', 'planner', 'admin']).optional(),
+        // Professional details. A vendor or planner who signed up with Google
+        // never supplies these, so an admin has to be able to fill them in
+        // before approving — the approvals list is keyed on business_name.
+        business_name: z.string().optional(),
+        instagram_handle: z.string().optional(),
+        whatsapp_phone: z.string().optional(),
+        city: z.string().optional(),
       });
       const validation = schema.safeParse(req.body);
       if (!validation.success) {
@@ -605,6 +612,14 @@ export const adminController = {
       if (updates.user_type !== undefined) {
         fields.push(`user_type = $${paramIndex++}`);
         values.push(updates.user_type);
+      }
+      // Empty string clears the column rather than storing ''.
+      for (const column of ['business_name', 'instagram_handle', 'whatsapp_phone', 'city'] as const) {
+        const value = updates[column];
+        if (value !== undefined) {
+          fields.push(`${column} = $${paramIndex++}`);
+          values.push(value || null);
+        }
       }
 
       if (fields.length === 0) {
