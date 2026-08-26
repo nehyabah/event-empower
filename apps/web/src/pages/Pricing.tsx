@@ -141,13 +141,13 @@ const PricingPage = () => {
               id="basic"
               title="Basic"
               price="Free"
-              description="Essential tools for couples just getting started with their planning journey."
+              description="Share the news, gather replies, and keep it all in one place."
               features={[
-                "Basic event planning tools",
-                "Limited task management",
-                "Access to public vendor listings",
-                "Simple wedding countdown",
-                "Up to 50 guests",
+                "Wedding website on your own link",
+                "Digital invitation card to share",
+                "RSVP tracking for up to 50 guests",
+                "Guest list with dietary notes and plus-ones",
+                "Browse the vendor directory",
               ]}
               buttonText="Get Started"
               selected={selectedTier === "basic"}
@@ -159,15 +159,16 @@ const PricingPage = () => {
               id="premium"
               title="Premium"
               price="9,999"
-              description="Our most popular plan. The complete toolkit for planning a stress-free wedding."
+              description="Everything you need to plan the day yourself, without the spreadsheets."
               features={[
                 "Everything in Basic",
-                "Advanced planning tools",
-                "Full task management & delegation",
-                "Complete vendor directory",
-                "Custom wedding website",
-                "Up to 300 guests",
-                "Budget tracking tools",
+                "Unlimited guests",
+                "RSVP deadlines with automatic email reminders",
+                "Budget tracker with payments, balances and due dates",
+                "Shared to-do lists and mood boards",
+                "Message and book vendors directly",
+                "Registry and cash gifts with bank details",
+                "Sync your calendar to Google or Apple",
               ]}
               buttonText="Start Free Trial"
               highlighted={true}
@@ -180,15 +181,14 @@ const PricingPage = () => {
               id="luxury"
               title="Luxury"
               price="24,999"
-              description="White-glove service, dedicated support, and exclusive perks for elaborate celebrations."
+              description="For multi-day celebrations and couples working with a planner."
               features={[
                 "Everything in Premium",
-                "Unlimited guests",
-                "Priority vendor access",
-                "Advanced budget analytics",
-                "Dedicated planning support",
-                "Custom event app for guests",
-                "VIP vendor discounts",
+                "Plan alongside your wedding planner in one workspace",
+                "Traditional, white wedding and reception as separate events",
+                "Vendor bookings and schedules on a shared calendar",
+                "Custom invitation card designs",
+                "Priority support",
               ]}
               buttonText="Contact Sales"
               selected={selectedTier === "luxury"}

@@ -306,19 +306,19 @@ const VendorHomepage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <MetricCard
                 title="Upcoming Events"
-                value={dashboard ? String(dashboard.stats.upcoming_events) : "--"}
+                value={dashboard ? dashboard.stats.upcoming_events.toLocaleString() : "--"}
                 description={upcomingEvents[0] ? `Next event: ${upcomingEvents[0].date}` : "No upcoming events"}
                 icon={Calendar}
               />
               <MetricCard 
                 title="New Inquiries" 
-                value={dashboard ? String(dashboard.stats.inquiries_new) : "--"} 
-                description={dashboard ? `${dashboard.stats.inquiries_total} total inquiries` : "No inquiries yet"} 
+                value={dashboard ? dashboard.stats.inquiries_new.toLocaleString() : "--"} 
+                description={dashboard ? `${dashboard.stats.inquiries_total.toLocaleString()} total inquiries` : "No inquiries yet"} 
                 icon={MessageSquare} 
               />
               <MetricCard 
                 title="Confirmed Events" 
-                value={dashboard ? String(dashboard.stats.confirmed_events) : "--"} 
+                value={dashboard ? dashboard.stats.confirmed_events.toLocaleString() : "--"} 
                 description="Confirmed bookings" 
                 icon={Users} 
               />
