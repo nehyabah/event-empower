@@ -36,6 +36,10 @@ const AdminUserDetail = () => {
     email: "",
     phone: "",
     user_type: "",
+    business_name: "",
+    instagram_handle: "",
+    whatsapp_phone: "",
+    city: "",
   });
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState("");
@@ -80,6 +84,10 @@ const AdminUserDetail = () => {
       email: data.email || "",
       phone: data.phone || "",
       user_type: data.userType,
+      business_name: data.businessName || "",
+      instagram_handle: data.instagramHandle || "",
+      whatsapp_phone: data.whatsappPhone || "",
+      city: data.city || "",
     });
     setIsEditing(true);
   };
@@ -275,6 +283,47 @@ const AdminUserDetail = () => {
                     <option value="admin">Admin</option>
                   </select>
                 </div>
+
+                {/* A professional who signs up with Google supplies none of
+                    these, and the approvals queue is keyed on business name. */}
+                {(editForm.user_type === "vendor" || editForm.user_type === "planner") && (
+                  <>
+                    <div>
+                      <Label htmlFor="business_name">Business / Brand Name</Label>
+                      <Input
+                        id="business_name"
+                        value={editForm.business_name ?? ""}
+                        onChange={(e) => setEditForm({ ...editForm, business_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="city">City / State</Label>
+                      <Input
+                        id="city"
+                        value={editForm.city ?? ""}
+                        onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="instagram_handle">Instagram</Label>
+                      <Input
+                        id="instagram_handle"
+                        placeholder="@handle"
+                        value={editForm.instagram_handle ?? ""}
+                        onChange={(e) => setEditForm({ ...editForm, instagram_handle: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="whatsapp_phone">WhatsApp</Label>
+                      <Input
+                        id="whatsapp_phone"
+                        placeholder="+234 800..."
+                        value={editForm.whatsapp_phone ?? ""}
+                        onChange={(e) => setEditForm({ ...editForm, whatsapp_phone: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleSaveEdit} disabled={actionLoading}>

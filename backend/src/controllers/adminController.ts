@@ -366,10 +366,18 @@ export const adminController = {
         suspended_at: Date | null;
         deleted_at: Date | null;
         admin_notes: string | null;
+        business_name: string | null;
+        instagram_handle: string | null;
+        whatsapp_phone: string | null;
+        city: string | null;
+        approval_status: string;
+        auth_provider: string | null;
         created_at: Date;
         updated_at: Date;
       }>(
-        `SELECT id, email, phone, name, user_type, avatar_url, is_active, suspended_at, deleted_at, admin_notes, created_at, updated_at
+        `SELECT id, email, phone, name, user_type, avatar_url, is_active, suspended_at, deleted_at,
+                admin_notes, business_name, instagram_handle, whatsapp_phone, city,
+                approval_status, auth_provider, created_at, updated_at
          FROM users
          WHERE id = $1`,
         [userId]
@@ -391,6 +399,12 @@ export const adminController = {
         suspendedAt: user.suspended_at,
         deletedAt: user.deleted_at,
         adminNotes: user.admin_notes,
+        businessName: user.business_name,
+        instagramHandle: user.instagram_handle,
+        whatsappPhone: user.whatsapp_phone,
+        city: user.city,
+        approvalStatus: user.approval_status,
+        authProvider: user.auth_provider,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
       });

@@ -10,6 +10,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormDescription,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -33,12 +34,15 @@ const baseSchema = z.object({
   message: "Passwords do not match",
   path: ["confirmPassword"],
 }).refine((d) => {
+  // City, Instagram and WhatsApp moved to the vendor's own profile — asking for
+  // them here made signup nine fields deep and blocked Google signups, which
+  // supply none of them. Business name stays: the approvals queue is keyed on it.
   if (d.role !== "couple") {
-    return !!(d.businessName?.trim()) && !!(d.instagramHandle?.trim() || d.whatsappPhone?.trim());
+    return !!(d.businessName?.trim());
   }
   return true;
 }, {
-  message: "Business name and at least Instagram or WhatsApp are required",
+  message: "Business name is required",
   path: ["businessName"],
 });
 
@@ -147,6 +151,21 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
           )}
         />
 
+        {/* Offered before the form rather than after it — a Google signup skips
+            the password entirely, so burying it under the fields wastes the
+            typing. It follows the role chosen above. */}
+        <div className="space-y-3">
+          <GoogleSignInButton userType={role === "couple" ? "client" : role} />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or sign up with email</span>
+            </div>
+          </div>
+        </div>
+
         {/* Name */}
         <FormField
           control={form.control}
@@ -209,81 +228,26 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
 
         {/* Professional extra fields */}
         {isProfessional && (
-          <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Business Details (required for verification)
-            </p>
-
-            <FormField
-              control={form.control}
-              name="businessName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business / Brand Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder={role === "vendor" ? "e.g. Bloom Photography" : "e.g. Ife Events Co."} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City / State</FormLabel>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input placeholder="e.g. Lagos" {...field} className="pl-9" />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="instagramHandle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Instagram</FormLabel>
-                    <div className="relative">
-                      <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input placeholder="@handle" {...field} className="pl-9" />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="whatsappPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>WhatsApp</FormLabel>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <FormControl>
-                        <Input placeholder="+234 800..." {...field} className="pl-9" />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              We use this to verify your business. At least Instagram or WhatsApp is required.
-            </p>
-          </div>
+          <FormField
+            control={form.control}
+            name="businessName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Business / Brand Name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder={role === "vendor" ? "e.g. Bloom Photography" : "e.g. Ife Events Co."}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Shown to our team when reviewing your application. You can add your
+                  city, Instagram and WhatsApp from your profile once approved.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         )}
 
         <Button type="submit" className="w-full mt-2 button-hover" disabled={isLoading}>
@@ -302,21 +266,6 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
           </p>
         )}
       </form>
-
-      {/* Signing up with Google skips the password, but still needs to know
-          which kind of account to create — so it follows the role selected
-          above. Planners and vendors keep the same approval gate. */}
-      <div className="space-y-4 pt-2">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">or</span>
-          </div>
-        </div>
-        <GoogleSignInButton userType={role === "couple" ? "client" : role} />
-      </div>
     </Form>
   );
 };
