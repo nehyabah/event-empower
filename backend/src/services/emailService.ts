@@ -91,6 +91,57 @@ async function deliver(message: {
 }
 
 export const emailService = {
+  /** Confirms a professional's profile reached the review queue. */
+  async sendOnboardingSubmitted({ toEmail, toName }: { toEmail: string; toName: string }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — onboarding submitted for ${toEmail}`);
+      return;
+    }
+    await deliver({
+      to: toEmail,
+      subject: 'We have your details — application under review',
+      html: buildNoticeHtml({
+        heading: 'Application received',
+        greeting: toName ? `Hi ${toName},` : 'Hello,',
+        body: `Thanks for setting up your profile. Our team reviews every vendor and planner
+               before they go live, usually within 1 working day. We'll email you the moment
+               you're approved — there's nothing else you need to do.`,
+        ctaLabel: 'View your profile',
+        ctaUrl: `${env.APP_URL}/home`,
+      }),
+      text: buildNoticeText({
+        greeting: toName ? `Hi ${toName},` : 'Hello,',
+        body: "Thanks for setting up your profile. Our team reviews every vendor and planner before they go live, usually within 1 working day. We'll email you the moment you're approved.",
+        ctaUrl: `${env.APP_URL}/home`,
+      }),
+    });
+  },
+
+  /** Tells a professional their account is live. */
+  async sendAccountApproved({ toEmail, toName }: { toEmail: string; toName: string }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — approval for ${toEmail}`);
+      return;
+    }
+    await deliver({
+      to: toEmail,
+      subject: "You're approved — welcome to àjọyọ̀",
+      html: buildNoticeHtml({
+        heading: "You're approved",
+        greeting: toName ? `Hi ${toName},` : 'Hello,',
+        body: `Your account has been reviewed and approved. You now have full access —
+               couples can find you, and you can start taking bookings.`,
+        ctaLabel: 'Go to your dashboard',
+        ctaUrl: `${env.APP_URL}/home`,
+      }),
+      text: buildNoticeText({
+        greeting: toName ? `Hi ${toName},` : 'Hello,',
+        body: 'Your account has been reviewed and approved. You now have full access — couples can find you, and you can start taking bookings.',
+        ctaUrl: `${env.APP_URL}/home`,
+      }),
+    });
+  },
+
   async sendPlannerInvite({
     toEmail,
     toName,
@@ -296,6 +347,53 @@ function escapeHtml(value: string): string {
 }
 
 /** Plain-text mirror of the invite; every HTML mail should carry one. */
+/** Shared shell for short transactional notices, matching the invite styling. */
+function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
+  heading: string; greeting: string; body: string; ctaLabel: string; ctaUrl: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background-color:#faf9f7;font-family:Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f7;padding:48px 16px 64px;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:32px;">
+        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">àjọyọ̀</p>
+      </td></tr>
+      <tr><td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="height:4px;background:#b2834c;"></td></tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="padding:44px 48px 40px;">
+            <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;font-weight:500;color:#2e3240;">${heading}</h1>
+            <p style="margin:0 0 12px;font-size:15px;color:#4a4a4a;">${greeting}</p>
+            <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#4a4a4a;">${body}</p>
+            <a href="${ctaUrl}" style="display:inline-block;background:#2e3240;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:6px;font-size:14px;">${ctaLabel}</a>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td align="center" style="padding-top:28px;">
+        <p style="margin:0;font-size:12px;color:#9b9b9b;">àjọyọ̀ — wedding planning</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
+/** Plain-text mirror of buildNoticeHtml. */
+function buildNoticeText({ greeting, body, ctaUrl }: {
+  greeting: string; body: string; ctaUrl: string;
+}): string {
+  return [greeting, '', body.replace(/\s+/g, ' ').trim(), '', ctaUrl, '', '—', 'ajoyo — wedding planning'].join('\n');
+}
+
 function buildInviteText({ toName, plannerName, acceptUrl, inviteCode }: {
   toName: string; plannerName: string; acceptUrl: string; inviteCode: string;
 }): string {

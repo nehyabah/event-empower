@@ -29,6 +29,8 @@ export interface AuthResult {
     userType: UserType;
     avatarUrl: string | null;
     approvalStatus: string;
+    /** Null until the professional first saves their profile for review. */
+    onboardingSubmittedAt: string | null;
   };
   tokens: TokenPair;
 }
@@ -77,6 +79,9 @@ export const authService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        onboardingSubmittedAt: user.onboarding_submitted_at
+          ? new Date(user.onboarding_submitted_at).toISOString()
+          : null,
       },
       tokens,
     };
@@ -118,6 +123,9 @@ export const authService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        onboardingSubmittedAt: user.onboarding_submitted_at
+          ? new Date(user.onboarding_submitted_at).toISOString()
+          : null,
       },
       tokens,
     };
@@ -155,6 +163,9 @@ export const authService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        onboardingSubmittedAt: user.onboarding_submitted_at
+          ? new Date(user.onboarding_submitted_at).toISOString()
+          : null,
       },
       tokens,
     };

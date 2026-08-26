@@ -19,6 +19,7 @@ export interface User {
   created_at: Date;
   updated_at: Date;
   approval_status: 'pending' | 'approved' | 'rejected';
+  onboarding_submitted_at: Date | string | null;
   business_name: string | null;
   instagram_handle: string | null;
   whatsapp_phone: string | null;

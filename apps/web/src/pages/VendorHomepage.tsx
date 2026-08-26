@@ -1,5 +1,6 @@
 
 import { formatCurrency } from "@/lib/currency";
+import ApprovalCelebration from "@/components/auth/ApprovalCelebration";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -210,17 +211,30 @@ const VendorHomepage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      <ApprovalCelebration />
       <main className="flex-grow pt-20 md:pt-24 pb-16">
         {user?.approvalStatus === 'pending' && (
           <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
             <div className="container mx-auto flex items-start gap-3">
               <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-amber-900">Your account is pending approval</p>
-                <p className="text-xs text-amber-700 mt-0.5">
-                  We're reviewing your business details. You'll receive a notification once approved — usually within 1 working day. You won't appear in the marketplace until then.
-                </p>
-              </div>
+              {/* 'pending' is set at signup, so on its own it says nothing about
+                  whether they have actually sent anything in to review yet. */}
+              {user.onboardingSubmittedAt ? (
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Your account is pending approval</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    We're reviewing your business details. You'll get an email once approved — usually within 1 working day. You won't appear in the marketplace until then.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Finish setting up your profile</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    We can't review your account until you've added your business details.{" "}
+                    <Link to="/vendor-profile" className="underline font-medium">Complete your profile</Link>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}

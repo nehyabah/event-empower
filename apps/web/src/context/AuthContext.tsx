@@ -12,6 +12,8 @@ export interface AuthUser {
   avatarUrl: string | null;
   adminRole?: string | null;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
+  /** Null until a professional first submits their profile for review. */
+  onboardingSubmittedAt?: string | null;
 }
 
 export interface RegisterExtraFields {
