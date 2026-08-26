@@ -34,7 +34,7 @@ const Footer = () => {
   return (
     <footer className="bg-secondary pt-20 pb-10">
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="font-serif text-lg font-medium">àjọyọ̀</span>
@@ -79,32 +79,6 @@ const Footer = () => {
               <li>
                 <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
                   Contact Support
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-serif text-lg font-medium mb-4">Resources</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link to="/help" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link to="/regions" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Regional Guides
-                </Link>
-              </li>
-              <li>
-                <Link to="/traditions" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Nigerian Wedding Traditions
-                </Link>
-              </li>
-              <li>
-                <Link to="/vendors/join" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Become a Vendor
                 </Link>
               </li>
             </ul>

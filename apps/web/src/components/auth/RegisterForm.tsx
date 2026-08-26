@@ -72,6 +72,9 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
     },
   });
 
+  // Google is the primary path now, so the email fields start collapsed —
+  // expanded, the form ran past the top and bottom of a laptop viewport.
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const navigate = useNavigate();
   const role = form.watch("role");
   const isProfessional = role === "vendor" || role === "planner";
@@ -179,114 +182,119 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
               onSuccess?.();
             }}
           />
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">or sign up with email</span>
-            </div>
+          {!showEmailForm && (
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(true)}
+              className="w-full text-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              or sign up with email
+            </button>
+          )}
+        </div>
+
+        {showEmailForm && (
+          <>
+          {/* Name */}
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{isProfessional ? "Your Full Name" : "Full Name"}</FormLabel>
+                <FormControl>
+                  <Input placeholder="John Doe" {...field} className="input-elegant" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Email */}
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="you@example.com" {...field} className="input-elegant" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Password */}
+          <div className="grid grid-cols-2 gap-3">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input placeholder="••••••••" type="password" {...field} className="input-elegant" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm</FormLabel>
+                  <FormControl>
+                    <Input placeholder="••••••••" type="password" {...field} className="input-elegant" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-        </div>
 
-        {/* Name */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{isProfessional ? "Your Full Name" : "Full Name"}</FormLabel>
-              <FormControl>
-                <Input placeholder="John Doe" {...field} className="input-elegant" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          {/* Professional extra fields */}
+          {isProfessional && (
+            <FormField
+              control={form.control}
+              name="businessName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business / Brand Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={role === "vendor" ? "e.g. Bloom Photography" : "e.g. Ife Events Co."}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Shown to our team when reviewing your application. You can add your
+                    city, Instagram and WhatsApp from your profile once approved.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
 
-        {/* Email */}
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="you@example.com" {...field} className="input-elegant" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          <Button type="submit" className="w-full mt-2 button-hover" disabled={isLoading}>
+            {isLoading ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</>
+            ) : isProfessional ? (
+              "Submit Application"
+            ) : (
+              "Create Account"
+            )}
+          </Button>
+
+          {isProfessional && (
+            <p className="text-xs text-center text-muted-foreground">
+              Applications are reviewed within 1 working day. You'll be notified once approved.
+            </p>
           )}
-        />
-
-        {/* Password */}
-        <div className="grid grid-cols-2 gap-3">
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input placeholder="••••••••" type="password" {...field} className="input-elegant" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm</FormLabel>
-                <FormControl>
-                  <Input placeholder="••••••••" type="password" {...field} className="input-elegant" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Professional extra fields */}
-        {isProfessional && (
-          <FormField
-            control={form.control}
-            name="businessName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Business / Brand Name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder={role === "vendor" ? "e.g. Bloom Photography" : "e.g. Ife Events Co."}
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Shown to our team when reviewing your application. You can add your
-                  city, Instagram and WhatsApp from your profile once approved.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        <Button type="submit" className="w-full mt-2 button-hover" disabled={isLoading}>
-          {isLoading ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</>
-          ) : isProfessional ? (
-            "Submit Application"
-          ) : (
-            "Create Account"
-          )}
-        </Button>
-
-        {isProfessional && (
-          <p className="text-xs text-center text-muted-foreground">
-            Applications are reviewed within 1 working day. You'll be notified once approved.
-          </p>
+          </>
         )}
       </form>
     </Form>

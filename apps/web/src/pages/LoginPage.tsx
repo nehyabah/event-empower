@@ -29,12 +29,12 @@ const LoginPage = () => {
   if (isLoading) return null;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6 sm:py-8">
       <div className="w-full max-w-md">
-        <p className="text-center text-2xl font-serif font-medium mb-8 tracking-tight">àjọyọ̀</p>
+        <p className="text-center text-2xl font-serif font-medium mb-5 tracking-tight">àjọyọ̀</p>
 
         <Card>
-          <CardContent className="pt-8 pb-8 px-8 space-y-6">
+          <CardContent className="p-6 sm:p-7 space-y-5">
             {/* Tab switcher */}
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button
