@@ -299,7 +299,10 @@ export const plannerService = {
 
     // Send email if client has an email address on file
     if (client.email) {
-      const planner = await queryOne<{ name: string }>('SELECT name FROM users WHERE id = $1', [plannerId]);
+      const planner = await queryOne<{ name: string; email: string | null }>(
+        'SELECT name, email FROM users WHERE id = $1',
+        [plannerId]
+      );
       const plannerName = planner?.name || 'Your planner';
       const toName = [client.partner1_name, client.partner2_name].filter(Boolean).join(' & ') || '';
       await emailService.sendPlannerInvite({
@@ -307,6 +310,9 @@ export const plannerService = {
         toName,
         plannerName,
         inviteCode,
+        // Replies land with the planner rather than an unmonitored mailbox,
+        // which also reads as more legitimate to spam filters.
+        ...(planner?.email ? { replyTo: planner.email } : {}),
       })
         .then(() => {
           emailSent = true;

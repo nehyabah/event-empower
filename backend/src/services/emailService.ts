@@ -37,7 +37,14 @@ function parseSender(value: string): { name?: string; email: string } {
 }
 
 /** Deliver through whichever provider is configured. */
-async function deliver(message: { to: string; subject: string; html: string }): Promise<void> {
+async function deliver(message: {
+  to: string;
+  subject: string;
+  html: string;
+  /** Mail with no text/plain alternative is a long-standing spam signal. */
+  text: string;
+  replyTo?: string;
+}): Promise<void> {
   if (brevoApiKey) {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -51,6 +58,8 @@ async function deliver(message: { to: string; subject: string; html: string }): 
         to: [{ email: message.to }],
         subject: message.subject,
         htmlContent: message.html,
+        textContent: message.text,
+        ...(message.replyTo ? { replyTo: { email: message.replyTo } } : {}),
       }),
     });
 
@@ -67,7 +76,14 @@ async function deliver(message: { to: string; subject: string; html: string }): 
     return;
   }
 
-  const { error } = await resend!.emails.send({ from: env.EMAIL_FROM, ...message });
+  const { error } = await resend!.emails.send({
+    from: env.EMAIL_FROM,
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+    text: message.text,
+    ...(message.replyTo ? { replyTo: message.replyTo } : {}),
+  });
   if (error) {
     console.error('[email] Resend error:', error);
     throw new Error('Failed to send email');
@@ -80,11 +96,14 @@ export const emailService = {
     toName,
     plannerName,
     inviteCode,
+    replyTo,
   }: {
     toEmail: string;
     toName: string;
     plannerName: string;
     inviteCode: string;
+    /** The planner's own address, so a couple hitting reply reaches a human. */
+    replyTo?: string;
   }): Promise<void> {
     const acceptUrl = `${env.APP_URL}/accept-invite?code=${inviteCode}`;
 
@@ -97,6 +116,8 @@ export const emailService = {
       to: toEmail,
       subject: `${plannerName} is ready to plan your wedding`,
       html: buildInviteHtml({ toName, plannerName, acceptUrl, inviteCode }),
+      text: buildInviteText({ toName, plannerName, acceptUrl, inviteCode }),
+      ...(replyTo ? { replyTo } : {}),
     });
   },
 
@@ -110,6 +131,7 @@ export const emailService = {
     rsvpUrl,
     deadline,
     customMessage,
+    replyTo,
   }: {
     toEmail: string;
     guestName: string;
@@ -119,6 +141,7 @@ export const emailService = {
     rsvpUrl: string;
     deadline: string | null;
     customMessage?: string | null;
+    replyTo?: string;
   }): Promise<void> {
     if (emailTransport === 'none') {
       console.log(`[email] no provider configured — RSVP reminder for ${toEmail}: ${rsvpUrl}`);
@@ -139,6 +162,16 @@ export const emailService = {
         deadline,
         customMessage,
       }),
+      text: buildRsvpReminderText({
+        guestName,
+        coupleNames,
+        eventDate,
+        venue,
+        rsvpUrl,
+        deadline,
+        customMessage,
+      }),
+      ...(replyTo ? { replyTo } : {}),
     });
   },
 };
@@ -262,6 +295,47 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** Plain-text mirror of the invite; every HTML mail should carry one. */
+function buildInviteText({ toName, plannerName, acceptUrl, inviteCode }: {
+  toName: string; plannerName: string; acceptUrl: string; inviteCode: string;
+}): string {
+  return [
+    toName ? `Hi ${toName},` : 'Hello,',
+    '',
+    `${plannerName} has invited you to plan your wedding on ajoyo.`,
+    '',
+    'Accept your invitation:',
+    acceptUrl,
+    '',
+    `Or enter this code in the app: ${inviteCode}`,
+    '',
+    '—',
+    'ajoyo — wedding planning',
+  ].join('\n');
+}
+
+/** Plain-text mirror of the RSVP reminder. */
+function buildRsvpReminderText({ guestName, coupleNames, eventDate, venue, rsvpUrl, deadline, customMessage }: {
+  guestName: string; coupleNames: string; eventDate: string | null; venue: string | null;
+  rsvpUrl: string; deadline: string | null; customMessage?: string | null;
+}): string {
+  return [
+    `Hi ${guestName},`,
+    '',
+    customMessage || `${coupleNames} would love to know if you can join them.`,
+    '',
+    eventDate ? `Date: ${eventDate}` : null,
+    venue ? `Venue: ${venue}` : null,
+    deadline ? `Please respond by ${deadline}.` : null,
+    '',
+    'RSVP here:',
+    rsvpUrl,
+    '',
+    '—',
+    'ajoyo — wedding planning',
+  ].filter((line) => line !== null).join('\n');
+}
+
 function buildInviteHtml({
   toName,
   plannerName,
@@ -280,8 +354,6 @@ function buildInviteHtml({
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background-color:#faf9f7;font-family:'Montserrat',Helvetica,Arial,sans-serif;">
 
