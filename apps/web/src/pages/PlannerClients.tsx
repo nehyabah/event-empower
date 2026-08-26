@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
+import ApprovalGate from "@/components/auth/ApprovalGate";
 import { formatCurrency } from "@/lib/currency";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -275,12 +276,14 @@ const PlannerClients = () => {
         <Check className="h-3 w-3" />Linked
       </span>
     ) : (
-      <button
-        onClick={() => copyInvite(client)}
-        className="text-xs text-primary underline underline-offset-2 hover:opacity-80"
-      >
-        {client.invite_code ? "Copy invite" : "Generate invite"}
-      </button>
+      <ApprovalGate>
+        <button
+          onClick={() => copyInvite(client)}
+          className="text-xs text-primary underline underline-offset-2 hover:opacity-80"
+        >
+          {client.invite_code ? "Copy invite" : "Generate invite"}
+        </button>
+      </ApprovalGate>
     );
 
   const ClientCard = ({ client }: { client: PlannerClient }) => (
@@ -483,10 +486,12 @@ const PlannerClients = () => {
             <h1 className="text-3xl font-serif">Client Management</h1>
             <p className="text-muted-foreground">Manage all your wedding clients</p>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)}>
+          <ApprovalGate>
+            <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add New Client
-          </Button>
+            </Button>
+          </ApprovalGate>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 mb-6">
