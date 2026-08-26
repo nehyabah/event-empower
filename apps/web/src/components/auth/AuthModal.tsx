@@ -45,8 +45,8 @@ const AuthModal = ({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-white gap-0 border-none shadow-2xl z-[80]">
-        <div className="flex flex-col md:flex-row h-full md:min-h-[550px]">
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-white gap-0 border-none shadow-2xl z-[80] max-h-[92vh]">
+        <div className="flex flex-col md:flex-row max-h-[92vh] md:min-h-[520px]">
           <div className="hidden md:flex flex-col justify-between w-1/2 bg-zinc-900 p-10 text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1519225469958-3160e0d5a3c2?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/60 to-transparent"></div>
@@ -75,9 +75,9 @@ const AuthModal = ({
             </div>
           </div>
 
-          <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white relative">
-            <div className="max-w-xs mx-auto w-full">
-              <div className="mb-10 text-center md:text-left">
+          <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col bg-white relative overflow-y-auto">
+            <div className="max-w-xs mx-auto w-full my-auto">
+              <div className="mb-6 text-center md:text-left">
                 <DialogTitle className="text-3xl font-serif font-medium text-zinc-900 mb-2 tracking-tight">
                   {mode === "login" ? "Sign In" : "Create Account"}
                 </DialogTitle>
