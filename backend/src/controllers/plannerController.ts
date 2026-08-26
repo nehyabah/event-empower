@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { notifyOnboardingSubmitted } from '../services/onboardingService.js';
 import { z } from 'zod';
 import { plannerService } from '../services/plannerService.js';
 import { PlannerProfileModel } from '../models/PlannerProfile.js';
@@ -734,6 +735,8 @@ export const plannerController = {
         await query('UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2', [name, userId]);
       }
       const profile = await PlannerProfileModel.upsert(userId, profileData);
+      // Fires once, only while still pending — see notifyOnboardingSubmitted.
+      await notifyOnboardingSubmitted(userId);
       res.json(profile);
     } catch (error) {
       next(error);

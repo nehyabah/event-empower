@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { notifyOnboardingSubmitted } from '../services/onboardingService.js';
 import { z } from 'zod';
 import { vendorService } from '../services/vendorService.js';
 import { storageService } from '../services/storageService.js';
@@ -446,6 +447,8 @@ export const vendorController = {
         images: mappedImages,
       });
 
+      // Fires once, only while still pending — see notifyOnboardingSubmitted.
+      await notifyOnboardingSubmitted(req.user!.userId);
       res.json(vendor);
     } catch (error) {
       next(error);

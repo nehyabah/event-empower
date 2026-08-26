@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { emailService } from '../services/emailService.js';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
@@ -2450,10 +2451,20 @@ export const adminController = {
   async approveUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      await query(
-        `UPDATE users SET approval_status = 'approved', approved_at = NOW(), approved_by = $2 WHERE id = $1`,
+      const approved = await queryOne<{ email: string | null; name: string | null }>(
+        `UPDATE users SET approval_status = 'approved', approved_at = NOW(), approved_by = $2
+         WHERE id = $1 RETURNING email, name`,
         [id, req.user!.userId]
       );
+
+      // Best-effort: an email outage must not make the approval itself fail,
+      // since the account is already live at this point.
+      if (approved?.email) {
+        await emailService
+          .sendAccountApproved({ toEmail: approved.email, toName: approved.name || '' })
+          .catch((err) => console.error('[approveUser] email send failed:', err));
+      }
+
       res.json({ success: true });
     } catch (error) {
       next(error);

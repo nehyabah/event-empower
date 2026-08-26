@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ApprovalCelebration from "@/components/auth/ApprovalCelebration";
 import { formatCurrency } from "@/lib/currency";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -115,16 +116,29 @@ const PlannerHomepage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <ApprovalCelebration />
       {user?.approvalStatus === 'pending' && (
         <div className="fixed top-0 left-0 right-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-3 mt-16">
           <div className="container mx-auto flex items-start gap-3">
             <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-900">Account pending approval</p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                We're verifying your details. You'll be notified within 1 working day once approved.
-              </p>
-            </div>
+            {/* 'pending' is set at signup, so on its own it says nothing about
+                whether they have actually sent anything in to review yet. */}
+            {user.onboardingSubmittedAt ? (
+              <div>
+                <p className="text-sm font-medium text-amber-900">Account pending approval</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  We're verifying your details. You'll get an email within 1 working day once approved.
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-medium text-amber-900">Finish setting up your profile</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  We can't review your account until you've added your details.{" "}
+                  <Link to="/planner-profile" className="underline font-medium">Complete your profile</Link>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireApproved } from '../middleware/requireApproved.js';
 import multer from 'multer';
 import { plannerController } from '../controllers/plannerController.js';
 import { authenticate, requireUserType } from '../middleware/auth.js';
@@ -25,7 +26,7 @@ router.get('/clients/:id', plannerController.getClient);
 router.post('/clients', plannerController.createClient);
 router.patch('/clients/:id', plannerController.updateClient);
 router.delete('/clients/:id', plannerController.deleteClient);
-router.post('/clients/:id/invite', plannerController.createInvite);
+router.post('/clients/:id/invite', requireApproved, plannerController.createInvite);
 router.post('/clients/:id/archive', plannerController.archiveClient);
 router.post('/clients/:id/unarchive', plannerController.unarchiveClient);
 
