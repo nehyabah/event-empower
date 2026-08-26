@@ -17,6 +17,12 @@ COPY backend/ ./backend/
 COPY packages/ ./packages/
 COPY apps/web/ ./apps/web/
 
+# Vite inlines VITE_* at build time, and a Dockerfile sees Railway's variables
+# only if it declares them as build args. Without this the Google button would
+# compile out to nothing and simply never appear.
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 # build:backend also copies the .sql migrations into dist (tsc emits JS only).
 RUN npm run build:backend && npm run build:web
 
