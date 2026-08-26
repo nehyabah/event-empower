@@ -114,6 +114,13 @@ class ApiClient {
       }
 
       if (!response.ok) {
+        // The approval gate refuses every write by an unreviewed vendor or
+        // planner. Buttons are disabled where we know to disable them; this
+        // is the backstop, so an ungated action cannot fail with a bare
+        // "Request failed" that never mentions approval.
+        if (response.status === 403 && (data as { approvalStatus?: string })?.approvalStatus) {
+          notifyApprovalBlocked((data as { error?: string })?.error || 'Your account is awaiting approval.');
+        }
         return {
           error: (data as { error?: string })?.error || 'Request failed',
           status: response.status,
@@ -154,6 +161,21 @@ class ApiClient {
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
+}
+
+/**
+ * Surfaces an approval refusal once, not per failed request — one page action
+ * can fan out into several writes, and a stack of identical toasts explaining
+ * the same block helps nobody.
+ */
+let lastApprovalNotice = 0;
+function notifyApprovalBlocked(message: string) {
+  const now = Date.now();
+  if (now - lastApprovalNotice < 4000) return;
+  lastApprovalNotice = now;
+  void import('sonner').then(({ toast }) => {
+    toast.warning('Awaiting approval', { description: message });
+  });
 }
 
 export const apiClient = new ApiClient();
