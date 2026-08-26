@@ -63,7 +63,7 @@ const loadGis = (): Promise<void> => {
 interface GoogleSignInButtonProps {
   /** Applied only when this sign-in creates a new account. */
   userType?: UserType;
-  onSuccess?: () => void;
+  onSuccess?: (result: { isNewUser: boolean }) => void;
 }
 
 const GoogleSignInButton = ({ userType, onSuccess }: GoogleSignInButtonProps) => {
@@ -76,8 +76,8 @@ const GoogleSignInButton = ({ userType, onSuccess }: GoogleSignInButtonProps) =>
   const handler = useRef<(credential: string) => void>();
   handler.current = async (credential: string) => {
     try {
-      await loginWithGoogle(credential, userType);
-      onSuccess?.();
+      const result = await loginWithGoogle(credential, userType);
+      onSuccess?.(result);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Google sign-in failed");
     }

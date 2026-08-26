@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,6 +72,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
     },
   });
 
+  const navigate = useNavigate();
   const role = form.watch("role");
   const isProfessional = role === "vendor" || role === "planner";
 
@@ -88,10 +90,16 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
       );
 
       if (isProfessional) {
-        toast.success("Application submitted!", {
-          description: "We'll review your profile and get back to you within 1 working day.",
+        toast.success("Account created", {
+          description: "Add your details so we can review your application.",
           duration: 6000,
         });
+        // Onboarding is theirs to do — nobody else knows their business.
+        navigate(userType === "vendor" ? "/vendor-profile" : "/planner-profile", {
+          replace: true,
+          state: { onboarding: true },
+        });
+        return;
       } else {
         toast.success("Welcome to àjọyọ̀!", {
           description: `Let's start planning, ${data.name}!`,
@@ -155,7 +163,22 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
             the password entirely, so burying it under the fields wastes the
             typing. It follows the role chosen above. */}
         <div className="space-y-3">
-          <GoogleSignInButton userType={role === "couple" ? "client" : role} />
+          <GoogleSignInButton
+            userType={role === "couple" ? "client" : role}
+            onSuccess={({ isNewUser }) => {
+              // A professional signing up with Google gives us nothing but an
+              // email, so send them straight to their own profile to fill it
+              // in — an admin cannot invent their business details.
+              if (isNewUser && role !== "couple") {
+                navigate(role === "vendor" ? "/vendor-profile" : "/planner-profile", {
+                  replace: true,
+                  state: { onboarding: true },
+                });
+                return;
+              }
+              onSuccess?.();
+            }}
+          />
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />

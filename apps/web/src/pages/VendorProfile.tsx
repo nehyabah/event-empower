@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import OnboardingBanner from "@/components/auth/OnboardingBanner";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
@@ -290,6 +291,7 @@ const VendorProfile = () => {
       <Navbar />
       <main className="pt-24 flex-grow">
         <div className="container mx-auto px-4 py-8">
+          <OnboardingBanner />
           <h1 className="text-3xl font-serif mb-2">Vendor Profile</h1>
           <p className="text-muted-foreground mb-8">
             Manage your vendor profile, services, and gallery

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import OnboardingBanner from "@/components/auth/OnboardingBanner";
 import { plannerService, PlannerProfileData, PlannerProfileResponse } from "@/services/api/plannerService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,6 +161,9 @@ const PlannerProfilePage = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 pt-16">
+        <div className="container mx-auto px-4 pt-6">
+          <OnboardingBanner />
+        </div>
         {/* Cover Photo */}
         <div className="relative h-48 sm:h-60 bg-muted overflow-hidden">
           {coverImageUrl ? (
