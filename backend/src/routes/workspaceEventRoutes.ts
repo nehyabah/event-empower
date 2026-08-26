@@ -1,10 +1,15 @@
 import { Router } from 'express';
+import { blockUnapprovedWrites } from '../middleware/requireApproved.js';
 import { authenticate } from '../middleware/auth.js';
 import { workspaceEventController } from '../controllers/workspaceEventController.js';
 
 const router = Router();
 
 router.use(authenticate);
+
+// Workspace events surface to everyone in the workspace, so an unreviewed
+// professional should not be able to create them.
+router.use(blockUnapprovedWrites());
 
 // Available to every role: couples, planners and vendors all schedule against
 // a wedding they are connected to.
