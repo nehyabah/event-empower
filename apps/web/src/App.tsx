@@ -126,6 +126,7 @@ const LandingRoute = () => {
 const AppRoutes = () => {
   return (
     <>
+      <ScrollToTop />
       <Routes>
       {/* Landing page - redirects authenticated users */}
       <Route path="/" element={<LandingRoute />} />
