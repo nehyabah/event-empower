@@ -102,9 +102,9 @@ export const emailService = {
     const greeting = toName ? `Hi ${toName},` : 'Hello,';
     await deliver({
       to: toEmail,
-      subject: `${code} is your Ajoyo sign-in code`,
+      subject: `${code} is your àjọyọ sign-in code`,
       html: buildCodeHtml({
-        heading: 'Sign in to Ajoyo',
+        heading: 'Sign in to àjọyọ',
         greeting,
         code,
         body: `Enter this code to sign in. It expires in ${expiresInMinutes} minutes.`,
@@ -118,7 +118,7 @@ export const emailService = {
         "If you didn't try to sign in, you can ignore this email — nobody has access to your account.",
         '',
         '—',
-        'Ajoyo — wedding planning',
+        'àjọyọ — wedding planning',
       ].join('\n'),
     });
   },
@@ -134,7 +134,7 @@ export const emailService = {
     const greeting = toName ? `Hi ${toName},` : 'Hello,';
     await deliver({
       to: toEmail,
-      subject: `${code} is your Ajoyo password reset code`,
+      subject: `${code} is your àjọyọ password reset code`,
       html: buildCodeHtml({
         heading: 'Reset your password',
         greeting,
@@ -150,7 +150,7 @@ export const emailService = {
         "If you didn't ask to reset your password, you can ignore this email — nothing has changed.",
         '',
         '—',
-        'Ajoyo — wedding planning',
+        'àjọyọ — wedding planning',
       ].join('\n'),
     });
   },
@@ -189,7 +189,7 @@ export const emailService = {
     }
     await deliver({
       to: toEmail,
-      subject: "You're approved — welcome to Ajoyo",
+      subject: "You're approved — welcome to àjọyọ",
       html: buildNoticeHtml({
         heading: "You're approved",
         greeting: toName ? `Hi ${toName},` : 'Hello,',
@@ -407,12 +407,12 @@ function buildCodeHtml({ heading, greeting, code, body }: {
 const SENDER_NAME = 'Jessie';
 
 /**
- * The brand carries a combining grave on its final letter (U+1ECD + U+0300)
- * which many mail clients cannot compose, drawing a stray accent instead. HTML
- * lets us name fonts that handle it; plain text and headers cannot, so those
- * use "Ajoyo".
+ * Every character here is precomposed — à is U+00E0 and ọ is U+1ECD — so this
+ * renders anywhere, including in headers and plain-text parts. The earlier
+ * spelling ended in a combining grave (U+0300) that many mail clients could
+ * not compose, drawing a stray accent after the word.
  */
-const BRAND_HTML = 'àjọyọ̀';
+const BRAND_HTML = 'àjọyọ';
 const BRAND_FONT = "Georgia,'Times New Roman',serif";
 
 function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
@@ -452,7 +452,7 @@ function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
 function buildNoticeText({ greeting, body, ctaUrl }: {
   greeting: string; body: string; ctaUrl: string;
 }): string {
-  return [greeting, '', body.replace(/\s+/g, ' ').trim(), '', ctaUrl, '', '—', 'Ajoyo — wedding planning'].join('\n');
+  return [greeting, '', body.replace(/\s+/g, ' ').trim(), '', ctaUrl, '', '—', 'àjọyọ — wedding planning'].join('\n');
 }
 
 function buildInviteText({ toName, plannerName, acceptUrl, inviteCode }: {
@@ -469,7 +469,7 @@ function buildInviteText({ toName, plannerName, acceptUrl, inviteCode }: {
     `Or enter this code in the app: ${inviteCode}`,
     '',
     '—',
-    'Ajoyo — wedding planning',
+    'àjọyọ — wedding planning',
   ].join('\n');
 }
 
@@ -491,7 +491,7 @@ function buildRsvpReminderText({ guestName, coupleNames, eventDate, venue, rsvpU
     rsvpUrl,
     '',
     '—',
-    'Ajoyo — wedding planning',
+    'àjọyọ — wedding planning',
   ].filter((line) => line !== null).join('\n');
 }
 

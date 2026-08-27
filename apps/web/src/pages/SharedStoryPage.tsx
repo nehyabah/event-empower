@@ -561,7 +561,7 @@ const SharedStoryPage = () => {
               <Sprig src={florals.sprig} className={`${florals.sprigClass ?? "h-16 w-36"} mb-5`} opacity={0.75} />
             )}
             <p className="font-serif italic text-lg mb-2 opacity-80">{coupleStory.hashtag ? `#${coupleStory.hashtag}` : "Forever & Always"}</p>
-            <p className="opacity-60">Created with àjọyọ̀</p>
+            <p className="opacity-60">Created with àjọyọ</p>
           </div>
         </footer>
       </div>

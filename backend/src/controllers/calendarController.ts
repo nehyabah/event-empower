@@ -81,7 +81,7 @@ export const calendarController = {
       }
 
       const entries = await calendarService.getEntries(user.id, user.user_type);
-      const calendarName = user.name ? `àjọyọ̀ — ${user.name}` : 'àjọyọ̀';
+      const calendarName = user.name ? `àjọyọ — ${user.name}` : 'àjọyọ';
       const body = icsService.build(entries, { calendarName, domain: feedDomain() });
 
       res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
@@ -99,7 +99,7 @@ export const calendarController = {
     try {
       const { userId, userType } = req.user!;
       const entries = await calendarService.getEntries(userId, userType);
-      const body = icsService.build(entries, { calendarName: 'àjọyọ̀', domain: feedDomain() });
+      const body = icsService.build(entries, { calendarName: 'àjọyọ', domain: feedDomain() });
 
       res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${icsService.filename('ajoyo-calendar')}"`);

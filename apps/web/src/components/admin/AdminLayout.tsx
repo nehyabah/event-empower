@@ -132,7 +132,7 @@ const AdminLayout = ({ title, children }: AdminLayoutProps) => {
             {/* Logo */}
             <div className="flex h-16 items-center gap-2 px-6 border-b border-white/10">
               <div>
-                <span className="font-serif text-sm font-bold text-white">àjọyọ̀</span>
+                <span className="font-serif text-sm font-bold text-white">àjọyọ</span>
                 <span className="ml-1 text-xs font-medium text-white/50">Admin</span>
               </div>
             </div>
@@ -194,7 +194,7 @@ const AdminLayout = ({ title, children }: AdminLayoutProps) => {
             {/* Mobile nav toggle placeholder */}
             <div className="lg:hidden">
               <Link to="/admin" className="flex items-center gap-1.5">
-                <span className="font-serif text-sm font-bold text-foreground">àjọyọ̀</span>
+                <span className="font-serif text-sm font-bold text-foreground">àjọyọ</span>
                 <span className="text-xs text-muted-foreground">Admin</span>
               </Link>
             </div>

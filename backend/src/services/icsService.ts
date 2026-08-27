@@ -47,7 +47,7 @@ const escapeText = (value: string): string =>
 
 /**
  * Fold to 75 octets per line. Counting is on UTF-8 bytes, not characters, so
- * names like "àjọyọ̀" don't produce over-length lines.
+ * names like "àjọyọ" don't produce over-length lines.
  */
 const fold = (line: string): string => {
   const bytes = Buffer.from(line, 'utf8');

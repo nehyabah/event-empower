@@ -85,7 +85,7 @@ const ForgotPassword = () => {
       <Navbar />
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
-          <p className="text-center text-2xl font-serif font-medium mb-5 tracking-tight">àjọyọ̀</p>
+          <p className="text-center text-2xl font-serif font-medium mb-5 tracking-tight">àjọyọ</p>
 
           <Card>
             <CardContent className="p-6 sm:p-7 space-y-5">

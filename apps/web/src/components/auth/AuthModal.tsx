@@ -54,7 +54,7 @@ const AuthModal = ({
             <div className="relative z-10 animate-fade-in">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-bold tracking-[0.2em] text-wedding-gold uppercase">
-                  àjọyọ̀
+                  àjọyọ
                 </span>
               </div>
             </div>
@@ -71,7 +71,7 @@ const AuthModal = ({
             </div>
 
             <div className="relative z-10 text-sm text-zinc-600 font-medium">
-              © 2026 àjọyọ̀ Inc.
+              © 2026 àjọyọ Inc.
             </div>
           </div>
 

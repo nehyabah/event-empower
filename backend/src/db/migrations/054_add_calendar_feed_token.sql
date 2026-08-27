@@ -1,5 +1,5 @@
 -- Secret per-user token for the read-only ICS feed. Subscribing to the feed URL
--- in Google/Apple/Outlook Calendar keeps àjọyọ̀ dates in sync and lets those
+-- in Google/Apple/Outlook Calendar keeps àjọyọ dates in sync and lets those
 -- apps deliver the reminders.
 ALTER TABLE users
   ADD COLUMN calendar_token UUID UNIQUE DEFAULT gen_random_uuid();
