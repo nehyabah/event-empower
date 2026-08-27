@@ -91,6 +91,38 @@ async function deliver(message: {
 }
 
 export const emailService = {
+  /** Six-digit code for resetting a password. */
+  async sendPasswordResetCode({ toEmail, toName, code, expiresInMinutes }: {
+    toEmail: string; toName: string; code: string; expiresInMinutes: number;
+  }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — reset code for ${toEmail}: ${code}`);
+      return;
+    }
+    const greeting = toName ? `Hi ${toName},` : 'Hello,';
+    await deliver({
+      to: toEmail,
+      subject: `${code} is your àjọyọ̀ password reset code`,
+      html: buildCodeHtml({
+        heading: 'Reset your password',
+        greeting,
+        code,
+        body: `Enter this code to choose a new password. It expires in ${expiresInMinutes} minutes.`,
+      }),
+      text: [
+        greeting,
+        '',
+        `Your password reset code is ${code}.`,
+        `It expires in ${expiresInMinutes} minutes.`,
+        '',
+        "If you didn't ask to reset your password, you can ignore this email — nothing has changed.",
+        '',
+        '—',
+        'ajoyo — wedding planning',
+      ].join('\n'),
+    });
+  },
+
   /** Confirms a professional's profile reached the review queue. */
   async sendOnboardingSubmitted({ toEmail, toName }: { toEmail: string; toName: string }): Promise<void> {
     if (emailTransport === 'none') {
@@ -348,6 +380,48 @@ function escapeHtml(value: string): string {
 
 /** Plain-text mirror of the invite; every HTML mail should carry one. */
 /** Shared shell for short transactional notices, matching the invite styling. */
+/** Notice layout with a large monospaced code, for anything one-time. */
+function buildCodeHtml({ heading, greeting, code, body }: {
+  heading: string; greeting: string; code: string; body: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background-color:#faf9f7;font-family:Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f7;padding:48px 16px 64px;">
+  <tr><td align="center">
+    <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:32px;">
+        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">àjọyọ̀</p>
+      </td></tr>
+      <tr><td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="height:4px;background:#b2834c;"></td></tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="padding:44px 48px 40px;">
+            <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;font-weight:500;color:#2e3240;">${heading}</h1>
+            <p style="margin:0 0 12px;font-size:15px;color:#4a4a4a;">${greeting}</p>
+            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#4a4a4a;">${body}</p>
+            <div style="background:#faf9f7;border:1px solid #ece8e2;border-radius:8px;padding:20px;text-align:center;margin-bottom:24px;">
+              <span style="font-family:'Courier New',monospace;font-size:34px;letter-spacing:10px;color:#2e3240;font-weight:bold;">${code}</span>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#8a8a8a;">
+              If you didn't ask to reset your password, you can ignore this email — nothing has changed.
+            </p>
+          </td></tr>
+        </table>
+      </td></tr>
+      <tr><td align="center" style="padding-top:28px;">
+        <p style="margin:0;font-size:12px;color:#9b9b9b;">àjọyọ̀ — wedding planning</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
 function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
   heading: string; greeting: string; body: string; ctaLabel: string; ctaUrl: string;
 }): string {

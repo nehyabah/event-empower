@@ -9,6 +9,12 @@ const router = Router();
 router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/logout', optionalAuth, authController.logout);
+
+// Password reset. otpLimiter (5/hour/IP) throttles code requests so the
+// endpoint cannot be used to spam an inbox or grind through addresses;
+// authLimiter guards the verify step against brute-forcing a 6-digit code.
+router.post('/password/request-reset', otpLimiter, authController.requestPasswordReset);
+router.post('/password/reset', authLimiter, authController.resetPassword);
 router.post('/refresh', authController.refresh);
 router.post('/refresh-token', authController.refreshFromBody);
 

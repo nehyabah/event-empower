@@ -1,5 +1,6 @@
 
 import { Control } from "react-hook-form";
+import { Link } from "react-router-dom";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,15 @@ const LoginFormFields = ({ control, isLoading }: LoginFormFieldsProps) => {
         name="password"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Password</FormLabel>
+            <div className="flex items-center justify-between">
+              <FormLabel>Password</FormLabel>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <FormControl>
               <Input 
                 placeholder="••••••••" 

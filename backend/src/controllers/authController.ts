@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
+import { passwordResetService } from '../services/passwordResetService.js';
+import { z, ZodError } from 'zod';
 import { authService } from '../services/authService.js';
 import { googleAuthService } from '../services/googleAuthService.js';
 import { twilioService } from '../services/twilioService.js';
@@ -52,7 +53,52 @@ function clearRefreshTokenCookie(res: Response): void {
   } as CookieOptions);
 }
 
+
+const requestPasswordResetSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+  code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code from your email'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
 export const authController = {
+  /**
+   * Start a password reset.
+   *
+   * Always answers 200 with the same body, whether or not the address belongs
+   * to an account — a different response for an unknown email would turn this
+   * into a way to test which addresses are registered.
+   */
+  async requestPasswordReset(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = requestPasswordResetSchema.parse(req.body);
+      await passwordResetService.requestCode(input.email);
+      res.json({ message: 'If that email has an account, a reset code is on its way.' });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        next(error);
+        return;
+      }
+      // A failure to send must not reveal anything either; it is logged and
+      // the caller sees the same message as everyone else.
+      console.error('[requestPasswordReset]', error);
+      res.json({ message: 'If that email has an account, a reset code is on its way.' });
+    }
+  },
+
+  async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = resetPasswordSchema.parse(req.body);
+      await passwordResetService.resetPassword(input.email, input.code, input.password);
+      res.json({ message: 'Your password has been changed. Please sign in.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const input = registerSchema.parse(req.body);
