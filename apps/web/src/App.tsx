@@ -33,6 +33,7 @@ import LoginPage from "./pages/LoginPage";
 import VisionBoard from "./pages/VisionBoard";
 import MyInquiries from "./pages/MyInquiries";
 import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminUserDetail from "./pages/AdminUserDetail";
@@ -138,6 +139,7 @@ const AppRoutes = () => {
       <Route path="/vendors" element={<Vendors />} />
       <Route path="/vendor-profile" element={<VendorProfile />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/privacy" element={<Privacy />} />
 
       {/* Client routes */}
       <Route path="/home" element={
