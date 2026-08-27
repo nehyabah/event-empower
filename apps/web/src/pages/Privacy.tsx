@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
  * LAST_UPDATED is shown to users and matters legally; bump it on any edit.
  */
 
-const LAST_UPDATED = "27 August 2026";
+const LAST_UPDATED = "28 August 2026";
 const CONTACT_EMAIL = "privacy@ajoyoapp.com";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -37,7 +37,7 @@ const Privacy = () => {
 
             <Section title="Who we are">
               <p>
-                àjọyọ̀ is a wedding planning service operating in Nigeria. This policy explains what
+                àjọyọ is a wedding planning service operating in Nigeria. This policy explains what
                 personal data we collect, why we hold it, who else sees it, and what you can ask us
                 to do with it.
               </p>
@@ -126,7 +126,7 @@ const Privacy = () => {
             <Section title="Who else sees it">
               <p>
                 We do not sell personal data, and we do not share it for advertising. We use a small
-                number of service providers to run àjọyọ̀:
+                number of service providers to run àjọyọ:
               </p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>
@@ -134,8 +134,8 @@ const Privacy = () => {
                   file storage.
                 </li>
                 <li>
-                  <span className="font-medium text-zinc-800">Brevo</span> — sending our email. They
-                  receive the recipient's address and the message content.
+                  <span className="font-medium text-zinc-800">Resend</span> — sending our email.
+                  They receive the recipient's address and the message content.
                 </li>
                 <li>
                   <span className="font-medium text-zinc-800">Google</span> — only if you choose to
@@ -210,7 +210,7 @@ const Privacy = () => {
 
             <Section title="Children">
               <p>
-                àjọyọ̀ is not intended for anyone under 18, and we do not knowingly collect data
+                àjọyọ is not intended for anyone under 18, and we do not knowingly collect data
                 from children. If you believe a child has given us personal data, contact us and we
                 will delete it.
               </p>

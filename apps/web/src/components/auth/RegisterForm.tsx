@@ -104,7 +104,7 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
         });
         return;
       } else {
-        toast.success("Welcome to àjọyọ̀!", {
+        toast.success("Welcome to àjọyọ!", {
           description: `Let's start planning, ${data.name}!`,
         });
         // A new couple otherwise lands on a dashboard of empty widgets with

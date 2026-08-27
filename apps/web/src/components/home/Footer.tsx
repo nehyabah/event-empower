@@ -37,7 +37,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <span className="font-serif text-lg font-medium">àjọyọ̀</span>
+              <span className="font-serif text-lg font-medium">àjọyọ</span>
             </div>
             <p className="text-muted-foreground mb-6">
               The ultimate Nigerian wedding planning platform, connecting couples with local vendors and resources.
@@ -108,7 +108,7 @@ const Footer = () => {
 
         <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-muted-foreground text-sm mb-4 md:mb-0">
-            (c) {new Date().getFullYear()} àjọyọ̀. All rights reserved.
+            (c) {new Date().getFullYear()} àjọyọ. All rights reserved.
           </p>
           <div className="flex space-x-6">
             <Link to="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

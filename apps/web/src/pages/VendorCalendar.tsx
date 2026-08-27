@@ -394,7 +394,7 @@ const VendorCalendar = () => {
                       {c.client_name}{c.event_date ? ` · ${c.event_date}` : ""}
                     </SelectItem>
                   ))}
-                  <SelectItem value={OFF_PLATFORM}>Someone else (not on àjọyọ̀)</SelectItem>
+                  <SelectItem value={OFF_PLATFORM}>Someone else (not on àjọyọ)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">

@@ -19,7 +19,7 @@ interface CalendarSyncCardProps {
 /**
  * Subscribe-to-your-calendar panel.
  *
- * Handing out an ICS feed URL means Google, Apple and Outlook poll àjọyọ̀ for
+ * Handing out an ICS feed URL means Google, Apple and Outlook poll àjọyọ for
  * changes and deliver the reminders themselves — no OAuth, and it works with
  * whichever calendar the user already lives in.
  */
@@ -62,7 +62,7 @@ export const CalendarSyncCard = ({ feedUrl, webcalUrl, onRotated }: CalendarSync
           Sync to your calendar
         </CardTitle>
         <CardDescription>
-          Subscribe once and your àjọyọ̀ dates stay up to date in Google, Apple or
+          Subscribe once and your àjọyọ dates stay up to date in Google, Apple or
           Outlook Calendar — and those apps handle the reminders.
         </CardDescription>
       </CardHeader>

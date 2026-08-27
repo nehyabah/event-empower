@@ -17,7 +17,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-[#faf9f7] px-4 py-12 sm:py-20">
     <div className="mx-auto w-full max-w-md">
       <p className="mb-8 text-center font-serif text-2xl tracking-[0.2em] text-[#2e3240]">
-        àjọyọ̀
+        àjọyọ
       </p>
       <div className="overflow-hidden rounded-2xl border border-[#ece8e2] bg-white shadow-sm">
         <div className="h-1 bg-[#b2834c]" />

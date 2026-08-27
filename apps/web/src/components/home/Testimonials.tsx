@@ -54,13 +54,13 @@ const Testimonials = () => {
             Loved by Nigerian Couples
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Hear from couples who used àjọyọ̀ to create their perfect Nigerian wedding celebration.
+            Hear from couples who used àjọyọ to create their perfect Nigerian wedding celebration.
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <Testimonial
-            quote="àjọyọ̀ made planning our traditional Igbo wedding and white wedding seamless. The vendor recommendations in Enugu were spot-on!"
+            quote="àjọyọ made planning our traditional Igbo wedding and white wedding seamless. The vendor recommendations in Enugu were spot-on!"
             author="Chioma & Emeka"
             role="Married in Enugu"
             image="https://images.unsplash.com/photo-1541216970279-affbfdd55aa8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80"
@@ -77,7 +77,7 @@ const Testimonials = () => {
           />
           
           <Testimonial
-            quote="As a wedding planner in Abuja, I recommend àjọyọ̀ to all my clients. The regional focus makes it perfect for Nigerian weddings."
+            quote="As a wedding planner in Abuja, I recommend àjọyọ to all my clients. The regional focus makes it perfect for Nigerian weddings."
             author="Fatima Yusuf"
             role="Wedding Planner in Abuja"
             image="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80"

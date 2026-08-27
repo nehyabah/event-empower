@@ -78,7 +78,7 @@ const AcceptInvite = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <p className="text-center text-2xl font-serif font-medium mb-8 tracking-tight">àjọyọ̀</p>
+        <p className="text-center text-2xl font-serif font-medium mb-8 tracking-tight">àjọyọ</p>
 
         <Card>
           <CardContent className="pt-8 pb-8 px-8 space-y-6">
