@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { emailLoginService } from '../services/emailLoginService.js';
 import { passwordResetService } from '../services/passwordResetService.js';
 import { z, ZodError } from 'zod';
 import { authService } from '../services/authService.js';
@@ -64,7 +65,50 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+
+const emailLoginRequestSchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+});
+
+const emailLoginVerifySchema = z.object({
+  email: z.string().email('Enter a valid email address'),
+  code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code from your email'),
+});
+
 export const authController = {
+  /** Send a one-time sign-in code. Silent about whether the account exists. */
+  async requestEmailLoginCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = emailLoginRequestSchema.parse(req.body);
+      await emailLoginService.requestCode(input.email);
+      res.json({ message: 'If that email has an account, a sign-in code is on its way.' });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        next(error);
+        return;
+      }
+      console.error('[requestEmailLoginCode]', error);
+      res.json({ message: 'If that email has an account, a sign-in code is on its way.' });
+    }
+  },
+
+  /** Verify the code and start a session, exactly as a password login would. */
+  async verifyEmailLoginCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = emailLoginVerifySchema.parse(req.body);
+      const result = await emailLoginService.verifyCode(input.email, input.code);
+
+      setRefreshTokenCookie(res, result.tokens.refreshToken);
+
+      res.json({
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   /**
    * Start a password reset.
    *

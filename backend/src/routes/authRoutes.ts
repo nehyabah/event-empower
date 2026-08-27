@@ -15,6 +15,12 @@ router.post('/logout', optionalAuth, authController.logout);
 // authLimiter guards the verify step against brute-forcing a 6-digit code.
 router.post('/password/request-reset', otpLimiter, authController.requestPasswordReset);
 router.post('/password/reset', authLimiter, authController.resetPassword);
+
+// Passwordless sign-in by emailed code. Offered alongside password and Google,
+// not instead: an account whose only door is an inbox is unreachable during an
+// email outage.
+router.post('/email/request-code', otpLimiter, authController.requestEmailLoginCode);
+router.post('/email/verify-code', authLimiter, authController.verifyEmailLoginCode);
 router.post('/refresh', authController.refresh);
 router.post('/refresh-token', authController.refreshFromBody);
 

@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import EmailCodeSignIn from "@/components/auth/EmailCodeSignIn";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -87,6 +88,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
           </div>
         </div>
         <GoogleSignInButton />
+        <EmailCodeSignIn onSuccess={onSuccess} />
       </div>
     </div>
   );
