@@ -79,6 +79,7 @@ const UserHomepage = () => {
     return localStorage.getItem("hidePlannerLink") === "true";
   });
   const [plannerName, setPlannerName] = useState<string | null>(null);
+  const [setupIncomplete, setSetupIncomplete] = useState(false);
 
   const handleDateChange = (newDate: Date | undefined) => {
     setWeddingDate(newDate);
@@ -117,6 +118,10 @@ const UserHomepage = () => {
         const event = await userService.getUserEvent();
         if (!mounted) return;
         if (event) {
+          // Enough to plan with: a date, a budget and a guest estimate.
+          setSetupIncomplete(
+            !event.event_date || !event.total_budget || !event.guest_count_estimate,
+          );
           if (event.partner1_name) { setPartner1Name(event.partner1_name); localStorage.setItem("partner1Name", event.partner1_name); }
           if (event.partner2_name) { setPartner2Name(event.partner2_name); localStorage.setItem("partner2Name", event.partner2_name); }
           if (event.venue) { setVenue(event.venue); localStorage.setItem("venue", event.venue); }
@@ -128,12 +133,12 @@ const UserHomepage = () => {
             }
           }
         } else {
-          const localDate = localStorage.getItem("weddingDate");
+          setSetupIncomplete(true);
+          // Create the row, but do not invent its contents: seeding "Partner"
+          // and "The Grand Estate" made a new account look like it already
+          // held somebody else's wedding. /setup asks for the real answers.
           await userService.updateUserEvent({
             partner1Name: localStorage.getItem("partner1Name") || displayName,
-            partner2Name: localStorage.getItem("partner2Name") || "Partner",
-            venue: localStorage.getItem("venue") || "The Grand Estate",
-            eventDate: localDate || undefined,
           });
         }
       } catch { /* silent */ }
@@ -152,47 +157,59 @@ const UserHomepage = () => {
         <div className="container mx-auto px-4 space-y-6 max-w-5xl">
 
           {/* Welcome */}
-          <section className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-serif text-2xl sm:text-3xl mb-1">
-                Welcome back, <span className="text-primary">{displayName}</span>
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                {plannerName
-                  ? <span className="inline-flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5 text-green-600" />Planning with <strong>{plannerName}</strong></span>
-                  : "Continue planning your perfect wedding"
-                }
-              </p>
-            </div>
-            {plannerName && (
-              <Link to="/workspace">
-                <Button variant="outline" size="sm" className="shrink-0 gap-1.5">
-                  <CalendarHeart className="h-4 w-4" />
-                  Workspace
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            )}
+          <section>
+            <h1 className="font-serif text-2xl sm:text-3xl mb-1">
+              Welcome back, <span className="text-primary">{displayName}</span>
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {plannerName
+                ? `Planning with ${plannerName}`
+                : "Continue planning your perfect wedding"}
+            </p>
           </section>
 
-          {/* Planner state: connected */}
+          {/* Nothing to plan against until the basics exist, and this used to
+              have no home in the UI at all — the expected guest count had no
+              interface despite the column existing. */}
+          {setupIncomplete && (
+            <Link to="/setup" className="block">
+              <Card className="border-dashed transition-colors hover:bg-muted/40">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <CalendarHeart className="h-4 w-4 text-amber-700" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Finish setting up your wedding</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add your date, expected guests and budget
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+
+
+          {/* One route into the shared workspace. The header already names the
+              planner, so repeating it in a full-width card said nothing new. */}
           {plannerName && (
-            <Card className="border-green-100 bg-gradient-to-r from-green-50 to-emerald-50/40">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
-                  <UserCheck className="h-5 w-5 text-green-700" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm text-green-900">Connected to {plannerName}</p>
-                  <p className="text-xs text-green-700/70 mt-0.5">Your planner can see your workspace, checklist and guest list.</p>
-                </div>
-                <Link to="/workspace">
-                  <Button size="sm" variant="outline" className="border-green-200 text-green-800 hover:bg-green-100 shrink-0">
-                    Open workspace
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+            <Link to="/workspace" className="block">
+              <Card className="transition-colors hover:bg-muted/40">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <CalendarHeart className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Your shared workspace</p>
+                    <p className="text-xs text-muted-foreground">
+                      Checklist, budget and guests, with {plannerName}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
           )}
 
           {/* Planner state: prompt to link */}

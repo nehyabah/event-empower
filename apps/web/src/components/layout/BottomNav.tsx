@@ -55,10 +55,34 @@ const ITEMS: Record<string, NavItem[]> = {
   ],
 };
 
-const PROFILE_PATH: Record<string, string> = {
-  client: "/dashboard",
-  planner: "/planner-profile",
-  vendor: "/vendor-profile",
+/**
+ * Destinations that did not fit the bar. Trimming each role to four tabs to
+ * make room for Account dropped real pages — a couple lost Our Story — so the
+ * sheet carries them rather than losing them.
+ */
+const MORE_ITEMS: Record<string, NavItem[]> = {
+  client: [
+    { to: "/couple-story", label: "Our Story", icon: BookOpen },
+    { to: "/todo-lists", label: "To-Do Lists", icon: CheckSquare },
+    { to: "/expense-tracker", label: "Budget", icon: Briefcase },
+    { to: "/my-inquiries", label: "My Enquiries", icon: Users },
+  ],
+  planner: [
+    { to: "/vendors", label: "Vendors", icon: Store },
+  ],
+  vendor: [
+    { to: "/vendors", label: "Marketplace", icon: Store },
+  ],
+};
+
+/**
+ * "My profile" for each role. Couples have no profile page — the nearest
+ * equivalent is their wedding details, so that is what the link says and does.
+ */
+const ACCOUNT_LINK: Record<string, { to: string; label: string }> = {
+  client: { to: "/setup", label: "Wedding details" },
+  planner: { to: "/planner-profile", label: "My profile" },
+  vendor: { to: "/vendor-profile", label: "My profile" },
 };
 
 const BottomNav = () => {
@@ -133,13 +157,25 @@ const BottomNav = () => {
             <SheetTitle className="text-base">{user?.name || user?.email}</SheetTitle>
           </SheetHeader>
           <div className="mt-4 flex flex-col gap-1">
+            {(MORE_ITEMS[user?.userType ?? ""] ?? []).map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setAccountOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm hover:bg-muted"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Link>
+            ))}
+
             <Link
-              to={PROFILE_PATH[user?.userType ?? "client"] ?? "/home"}
+              to={ACCOUNT_LINK[user?.userType ?? "client"]?.to ?? "/home"}
               onClick={() => setAccountOpen(false)}
               className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm hover:bg-muted"
             >
               <UserCircle className="h-4 w-4" />
-              My profile
+              {ACCOUNT_LINK[user?.userType ?? "client"]?.label ?? "My profile"}
             </Link>
             <button
               type="button"
