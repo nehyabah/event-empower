@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { homePathFor } from "@/lib/homePath";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import LoginForm from "@/components/auth/LoginForm";
@@ -10,7 +11,7 @@ type AuthView = "login" | "register";
 const LoginPage = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [view, setView] = useState<AuthView>("login");
 
   const redirectTo = params.get("redirect") || null;
@@ -18,12 +19,15 @@ const LoginPage = () => {
   // If already authenticated, go straight to the redirect target or home
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(redirectTo || "/home", { replace: true });
+      navigate(redirectTo || homePathFor(user?.userType), { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, redirectTo]);
 
-  const handleSuccess = () => {
-    navigate(redirectTo || "/home", { replace: true });
+  // Uses the user the form hands back rather than context: setUser has not
+  // necessarily flushed by the time onSuccess fires, so reading context here
+  // can route on the previous value.
+  const handleSuccess = (signedIn?: { userType?: string }) => {
+    navigate(redirectTo || homePathFor(signedIn?.userType ?? user?.userType), { replace: true });
   };
 
   if (isLoading) return null;

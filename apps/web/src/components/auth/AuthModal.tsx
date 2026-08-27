@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { homePathFor } from "@/lib/homePath";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,7 @@ const AuthModal = ({
   trigger,
   triggerClassName = "",
 }: AuthModalProps) => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"login" | "register">(defaultTab);
 
@@ -114,7 +117,14 @@ const AuthModal = ({
               </div>
 
               {mode === "login" ? (
-                <LoginForm onSuccess={() => setOpen(false)} />
+                <LoginForm
+                  onSuccess={(user) => {
+                    setOpen(false);
+                    // Nothing else navigates from a public page, so signing in
+                    // on /pricing used to leave you on /pricing.
+                    navigate(homePathFor(user?.userType), { replace: true });
+                  }}
+                />
               ) : (
                 <RegisterForm onSuccess={() => setOpen(false)} />
               )}

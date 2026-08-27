@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Form } from "@/components/ui/form";
 import { toast } from "@/hooks/use-toast";
 import LoginFormFields from "./LoginFormFields";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthUser } from "@/context/AuthContext";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -18,7 +18,7 @@ const formSchema = z.object({
 type LoginFormValues = z.infer<typeof formSchema>;
 
 interface LoginFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (user: AuthUser) => void;
 }
 
 const LoginForm = ({ onSuccess }: LoginFormProps) => {
@@ -37,12 +37,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      console.log("Login data:", data);
-
       const authUser = await login(data.email, data.password);
-
-      // Debug: Log the user type returned from API
-      console.log("Login response - userType:", authUser.userType, "Full user:", authUser);
 
       // Extract first name for greeting
       const rawName = (authUser.name || authUser.email || "").trim();
@@ -57,8 +52,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
         variant: "default",
       });
 
-      // Close the modal - ProtectedRoute will handle navigation
-      if (onSuccess) onSuccess();
+      // The caller routes by role. A public page has no protected route to
+      // do it, so signing in from /pricing used to leave you on /pricing.
+      if (onSuccess) onSuccess(authUser);
     } catch (error) {
       console.error("Login error:", error);
       const message =
