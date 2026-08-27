@@ -10,6 +10,33 @@ import { CalendarEntry } from './calendarService.js';
 
 const PRODID = '-//ajoyo//Wedding Planner//EN';
 
+/**
+ * Every stored time is a wall-clock time in Nigeria.
+ *
+ * Emitting them as floating values (no TZID, no Z) means "whatever local time
+ * the viewer is in", so an 8pm ceremony showed at 8pm in the subscriber's own
+ * zone — off by however far apart the two are. Google ignores X-WR-TIMEZONE
+ * for individual events, so that header alone never fixed it.
+ */
+const TZID = 'Africa/Lagos';
+
+/**
+ * WAT is UTC+1 all year and Nigeria observes no DST, so one STANDARD rule with
+ * matching offsets is the whole definition. Google, Apple and Outlook all
+ * require the VTIMEZONE to be present before a TZID may be referenced.
+ */
+const VTIMEZONE = [
+  'BEGIN:VTIMEZONE',
+  `TZID:${TZID}`,
+  'BEGIN:STANDARD',
+  'DTSTART:19700101T000000',
+  'TZOFFSETFROM:+0100',
+  'TZOFFSETTO:+0100',
+  'TZNAME:WAT',
+  'END:STANDARD',
+  'END:VTIMEZONE',
+];
+
 /** Escape a TEXT value per RFC 5545 §3.3.11. */
 const escapeText = (value: string): string =>
   value
@@ -48,7 +75,7 @@ const stampUtc = (date: Date): string =>
 /** YYYY-MM-DD -> YYYYMMDD */
 const dateValue = (date: string): string => date.replace(/-/g, '');
 
-/** YYYY-MM-DD + HH:MM[:SS] -> local-time DATE-TIME (floating, no TZ suffix). */
+/** YYYY-MM-DD + HH:MM[:SS] -> DATE-TIME, to be qualified by TZID at the call site. */
 const dateTimeValue = (date: string, time: string): string => {
   const [h = '00', m = '00', s = '00'] = time.split(':');
   return `${dateValue(date)}T${h.padStart(2, '0')}${m.padStart(2, '0')}${s.padStart(2, '0')}`;
@@ -68,14 +95,14 @@ const buildEvent = (entry: CalendarEntry, domain: string, now: Date): string[] =
   lines.push(`DTSTAMP:${stampUtc(now)}`);
 
   if (entry.start_time) {
-    lines.push(`DTSTART:${dateTimeValue(entry.date, entry.start_time)}`);
+    lines.push(`DTSTART;TZID=${TZID}:${dateTimeValue(entry.date, entry.start_time)}`);
     // Default a timed entry to an hour when no end is recorded.
     if (entry.end_time) {
-      lines.push(`DTEND:${dateTimeValue(entry.date, entry.end_time)}`);
+      lines.push(`DTEND;TZID=${TZID}:${dateTimeValue(entry.date, entry.end_time)}`);
     } else {
       const [h = '00', m = '00'] = entry.start_time.split(':');
       const endHour = String((parseInt(h, 10) + 1) % 24).padStart(2, '0');
-      lines.push(`DTEND:${dateTimeValue(entry.date, `${endHour}:${m}`)}`);
+      lines.push(`DTEND;TZID=${TZID}:${dateTimeValue(entry.date, `${endHour}:${m}`)}`);
     }
   } else {
     // All-day: DTEND is exclusive, so it lands on the following day.
@@ -113,10 +140,11 @@ export const icsService = {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       `X-WR-CALNAME:${escapeText(options.calendarName)}`,
-      'X-WR-TIMEZONE:Africa/Lagos',
+      `X-WR-TIMEZONE:${TZID}`,
       // Hint to Google/Apple on how often to re-poll the feed.
       'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
       'X-PUBLISHED-TTL:PT1H',
+      ...VTIMEZONE,
     ];
 
     for (const entry of entries) {
