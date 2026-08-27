@@ -31,6 +31,8 @@ interface AuthContextType {
   register: (email: string, password: string, name: string, userType?: UserType, extra?: RegisterExtraFields) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: (idToken: string, userType?: UserType) => Promise<{ isNewUser: boolean }>;
+  /** Adopt a session obtained elsewhere — e.g. the emailed sign-in code. */
+  applySession: (user: AuthUser, accessToken: string) => void;
   sendPhoneOtp: (phone: string, channel: 'sms' | 'whatsapp') => Promise<void>;
   verifyPhoneOtp: (phone: string, code: string, userType?: UserType) => Promise<void>;
   updateUser: (updates: { name?: string; userType?: UserType }) => Promise<void>;
@@ -146,6 +148,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     queryClient.clear();
   };
 
+  const applySession = (nextUser: AuthUser, accessToken: string) => {
+    setUser(nextUser);
+    apiClient.setAccessToken(accessToken);
+  };
+
   const loginWithGoogle = async (idToken: string, userType?: UserType): Promise<{ isNewUser: boolean }> => {
     const response = await apiClient.post<{
       user: AuthUser;
@@ -214,6 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         loginWithGoogle,
+        applySession,
         sendPhoneOtp,
         verifyPhoneOtp,
         updateUser,

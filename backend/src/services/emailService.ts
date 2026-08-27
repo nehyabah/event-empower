@@ -91,6 +91,38 @@ async function deliver(message: {
 }
 
 export const emailService = {
+  /** Six-digit code for signing in without a password. */
+  async sendLoginCode({ toEmail, toName, code, expiresInMinutes }: {
+    toEmail: string; toName: string; code: string; expiresInMinutes: number;
+  }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — login code for ${toEmail}: ${code}`);
+      return;
+    }
+    const greeting = toName ? `Hi ${toName},` : 'Hello,';
+    await deliver({
+      to: toEmail,
+      subject: `${code} is your Ajoyo sign-in code`,
+      html: buildCodeHtml({
+        heading: 'Sign in to Ajoyo',
+        greeting,
+        code,
+        body: `Enter this code to sign in. It expires in ${expiresInMinutes} minutes.`,
+      }),
+      text: [
+        greeting,
+        '',
+        `Your sign-in code is ${code}.`,
+        `It expires in ${expiresInMinutes} minutes.`,
+        '',
+        "If you didn't try to sign in, you can ignore this email — nobody has access to your account.",
+        '',
+        '—',
+        'Ajoyo — wedding planning',
+      ].join('\n'),
+    });
+  },
+
   /** Six-digit code for resetting a password. */
   async sendPasswordResetCode({ toEmail, toName, code, expiresInMinutes }: {
     toEmail: string; toName: string; code: string; expiresInMinutes: number;
