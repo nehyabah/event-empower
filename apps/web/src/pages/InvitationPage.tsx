@@ -30,7 +30,7 @@ const InvitationPage = () => {
   });
   const localPartner1Name = localStorage.getItem("partner1Name") || "Partner 1";
   const localPartner2Name = localStorage.getItem("partner2Name") || "Partner 2";
-  const localVenue = localStorage.getItem("venue") || "The Grand Estate";
+  const localVenue = localStorage.getItem("venue") || "";
   // Design comes from the link the couple shared; localStorage is only a
   // fallback for the couple previewing their own card
   const templateId =

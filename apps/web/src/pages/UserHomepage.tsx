@@ -56,10 +56,10 @@ const UserHomepage = () => {
     () => localStorage.getItem("partner1Name") || displayName,
   );
   const [partner2Name, setPartner2Name] = useState(
-    () => localStorage.getItem("partner2Name") || "Partner",
+    () => localStorage.getItem("partner2Name") || "",
   );
   const [venue, setVenue] = useState(
-    () => localStorage.getItem("venue") || "The Grand Estate",
+    () => localStorage.getItem("venue") || "",
   );
 
   const { stats } = useGuests();
