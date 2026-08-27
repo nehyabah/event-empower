@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/auth/AuthModal";
 import { Link } from "react-router-dom";
-import { ArrowRight, WandSparkles, Handshake, ClipboardCheck } from "lucide-react";
+import { ArrowRight, PenLine, Handshake, ClipboardCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
 const Step = ({
@@ -70,22 +70,22 @@ const HowItWorks = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
           <Step
             number="01"
-            icon={<WandSparkles className="w-6 h-6" strokeWidth={1.5} />}
+            icon={<PenLine className="w-6 h-6" strokeWidth={1.5} />}
             title="Start your profile"
-            description="Share your wedding date and location. We'll automatically generate a custom checklist tailored to your specific timeline."
+            description="Add your date, venue and guest list, then pick a theme for your wedding website."
           />
           <Step
             number="02"
             icon={<Handshake className="w-6 h-6" strokeWidth={1.5} />}
             title="Connect with vendors"
-            description="Browse our curated network of local professionals. Compare portfolios, pricing, and availability in one place."
+            description="Browse vendors by category and location, look through their photos and prices, and send an enquiry."
           />
           <Step
             number="03"
             title="Manage details"
             isLast
             icon={<ClipboardCheck className="w-6 h-6" strokeWidth={1.5} />}
-            description="From guest lists to seating charts, keep every detail organized in your unified dashboard until the big day."
+            description="Track replies, payments and outstanding tasks in one place, right up to the day itself."
           />
         </div>
 

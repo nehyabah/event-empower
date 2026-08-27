@@ -1,7 +1,7 @@
 import Navbar from "@/components/layout/Navbar";
 import Features from "@/components/home/Features";
 import Footer from "@/components/home/Footer";
-import { Sparkles, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -15,9 +15,8 @@ const FeaturesPage = () => {
         <section className="container mx-auto px-4 mb-20">
           <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in-up">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-zinc-200 shadow-sm mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-wedding-gold" />
               <span className="text-xs font-bold tracking-widest uppercase text-zinc-500">
-                Comprehensive Suite
+                Features
               </span>
             </div>
 
@@ -27,8 +26,9 @@ const FeaturesPage = () => {
             </h1>
 
             <p className="text-xl text-zinc-500 font-light leading-relaxed max-w-2xl mx-auto">
-              We've reimagined wedding planning. Abandon the spreadsheets for a
-              cohesive, intelligent system that adapts to your unique vision.
+              Your website, invitations, guest replies, budget and vendors —
+              kept together, so you stop stitching a wedding out of group chats
+              and spreadsheets.
             </p>
 
           </div>

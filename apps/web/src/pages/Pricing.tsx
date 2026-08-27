@@ -2,7 +2,7 @@ import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 
 interface PricingTierProps {
   id: string;
@@ -38,7 +38,7 @@ const PricingTier = ({
     >
       {highlighted && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-wedding-gold/80 to-yellow-500 text-white text-[10px] font-bold tracking-widest uppercase rounded-full flex items-center gap-1.5 shadow-lg">
-          <Sparkles className="w-3 h-3" /> Most Popular
+          Most Popular
         </div>
       )}
 

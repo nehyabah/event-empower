@@ -5,7 +5,6 @@ import {
   ArrowRight,
   UsersRound,
   ListTodo,
-  Sparkles,
   Gem,
   BadgeCheck,
 } from "lucide-react";
@@ -71,15 +70,13 @@ const Hero = () => {
               <span className="block text-white/90">Curate Your</span>
               <span className="block italic text-wedding-gold relative inline-block">
                 Perfect Day
-                <Sparkles className="absolute -top-6 -right-8 w-8 h-8 text-white/60 animate-pulse hidden md:block" />
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-white/80 max-w-xl text-center md:text-left font-light leading-relaxed">
-              Experience the new standard in wedding planning. Seamlessly
-              connect with elite vendors and manage every detail in one elegant
-              dashboard.
-            </p>
+                Your website, invitations, guest replies, budget and vendors
+                in one place — with your planner working there beside you.
+              </p>
 
             {/* Call-to-action buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center md:justify-start items-center md:items-start">
@@ -130,11 +127,11 @@ const Hero = () => {
                   <UsersRound className="w-6 h-6" strokeWidth={1.4} />
                 </div>
                 <h3 className="text-2xl font-serif font-medium mb-3 text-gray-900">
-                  Curated Vendors
+                  Find Vendors
                 </h3>
                 <p className="text-gray-500 leading-relaxed mb-6">
-                  Discover and connect with hand-picked local artisans and
-                  professionals who align with your aesthetic.
+                  Browse vendors by category and location, send an enquiry,
+                  and keep their bookings with the rest of your plan.
                 </p>
                 <div className="flex items-center text-sm font-medium text-wedding-gold opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
                   Browse Directory <ArrowRight className="w-4 h-4 ml-1" />
@@ -153,8 +150,8 @@ const Hero = () => {
                   Mood Board
                 </h3>
                 <p className="text-zinc-400 leading-relaxed mb-6">
-                  Access premium templates and style guides. Visualize your
-                  perfect day before it happens.
+                  Collect the looks you love in one board and share it with
+                  your planner and your vendors.
                 </p>
                 <ul className="space-y-2 text-sm text-zinc-300">
                   <li className="flex items-center gap-2">
@@ -179,11 +176,11 @@ const Hero = () => {
                   <ListTodo className="w-6 h-6" strokeWidth={1.4} />
                 </div>
                 <h3 className="text-2xl font-serif font-medium mb-3 text-gray-900">
-                  Intelligent Tasks
+                  Shared Checklists
                 </h3>
                 <p className="text-gray-500 leading-relaxed mb-6">
-                  Automated checklists that adapt to your wedding date. Never
-                  miss a deadline or deposit again.
+                  Keep your to-do lists beside your partner's and your
+                  planner's — or keep a list private.
                 </p>
                 <div className="flex items-center text-sm font-medium text-wedding-sage opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
                   View Demo <ArrowRight className="w-4 h-4 ml-1" />
