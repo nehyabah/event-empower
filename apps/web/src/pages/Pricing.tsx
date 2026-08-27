@@ -143,9 +143,10 @@ const PricingPage = () => {
               price="Free"
               description="Share the news, gather replies, and keep it all in one place."
               features={[
-                "Wedding website on your own link",
-                "Digital invitation card to share",
-                "RSVP tracking for up to 50 guests",
+                "Wedding website — 1 template",
+                "Invitation card — 1 design, with a shareable link",
+                "RSVP management for up to 50 guests",
+                "Checklist to track your tasks",
                 "Guest list with dietary notes and plus-ones",
                 "Browse the vendor directory",
               ]}
@@ -162,10 +163,12 @@ const PricingPage = () => {
               description="Everything you need to plan the day yourself, without the spreadsheets."
               features={[
                 "Everything in Basic",
+                "All website templates, not just one",
+                "Design your invitation card — 24 templates to choose from",
                 "Unlimited guests",
-                "RSVP deadlines with automatic email reminders",
+                "RSVP deadlines with automatic reminders, plus bulk email to your guest list on demand",
+                "Checklist tasks shared with your partner, and mood boards",
                 "Budget tracker with payments, balances and due dates",
-                "Shared to-do lists and mood boards",
                 "Message and book vendors directly",
                 "Registry and cash gifts with bank details",
                 "Sync your calendar to Google or Apple",
@@ -187,7 +190,6 @@ const PricingPage = () => {
                 "Plan alongside your wedding planner in one workspace",
                 "Traditional, white wedding and reception as separate events",
                 "Vendor bookings and schedules on a shared calendar",
-                "Custom invitation card designs",
                 "Priority support",
               ]}
               buttonText="Contact Sales"
