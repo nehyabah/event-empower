@@ -148,6 +148,19 @@ const UserHomepage = () => {
       <main className="flex-grow pt-20 pb-12">
         <div className="container mx-auto px-4 space-y-6 max-w-5xl">
 
+          {/* The couple's names, in the same script the invitation card uses,
+              so opening the app feels like theirs rather than a dashboard.
+              Falls back to one name until a partner has been added. */}
+          <div className="text-center pt-2">
+            <h1
+              className="text-4xl sm:text-5xl text-primary leading-tight"
+              style={{ fontFamily: "'Great Vibes', cursive" }}
+            >
+              {partner2Name ? `${partner1Name} & ${partner2Name}` : partner1Name}
+            </h1>
+          </div>
+
+
           {/* Wedding Countdown */}
           <WeddingCountdown date={weddingDate} onDateChange={handleDateChange} />
 
