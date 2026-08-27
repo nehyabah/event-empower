@@ -77,6 +77,27 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "salt" 1, "ss01" 1, "cv01" 1, "cv03" 1;
+    /* One element wider than the screen otherwise drags the whole page
+       sideways, and the culprit is near-impossible to trace after the fact.
+       `clip` rather than `hidden`: hidden makes body a scroll container, which
+       silently breaks position: sticky for descendants — the admin header and
+       the vendor detail bars all rely on it. clip does not. */
+    overflow-x: clip;
+  }
+
+  /* Media defaults to its intrinsic width, so a wide upload overflows its
+     column rather than fitting it. */
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* A long unbroken string — a pasted URL, an email address in a table cell —
+     forces its container wider than the viewport on a narrow screen. */
+  p,
+  h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
   }
 
   h1, h2, h3, h4, h5, h6 {
