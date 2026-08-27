@@ -308,92 +308,38 @@ function buildRsvpReminderHtml({
   deadline: string | null;
   customMessage?: string | null;
 }): string {
-  const greeting = guestName ? `Hi ${escapeHtml(guestName)},` : 'Hello,';
-
-  const detailRow = (label: string, value: string) => `
-    <tr>
-      <td style="padding:6px 0;font-size:13px;color:#9ca3af;width:90px;">${label}</td>
-      <td style="padding:6px 0;font-size:14px;color:#2e3240;font-weight:500;">${value}</td>
-    </tr>`;
-
-  const details = [
-    eventDate ? detailRow('Date', escapeHtml(eventDate)) : '',
-    venue ? detailRow('Venue', escapeHtml(venue)) : '',
-    deadline ? detailRow('RSVP by', escapeHtml(deadline)) : '',
-  ].join('');
-
+  const detail = [eventDate, venue].filter(Boolean).join(' · ');
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-</head>
-<body style="margin:0;padding:0;background-color:#faf9f7;font-family:'Montserrat',Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f7;padding:48px 16px 64px;">
-  <tr><td align="center">
-    <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
-
-      <tr>
-        <td align="center" style="padding-bottom:32px;">
-          <p style="margin:0;font-family:Georgia,serif;font-size:26px;font-weight:400;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
-        </td>
-      </tr>
-
-      <tr>
-        <td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="height:4px;background:#b2834c;"></td></tr>
-          </table>
-
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:44px 48px 36px;text-align:center;">
-                <p style="margin:0 0 22px;font-size:34px;line-height:1;">💌</p>
-
-                <h1 style="margin:0 0 12px;font-family:Georgia,serif;font-size:30px;font-weight:500;color:#2e3240;line-height:1.3;">
-                  We're still hoping<br>to hear from you
-                </h1>
-
-                <p style="margin:0 0 28px;font-size:15px;color:#6b7280;line-height:1.7;">
-                  ${greeting}<br>
-                  ${escapeHtml(coupleNames)} would love to know whether you can join them.
-                </p>
-
-                ${customMessage ? `<p style="margin:0 0 28px;padding:14px 18px;background:#faf9f7;border-left:3px solid #b2834c;border-radius:4px;font-size:14px;color:#4b5563;line-height:1.7;text-align:left;">${escapeHtml(customMessage)}</p>` : ''}
-
-                ${details ? `<table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:0 auto 28px;text-align:left;">${details}</table>` : ''}
-
-                <table role="presentation" cellpadding="0" cellspacing="0" align="center">
-                  <tr>
-                    <td style="background-color:#b2834c;border-radius:8px;">
-                      <a href="${rsvpUrl}" target="_blank"
-                        style="display:inline-block;padding:15px 36px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:.5px;text-transform:uppercase;">
-                        RSVP now
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-
-                ${deadline ? `<p style="margin:20px 0 0;font-size:13px;color:#9ca3af;">Please respond by <strong style="color:#b2834c;">${escapeHtml(deadline)}</strong> — the link closes after that.</p>` : ''}
-              </td>
-            </tr>
-          </table>
-
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="padding:0 48px;"><div style="height:1px;background:#f0ede8;"></div></td></tr>
-          </table>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:24px 48px 32px;text-align:center;">
-                <p style="margin:0;font-size:12px;color:#c0bdb8;line-height:1.7;">
-                  You're receiving this because ${escapeHtml(coupleNames)} added you to their guest list.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#ffffff;color:#2b2b2b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td align="center" style="padding:40px 20px 56px;">
+    <table role="presentation" width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+      <tr><td style="padding-bottom:24px;">
+        <p style="margin:0;font-size:15px;">Hi ${guestName},</p>
+      </td></tr>
+      <tr><td style="padding-bottom:20px;">
+        <p style="margin:0;font-size:15px;">
+          ${customMessage || `${coupleNames} would love to know whether you can join them.`}
+        </p>
+      </td></tr>
+      ${detail ? `<tr><td style="padding-bottom:20px;">
+        <p style="margin:0;font-size:15px;color:#6a6a6a;">${detail}</p>
+      </td></tr>` : ''}
+      ${deadline ? `<tr><td style="padding-bottom:20px;">
+        <p style="margin:0;font-size:15px;">Could you let them know by <strong>${deadline}</strong>?</p>
+      </td></tr>` : ''}
+      <tr><td style="padding-bottom:24px;">
+        <a href="${rsvpUrl}" style="color:#8a6a2f;text-decoration:underline;font-size:15px;">Reply to the invitation</a>
+      </td></tr>
+      <tr><td style="padding-bottom:4px;">
+        <p style="margin:0;font-size:15px;">— ${SENDER_NAME}</p>
+      </td></tr>
+      <tr><td style="padding-top:32px;border-top:1px solid #ececec;">
+        <p style="margin:0;font-family:${BRAND_FONT};font-size:15px;color:#8a8a8a;letter-spacing:1px;">${BRAND_HTML}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#a5a5a5;">Sent on behalf of ${coupleNames}</p>
+      </td></tr>
     </table>
   </td></tr>
 </table>
@@ -419,33 +365,25 @@ function buildCodeHtml({ heading, greeting, code, body }: {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background-color:#faf9f7;font-family:Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f7;padding:48px 16px 64px;">
-  <tr><td align="center">
-    <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
-      <tr><td align="center" style="padding-bottom:32px;">
-        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
+<body style="margin:0;padding:0;background:#ffffff;color:#2b2b2b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td align="center" style="padding:40px 20px 56px;">
+    <table role="presentation" width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+      <tr><td style="padding-bottom:24px;">
+        <p style="margin:0;font-size:15px;color:#2b2b2b;">${greeting}</p>
       </td></tr>
-      <tr><td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="height:4px;background:#b2834c;"></td></tr>
-        </table>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="padding:44px 48px 40px;">
-            <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;font-weight:500;color:#2e3240;">${heading}</h1>
-            <p style="margin:0 0 12px;font-size:15px;color:#4a4a4a;">${greeting}</p>
-            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#4a4a4a;">${body}</p>
-            <div style="background:#faf9f7;border:1px solid #ece8e2;border-radius:8px;padding:20px;text-align:center;margin-bottom:24px;">
-              <span style="font-family:'Courier New',monospace;font-size:34px;letter-spacing:10px;color:#2e3240;font-weight:bold;">${code}</span>
-            </div>
-            <p style="margin:0;font-size:13px;line-height:1.6;color:#8a8a8a;">
-              If you didn't ask to reset your password, you can ignore this email — nothing has changed.
-            </p>
-          </td></tr>
-        </table>
+      <tr><td style="padding-bottom:20px;">
+        <p style="margin:0;font-size:15px;color:#2b2b2b;">${body}</p>
       </td></tr>
-      <tr><td align="center" style="padding-top:28px;">
-        <p style="margin:0;font-size:12px;color:#9b9b9b;">Ajoyo — wedding planning</p>
+      <tr><td style="padding-bottom:24px;">
+        <span style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:30px;letter-spacing:8px;color:#2b2b2b;font-weight:600;">${code}</span>
+      </td></tr>
+      <tr><td style="padding-bottom:4px;">
+        <p style="margin:0;font-size:15px;color:#2b2b2b;">— ${SENDER_NAME}</p>
+      </td></tr>
+      <tr><td style="padding-top:32px;border-top:1px solid #ececec;">
+        <p style="margin:0;font-family:${BRAND_FONT};font-size:15px;color:#8a8a8a;letter-spacing:1px;">${BRAND_HTML}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#a5a5a5;">If you didn't ask for this, you can ignore it — nothing has changed.</p>
       </td></tr>
     </table>
   </td></tr>
@@ -454,37 +392,54 @@ function buildCodeHtml({ heading, greeting, code, body }: {
 </html>`;
 }
 
+/**
+ * A short letter, not a notification.
+ *
+ * The centred card with a coloured banner and a big rounded button is the
+ * house style of every templated transactional email, and it reads as one.
+ * These are left-aligned, plainly set, and signed by a person — because they
+ * are sent by one, and a couple planning a wedding is more likely to read
+ * correspondence than a system message.
+ *
+ * SENDER_NAME must match the display name in EMAIL_FROM, or the signature
+ * contradicts the From line.
+ */
+const SENDER_NAME = 'Jessie';
+
+/**
+ * The brand carries a combining grave on its final letter (U+1ECD + U+0300)
+ * which many mail clients cannot compose, drawing a stray accent instead. HTML
+ * lets us name fonts that handle it; plain text and headers cannot, so those
+ * use "Ajoyo".
+ */
+const BRAND_HTML = 'àjọyọ̀';
+const BRAND_FONT = "Georgia,'Times New Roman',serif";
+
 function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
   heading: string; greeting: string; body: string; ctaLabel: string; ctaUrl: string;
 }): string {
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-</head>
-<body style="margin:0;padding:0;background-color:#faf9f7;font-family:Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f7;padding:48px 16px 64px;">
-  <tr><td align="center">
-    <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
-      <tr><td align="center" style="padding-bottom:32px;">
-        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#ffffff;color:#2b2b2b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td align="center" style="padding:40px 20px 56px;">
+    <table role="presentation" width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+      <tr><td style="padding-bottom:28px;">
+        <p style="margin:0;font-size:15px;color:#2b2b2b;">${greeting}</p>
       </td></tr>
-      <tr><td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="height:4px;background:#b2834c;"></td></tr>
-        </table>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="padding:44px 48px 40px;">
-            <h1 style="margin:0 0 16px;font-family:Georgia,serif;font-size:28px;font-weight:500;color:#2e3240;">${heading}</h1>
-            <p style="margin:0 0 12px;font-size:15px;color:#4a4a4a;">${greeting}</p>
-            <p style="margin:0 0 28px;font-size:15px;line-height:1.6;color:#4a4a4a;">${body}</p>
-            <a href="${ctaUrl}" style="display:inline-block;background:#2e3240;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:6px;font-size:14px;">${ctaLabel}</a>
-          </td></tr>
-        </table>
+      <tr><td style="padding-bottom:20px;">
+        <p style="margin:0;font-size:15px;color:#2b2b2b;">${body}</p>
       </td></tr>
-      <tr><td align="center" style="padding-top:28px;">
-        <p style="margin:0;font-size:12px;color:#9b9b9b;">Ajoyo — wedding planning</p>
+      <tr><td style="padding-bottom:28px;">
+        <a href="${ctaUrl}" style="color:#8a6a2f;text-decoration:underline;font-size:15px;">${ctaLabel}</a>
+      </td></tr>
+      <tr><td style="padding-bottom:4px;">
+        <p style="margin:0;font-size:15px;color:#2b2b2b;">— ${SENDER_NAME}</p>
+      </td></tr>
+      <tr><td style="padding-top:32px;border-top:1px solid #ececec;">
+        <p style="margin:0;font-family:${BRAND_FONT};font-size:15px;color:#8a8a8a;letter-spacing:1px;">${BRAND_HTML}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#a5a5a5;">Wedding planning, all in one place</p>
       </td></tr>
     </table>
   </td></tr>
@@ -552,135 +507,41 @@ function buildInviteHtml({
   inviteCode: string;
 }): string {
   const greeting = toName ? `Hi ${toName},` : 'Hello,';
-
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-</head>
-<body style="margin:0;padding:0;background-color:#faf9f7;font-family:'Montserrat',Helvetica,Arial,sans-serif;">
-
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#faf9f7;padding:48px 16px 64px;">
-  <tr><td align="center">
-    <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
-
-      <!-- Wordmark -->
-      <tr>
-        <td align="center" style="padding-bottom:32px;">
-          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:400;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
-        </td>
-      </tr>
-
-      <!-- Card -->
-      <tr>
-        <td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
-
-          <!-- Top accent bar -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="height:4px;background:#b2834c;"></td>
-            </tr>
-          </table>
-
-          <!-- Card body -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:48px 48px 40px;text-align:center;">
-
-                <!-- Decorative rings -->
-                <p style="margin:0 0 24px;font-size:36px;line-height:1;">💍</p>
-
-                <!-- Heading -->
-                <h1 style="margin:0 0 12px;font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;font-weight:500;color:#2e3240;line-height:1.25;letter-spacing:-.3px;">
-                  You're invited to plan<br>your perfect wedding
-                </h1>
-
-                <!-- Subtext -->
-                <p style="margin:0 0 32px;font-size:15px;color:#6b7280;line-height:1.7;">
-                  ${greeting}<br>
-                  <span style="color:#2e3240;"><strong>${plannerName}</strong></span> has added you as a client on Ajoyo.
-                  Accept the invitation below to access your shared wedding workspace.
-                </p>
-
-                <!-- CTA button -->
-                <table role="presentation" cellpadding="0" cellspacing="0" align="center">
-                  <tr>
-                    <td style="background-color:#b2834c;border-radius:8px;">
-                      <a href="${acceptUrl}" target="_blank"
-                        style="display:inline-block;padding:15px 36px;font-family:'Montserrat',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:.5px;text-transform:uppercase;">
-                        Accept Invitation
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-
-                <!-- Manual code -->
-                <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;">
-                  Or enter code manually:
-                  <span style="display:inline-block;margin-top:6px;padding:6px 14px;background:#faf9f7;border:1px solid #ece8e2;border-radius:6px;font-family:'Montserrat',monospace;font-size:14px;font-weight:600;color:#b2834c;letter-spacing:2px;">${inviteCode}</span>
-                </p>
-
-              </td>
-            </tr>
-          </table>
-
-          <!-- Divider -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="padding:0 48px;"><div style="height:1px;background:#f0ede8;"></div></td></tr>
-          </table>
-
-          <!-- Features row -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:32px 48px 40px;">
-                <p style="margin:0 0 20px;font-size:11px;font-weight:600;color:#b2834c;text-transform:uppercase;letter-spacing:1.5px;text-align:center;">Everything in one place</p>
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td style="width:33.3%;text-align:center;vertical-align:top;padding:0 8px;">
-                      <p style="margin:0 0 8px;font-size:22px;">📋</p>
-                      <p style="margin:0;font-size:13px;font-weight:600;color:#2e3240;">Shared checklists</p>
-                      <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;line-height:1.5;">Stay in sync on every task</p>
-                    </td>
-                    <td style="width:33.3%;text-align:center;vertical-align:top;padding:0 8px;">
-                      <p style="margin:0 0 8px;font-size:22px;">💰</p>
-                      <p style="margin:0;font-size:13px;font-weight:600;color:#2e3240;">Budget tracking</p>
-                      <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;line-height:1.5;">Every naira accounted for</p>
-                    </td>
-                    <td style="width:33.3%;text-align:center;vertical-align:top;padding:0 8px;">
-                      <p style="margin:0 0 8px;font-size:22px;">🤝</p>
-                      <p style="margin:0;font-size:13px;font-weight:600;color:#2e3240;">Vendor roster</p>
-                      <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;line-height:1.5;">All your vendors in one view</p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Footer inside card -->
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="padding:0 48px;"><div style="height:1px;background:#f0ede8;"></div></td></tr>
-          </table>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:24px 48px 32px;text-align:center;">
-                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#b2834c;letter-spacing:2px;">Ajoyo</p>
-                <p style="margin:0;font-size:12px;color:#c0bdb8;line-height:1.7;">
-                  This invite was sent by your wedding planner, ${plannerName}.<br>
-                  If you weren't expecting this, you can safely ignore it.
-                </p>
-              </td>
-            </tr>
-          </table>
-
-        </td>
-      </tr>
-
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#ffffff;color:#2b2b2b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td align="center" style="padding:40px 20px 56px;">
+    <table role="presentation" width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+      <tr><td style="padding-bottom:24px;">
+        <p style="margin:0;font-size:15px;">${greeting}</p>
+      </td></tr>
+      <tr><td style="padding-bottom:20px;">
+        <p style="margin:0;font-size:15px;">
+          <strong>${plannerName}</strong> has set up your wedding on ${BRAND_HTML} and would
+          like you to join. Everything lives in one place — your guest list and replies,
+          the budget, your vendors, and your wedding website.
+        </p>
+      </td></tr>
+      <tr><td style="padding-bottom:20px;">
+        <a href="${acceptUrl}" style="color:#8a6a2f;text-decoration:underline;font-size:15px;">Accept the invitation</a>
+      </td></tr>
+      <tr><td style="padding-bottom:24px;">
+        <p style="margin:0;font-size:13px;color:#8a8a8a;">
+          Or enter this code in the app: <span style="font-family:'SF Mono',Menlo,Consolas,monospace;letter-spacing:2px;color:#2b2b2b;">${inviteCode}</span>
+        </p>
+      </td></tr>
+      <tr><td style="padding-bottom:4px;">
+        <p style="margin:0;font-size:15px;">— ${SENDER_NAME}</p>
+      </td></tr>
+      <tr><td style="padding-top:32px;border-top:1px solid #ececec;">
+        <p style="margin:0;font-family:${BRAND_FONT};font-size:15px;color:#8a8a8a;letter-spacing:1px;">${BRAND_HTML}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#a5a5a5;">Wedding planning, all in one place</p>
+      </td></tr>
     </table>
   </td></tr>
 </table>
-
 </body>
 </html>`;
 }
