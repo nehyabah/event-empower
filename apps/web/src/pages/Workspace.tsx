@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, CheckCircle2, Circle, Sparkles, Plus, Search, Lock, CalendarDays, MapPin, Users, DollarSign, Mail, Star } from "lucide-react";
+import { Loader2, CheckCircle2, Circle, Plus, Search, Lock, CalendarDays, MapPin, Users, DollarSign, Mail, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { apiClient } from "@/services/api/client";
 // Aliased: `ExpenseSummary` is also the name of the component imported below.
@@ -240,14 +240,14 @@ const Workspace = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full mb-8 h-auto sm:h-10 p-1 bg-muted/60 rounded-lg">
-            <TabsTrigger value="overview"    className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
-            <TabsTrigger value="calendar"    className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Calendar</TabsTrigger>
-            <TabsTrigger value="visionboard" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />Mood Board
+          <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-5 sm:h-10">
+            <TabsTrigger value="overview"    className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
+            <TabsTrigger value="calendar"    className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Calendar</TabsTrigger>
+              <TabsTrigger value="visionboard" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                Mood Board
             </TabsTrigger>
-            <TabsTrigger value="todos"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
-            <TabsTrigger value="budget"      className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
+            <TabsTrigger value="todos"       className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
+            <TabsTrigger value="budget"      className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
           </TabsList>
 
           {/* ── Calendar ─────────────────────────────────────────────────── */}

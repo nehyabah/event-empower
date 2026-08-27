@@ -128,6 +128,16 @@
 }
 
 @layer utilities {
+  /* For horizontally scrolling tab strips: the bar itself is the affordance,
+     a visible scrollbar under it just looks like a rendering fault. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .text-balance {
     text-wrap: balance;
   }
