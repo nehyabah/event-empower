@@ -18,7 +18,7 @@ import { useAuth, AuthUser } from "@/context/AuthContext";
  */
 
 interface EmailCodeSignInProps {
-  onSuccess?: () => void;
+  onSuccess?: (user: AuthUser) => void;
 }
 
 const EmailCodeSignIn = ({ onSuccess }: EmailCodeSignInProps) => {
@@ -59,7 +59,7 @@ const EmailCodeSignIn = ({ onSuccess }: EmailCodeSignInProps) => {
         throw new Error(response.error || "That code is not valid.");
       }
       applySession(response.data.user, response.data.accessToken);
-      onSuccess?.();
+      onSuccess?.(response.data.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : "That code is not valid. Please request a new one.");
     } finally {

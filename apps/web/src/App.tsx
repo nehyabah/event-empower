@@ -36,6 +36,7 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import ForgotPassword from "./pages/ForgotPassword";
 import BottomNav from "./components/layout/BottomNav";
+import ScrollToTop from "./components/layout/ScrollToTop";
 import EventSetup from "./pages/EventSetup";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
