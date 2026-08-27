@@ -107,6 +107,10 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
         toast.success("Welcome to àjọyọ̀!", {
           description: `Let's start planning, ${data.name}!`,
         });
+        // A new couple otherwise lands on a dashboard of empty widgets with
+        // nothing indicating where to begin.
+        navigate("/setup", { replace: true });
+        return;
       }
 
       if (onSuccess) onSuccess();
@@ -177,6 +181,10 @@ const RegisterForm = ({ onSuccess }: RegisterFormProps) => {
                   replace: true,
                   state: { onboarding: true },
                 });
+                return;
+              }
+              if (isNewUser) {
+                navigate("/setup", { replace: true });
                 return;
               }
               onSuccess?.();

@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -9,7 +9,10 @@ import {
   LayoutDashboard,
   BookOpen,
   Store,
+  UserCircle,
+  LogOut,
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
@@ -38,26 +41,31 @@ const ITEMS: Record<string, NavItem[]> = {
     { to: "/dashboard", label: "Invites", icon: Calendar },
     { to: "/workspace", label: "Plan", icon: LayoutDashboard },
     { to: "/vendors", label: "Vendors", icon: Store },
-    { to: "/couple-story", label: "Story", icon: BookOpen },
   ],
   planner: [
     { to: "/planner-home", label: "Home", icon: Briefcase },
     { to: "/clients", label: "Clients", icon: Users, alsoMatches: ["/clients/"] },
     { to: "/planner-tasks", label: "Tasks", icon: CheckSquare },
     { to: "/planner-calendar", label: "Calendar", icon: Calendar },
-    { to: "/vendors", label: "Vendors", icon: Store },
   ],
   vendor: [
     { to: "/vendor-home", label: "Home", icon: Home },
     { to: "/vendor-calendar", label: "Calendar", icon: Calendar },
     { to: "/vendor-analytics", label: "Stats", icon: Briefcase },
-    { to: "/vendor-profile", label: "Profile", icon: Users },
   ],
 };
 
+const PROFILE_PATH: Record<string, string> = {
+  client: "/dashboard",
+  planner: "/planner-profile",
+  vendor: "/vendor-profile",
+};
+
 const BottomNav = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const items = user?.userType ? ITEMS[user.userType] : undefined;
   // Admin has its own layout and navigation.
@@ -101,7 +109,53 @@ const BottomNav = () => {
             </li>
           );
         })}
+
+        {/* Account. Hiding the burger for signed-in users took sign-out with
+            it — it lived in the mobile menu — so the bar has to carry it. */}
+        <li className="flex-1">
+          <button
+            type="button"
+            onClick={() => setAccountOpen(true)}
+            className={cn(
+              "flex w-full min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition-colors",
+              accountOpen ? "text-primary" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <UserCircle className="h-5 w-5" strokeWidth={1.8} />
+            <span className="text-[10px] font-medium leading-none">Account</span>
+          </button>
+        </li>
       </ul>
+
+      <Sheet open={accountOpen} onOpenChange={setAccountOpen}>
+        <SheetContent side="bottom" className="rounded-t-xl">
+          <SheetHeader className="text-left">
+            <SheetTitle className="text-base">{user?.name || user?.email}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 flex flex-col gap-1">
+            <Link
+              to={PROFILE_PATH[user?.userType ?? "client"] ?? "/home"}
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm hover:bg-muted"
+            >
+              <UserCircle className="h-4 w-4" />
+              My profile
+            </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                setAccountOpen(false);
+                await logout();
+                navigate("/", { replace: true });
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </nav>
   );
 };
