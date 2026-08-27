@@ -58,15 +58,6 @@ const LoginFormFields = ({ control, isLoading }: LoginFormFieldsProps) => {
           </FormItem>
         )}
       />
-      <div className="text-right">
-        <Button 
-          variant="link" 
-          className="text-sm p-0 h-auto font-normal"
-          type="button"
-        >
-          Forgot password?
-        </Button>
-      </div>
       
       <Button 
         type="submit" 
