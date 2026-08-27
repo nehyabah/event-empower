@@ -63,10 +63,12 @@ const Navbar = () => {
           <AuthButtons isAuthenticated={isAuthenticated} />
 
           {/* Mobile Menu Button */}
+            {/* Signed-in users navigate from the bottom bar; showing both
+                would be two menus doing one job. */}
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className={isAuthenticated ? "hidden" : "md:hidden"}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? (

@@ -35,6 +35,7 @@ import MyInquiries from "./pages/MyInquiries";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import ForgotPassword from "./pages/ForgotPassword";
+import BottomNav from "./components/layout/BottomNav";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminUserDetail from "./pages/AdminUserDetail";
@@ -122,7 +123,8 @@ const LandingRoute = () => {
 
 const AppRoutes = () => {
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* Landing page - redirects authenticated users */}
       <Route path="/" element={<LandingRoute />} />
 
@@ -328,7 +330,9 @@ const AppRoutes = () => {
 
       {/* Catch all */}
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+      <BottomNav />
+    </>
   );
 };
 
