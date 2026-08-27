@@ -93,6 +93,14 @@
     height: auto;
   }
 
+  /* Space for the fixed bottom navigation, so it never covers a submit
+     button. Only below md, where that bar is shown. */
+  @media (max-width: 767px) {
+    body.has-bottom-nav {
+      padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
+  }
+
   /* A long unbroken string — a pasted URL, an email address in a table cell —
      forces its container wider than the viewport on a narrow screen. */
   p,

@@ -150,7 +150,7 @@ export const emailService = {
         "If you didn't ask to reset your password, you can ignore this email — nothing has changed.",
         '',
         '—',
-        'ajoyo — wedding planning',
+        'Ajoyo — wedding planning',
       ].join('\n'),
     });
   },
@@ -497,7 +497,7 @@ function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
 function buildNoticeText({ greeting, body, ctaUrl }: {
   greeting: string; body: string; ctaUrl: string;
 }): string {
-  return [greeting, '', body.replace(/\s+/g, ' ').trim(), '', ctaUrl, '', '—', 'ajoyo — wedding planning'].join('\n');
+  return [greeting, '', body.replace(/\s+/g, ' ').trim(), '', ctaUrl, '', '—', 'Ajoyo — wedding planning'].join('\n');
 }
 
 function buildInviteText({ toName, plannerName, acceptUrl, inviteCode }: {
@@ -514,7 +514,7 @@ function buildInviteText({ toName, plannerName, acceptUrl, inviteCode }: {
     `Or enter this code in the app: ${inviteCode}`,
     '',
     '—',
-    'ajoyo — wedding planning',
+    'Ajoyo — wedding planning',
   ].join('\n');
 }
 
@@ -536,7 +536,7 @@ function buildRsvpReminderText({ guestName, coupleNames, eventDate, venue, rsvpU
     rsvpUrl,
     '',
     '—',
-    'ajoyo — wedding planning',
+    'Ajoyo — wedding planning',
   ].filter((line) => line !== null).join('\n');
 }
 
