@@ -119,21 +119,23 @@ const SharedStoryPage = () => {
       setIsLoading(true);
       setNotFound(false);
       try {
+        // Blank rather than a fictional couple: this is the page guests
+        // open, so an unfilled field showed them "Sarah & James" in Tuscany.
         const defaultStoryData = {
-          title: "Sarah & James",
-          content: "We met at a coffee shop on a rainy Tuesday...",
-          hashtag: "SarahJames2024",
-          weddingDate: "2024-10-15",
-          weddingTime: "4:00 PM",
-          venue: "The Grand Estate, Tuscany",
-          loveQuote: "In all the world, there is no heart for me like yours.",
-          bannerImage: "https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
-          brideName: "Sarah",
-          brideBio: "Always the dreamer, Sarah has spent her life collecting moments and memories.",
-          brideImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964&auto=format&fit=crop",
-          groomName: "James",
-          groomBio: "James approaches life with quiet determination and a warm smile.",
-          groomImage: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1887&auto=format&fit=crop",
+          title: "",
+          content: "",
+          hashtag: "",
+          weddingDate: "",
+          weddingTime: "",
+          venue: "",
+          loveQuote: "",
+          bannerImage: "",
+          brideName: "",
+          brideBio: "",
+          brideImage: "",
+          groomName: "",
+          groomBio: "",
+          groomImage: "",
           templateId: "editorial",
         };
 

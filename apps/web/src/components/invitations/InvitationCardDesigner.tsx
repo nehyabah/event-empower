@@ -28,7 +28,7 @@ export const InvitationCardDesigner = () => {
     () => localStorage.getItem("partner2Name") || "Partner",
   );
   const [venue, setVenue] = useState(
-    () => localStorage.getItem("venue") || "The Grand Estate",
+    () => localStorage.getItem("venue") || "",
   );
   const [weddingDate, setWeddingDate] = useState<string | null>(
     () => localStorage.getItem("weddingDate"),
