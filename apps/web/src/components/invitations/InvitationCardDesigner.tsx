@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { buildInvitationLink } from "@/lib/invitationLink";
 import { toast } from "sonner";
 import { AlignCenter, AlignLeft, AlignRight, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -93,16 +94,14 @@ export const InvitationCardDesigner = () => {
   const formattedWeddingDate =
     formatDateOnly(weddingDate, { month: "long", day: "numeric", year: "numeric" }) ?? "Date TBD";
 
-  // Design choices ride along in the link so guests see the same card.
-  const buildInvitationLink = () => {
-    const base = rsvpCode
-      ? `${window.location.origin}/invitation/${rsvpCode}`
-      : `${window.location.origin}/invitation`;
-    return `${base}?t=${selectedTemplate}&a=${textAlign}`;
-  };
-
+  // One definition, shared with the RSVP settings, so both tabs hand out the
+  // same link. Falls back to live state when no code exists yet, since the
+  // helper reads the persisted values.
   const copyInvitationLink = () => {
-    navigator.clipboard.writeText(buildInvitationLink());
+    const link =
+      buildInvitationLink(rsvpCode) ??
+      `${window.location.origin}/invitation?t=${selectedTemplate}&a=${textAlign}`;
+    navigator.clipboard.writeText(link);
     toast.success("Invitation link copied!");
   };
 

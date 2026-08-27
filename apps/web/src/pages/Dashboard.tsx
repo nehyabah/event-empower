@@ -275,8 +275,8 @@ const Dashboard = () => {
               and work the guest list. */}
           <Tabs defaultValue="card" className="w-full">
             <TabsList className="grid grid-cols-3 w-full max-w-md mb-6 h-10 p-1 bg-muted/60 rounded-lg">
-              <TabsTrigger value="card"   className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Card</TabsTrigger>
-              <TabsTrigger value="rsvp"   className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">RSVP</TabsTrigger>
+              <TabsTrigger value="card"   className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Design</TabsTrigger>
+              <TabsTrigger value="rsvp"   className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Send &amp; replies</TabsTrigger>
               <TabsTrigger value="guests" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 Guests{stats.total ? ` (${stats.total})` : ""}
               </TabsTrigger>
