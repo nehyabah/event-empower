@@ -39,6 +39,20 @@ const SOURCE_STYLES: Record<string, string> = {
   workspace_event: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200",
 };
 
+/** Dot fills: the chip backgrounds are ~100-weight and vanish at 6px. */
+const DOT_STYLES: Record<string, string> = {
+  wedding: "bg-pink-500",
+  planner_event: "bg-blue-500",
+  vendor_booking: "bg-violet-500",
+  todo_due: "bg-emerald-500",
+  expense_due: "bg-amber-500",
+  rsvp_deadline: "bg-rose-500",
+  workspace_event: "bg-indigo-500",
+};
+
+const dotStyle = (source?: string | null) =>
+  (source && DOT_STYLES[source]) || "bg-muted-foreground";
+
 const chipStyle = (source?: string | null) =>
   (source && SOURCE_STYLES[source]) || "bg-muted text-foreground hover:bg-muted/80";
 
@@ -164,7 +178,7 @@ export const MonthCalendar = ({
               key={key}
               onClick={() => onSelectDate?.(key)}
               className={cn(
-                "border-r border-b min-h-[92px] sm:min-h-[110px] p-1.5 flex flex-col gap-1 transition-colors",
+                "border-r border-b min-h-[58px] sm:min-h-[110px] p-1 sm:p-1.5 flex flex-col gap-1 transition-colors",
                 onSelectDate && "cursor-pointer hover:bg-muted/40",
                 !inMonth && "bg-muted/20",
                 isSelected && "bg-primary/5 ring-1 ring-inset ring-primary/40",
@@ -186,7 +200,26 @@ export const MonthCalendar = ({
                 )}
               </div>
 
-              <div className="flex flex-col gap-0.5 min-w-0">
+              {/* Below sm a cell is ~53px wide, so a text chip truncates to two
+                  or three characters and tells you nothing. Dots show that something
+                  is on and what kind; the day's detail sits in the panel below, which
+                  tapping the day fills. */}
+              <div className="flex flex-wrap gap-1 sm:hidden">
+                {dayEntries.slice(0, 4).map((entry) => (
+                  <span
+                    key={entry.id}
+                    title={entry.title}
+                    className={cn("h-1.5 w-1.5 rounded-full", dotStyle(entry.source))}
+                  />
+                ))}
+                {dayEntries.length > 4 && (
+                  <span className="text-[9px] leading-none text-muted-foreground">
+                    +{dayEntries.length - 4}
+                  </span>
+                )}
+              </div>
+
+              <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
                 {dayEntries.slice(0, maxPerDay).map((entry) => (
                   <button
                     key={entry.id}
