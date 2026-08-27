@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { buildInvitationLink } from "@/lib/invitationLink";
 import { toast } from "sonner";
 import {
   BellRing, CalendarClock, Check, Copy, ExternalLink, Loader2, Lock, Send, Unlock,
@@ -78,8 +79,11 @@ export const RsvpSettingsCard = () => {
   useEffect(() => { void load(); }, [load]);
   useAutoRefresh(load, { intervalMs: 60_000 });
 
+  // The card is the invitation, so this shares the card. It used to hand out
+  // /rsvp/<code>, a bare form with none of the design on it — a different
+  // experience from the link the Card tab copied, for the same invitation.
   const rsvpUrl = event?.rsvp_code
-    ? `${window.location.origin}/rsvp/${event.rsvp_code}`
+    ? buildInvitationLink(event.rsvp_code)
     : null;
 
   const saveDeadline = async () => {
@@ -156,7 +160,7 @@ export const RsvpSettingsCard = () => {
     try {
       await navigator.clipboard.writeText(rsvpUrl);
       setCopied(true);
-      toast.success("RSVP link copied");
+      toast.success("Invitation link copied");
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Couldn't copy the link");
