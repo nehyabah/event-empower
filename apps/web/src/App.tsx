@@ -36,6 +36,7 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import ForgotPassword from "./pages/ForgotPassword";
 import BottomNav from "./components/layout/BottomNav";
+import EventSetup from "./pages/EventSetup";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminUserDetail from "./pages/AdminUserDetail";
@@ -144,6 +145,11 @@ const AppRoutes = () => {
       <Route path="/contact" element={<Contact />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/setup" element={
+          <RequireAuth allowedTypes={["client"]}>
+            <EventSetup />
+          </RequireAuth>
+        } />
 
       {/* Client routes */}
       <Route path="/home" element={
