@@ -102,7 +102,7 @@ export const emailService = {
     const greeting = toName ? `Hi ${toName},` : 'Hello,';
     await deliver({
       to: toEmail,
-      subject: `${code} is your àjọyọ̀ password reset code`,
+      subject: `${code} is your Ajoyo password reset code`,
       html: buildCodeHtml({
         heading: 'Reset your password',
         greeting,
@@ -157,7 +157,7 @@ export const emailService = {
     }
     await deliver({
       to: toEmail,
-      subject: "You're approved — welcome to àjọyọ̀",
+      subject: "You're approved — welcome to Ajoyo",
       html: buildNoticeHtml({
         heading: "You're approved",
         greeting: toName ? `Hi ${toName},` : 'Hello,',
@@ -303,7 +303,7 @@ function buildRsvpReminderHtml({
 
       <tr>
         <td align="center" style="padding-bottom:32px;">
-          <p style="margin:0;font-family:Georgia,serif;font-size:26px;font-weight:400;color:#2e3240;letter-spacing:3px;">àjọyọ̀</p>
+          <p style="margin:0;font-family:Georgia,serif;font-size:26px;font-weight:400;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
         </td>
       </tr>
 
@@ -392,7 +392,7 @@ function buildCodeHtml({ heading, greeting, code, body }: {
   <tr><td align="center">
     <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
       <tr><td align="center" style="padding-bottom:32px;">
-        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">àjọyọ̀</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
       </td></tr>
       <tr><td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -413,7 +413,7 @@ function buildCodeHtml({ heading, greeting, code, body }: {
         </table>
       </td></tr>
       <tr><td align="center" style="padding-top:28px;">
-        <p style="margin:0;font-size:12px;color:#9b9b9b;">àjọyọ̀ — wedding planning</p>
+        <p style="margin:0;font-size:12px;color:#9b9b9b;">Ajoyo — wedding planning</p>
       </td></tr>
     </table>
   </td></tr>
@@ -436,7 +436,7 @@ function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
   <tr><td align="center">
     <table role="presentation" width="100%" style="max-width:540px;" cellpadding="0" cellspacing="0">
       <tr><td align="center" style="padding-bottom:32px;">
-        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">àjọyọ̀</p>
+        <p style="margin:0;font-family:Georgia,serif;font-size:26px;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
       </td></tr>
       <tr><td style="background:#ffffff;border-radius:12px;border:1px solid #ece8e2;overflow:hidden;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -452,7 +452,7 @@ function buildNoticeHtml({ heading, greeting, body, ctaLabel, ctaUrl }: {
         </table>
       </td></tr>
       <tr><td align="center" style="padding-top:28px;">
-        <p style="margin:0;font-size:12px;color:#9b9b9b;">àjọyọ̀ — wedding planning</p>
+        <p style="margin:0;font-size:12px;color:#9b9b9b;">Ajoyo — wedding planning</p>
       </td></tr>
     </table>
   </td></tr>
@@ -536,7 +536,7 @@ function buildInviteHtml({
       <!-- Wordmark -->
       <tr>
         <td align="center" style="padding-bottom:32px;">
-          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:400;color:#2e3240;letter-spacing:3px;">àjọyọ̀</p>
+          <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:400;color:#2e3240;letter-spacing:3px;">Ajoyo</p>
         </td>
       </tr>
 
@@ -567,7 +567,7 @@ function buildInviteHtml({
                 <!-- Subtext -->
                 <p style="margin:0 0 32px;font-size:15px;color:#6b7280;line-height:1.7;">
                   ${greeting}<br>
-                  <span style="color:#2e3240;"><strong>${plannerName}</strong></span> has added you as a client on àjọyọ̀.
+                  <span style="color:#2e3240;"><strong>${plannerName}</strong></span> has added you as a client on Ajoyo.
                   Accept the invitation below to access your shared wedding workspace.
                 </p>
 
@@ -633,7 +633,7 @@ function buildInviteHtml({
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td style="padding:24px 48px 32px;text-align:center;">
-                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#b2834c;letter-spacing:2px;">àjọyọ̀</p>
+                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#b2834c;letter-spacing:2px;">Ajoyo</p>
                 <p style="margin:0;font-size:12px;color:#c0bdb8;line-height:1.7;">
                   This invite was sent by your wedding planner, ${plannerName}.<br>
                   If you weren't expecting this, you can safely ignore it.
