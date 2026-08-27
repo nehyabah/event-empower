@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
-import ProjectStats from "@/components/dashboard/ProjectStats";
 import WeddingCountdown from "@/components/dashboard/WeddingCountdown";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,13 +64,6 @@ const UserHomepage = () => {
   const { stats } = useGuests();
   const { todoLists } = useTodoLists();
 
-  const taskStats = useMemo(() => {
-    const allItems = todoLists.flatMap(list => list.items);
-    return {
-      total: allItems.length,
-      completed: allItems.filter(item => item.completed).length,
-    };
-  }, [todoLists]);
 
   const [plannerCode, setPlannerCode] = useState("");
   const [isLinkingPlanner, setIsLinkingPlanner] = useState(false);
@@ -156,17 +148,31 @@ const UserHomepage = () => {
       <main className="flex-grow pt-20 pb-12">
         <div className="container mx-auto px-4 space-y-6 max-w-5xl">
 
-          {/* Welcome */}
-          <section>
-            <h1 className="font-serif text-2xl sm:text-3xl mb-1">
-              Welcome back, <span className="text-primary">{displayName}</span>
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {plannerName
-                ? `Planning with ${plannerName}`
-                : "Continue planning your perfect wedding"}
-            </p>
-          </section>
+          {/* Wedding Countdown */}
+          <WeddingCountdown date={weddingDate} onDateChange={handleDateChange} />
+
+
+          {/* One route into the shared workspace. The header already names the
+              planner, so repeating it in a full-width card said nothing new. */}
+          {plannerName && (
+            <Link to="/workspace" className="block">
+              <Card className="transition-colors hover:bg-muted/40">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <CalendarHeart className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">Go to workspace with {plannerName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Checklist, budget and guests, all shared
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+
 
           {/* Nothing to plan against until the basics exist, and this used to
               have no home in the UI at all — the expected guest count had no
@@ -191,26 +197,6 @@ const UserHomepage = () => {
           )}
 
 
-          {/* One route into the shared workspace. The header already names the
-              planner, so repeating it in a full-width card said nothing new. */}
-          {plannerName && (
-            <Link to="/workspace" className="block">
-              <Card className="transition-colors hover:bg-muted/40">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <CalendarHeart className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">Your shared workspace</p>
-                    <p className="text-xs text-muted-foreground">
-                      Checklist, budget and guests, with {plannerName}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            </Link>
-          )}
 
           {/* Planner state: prompt to link */}
           {showPlannerPrompt && (
@@ -266,20 +252,6 @@ const UserHomepage = () => {
             </Card>
           )}
 
-          {/* Wedding Countdown */}
-          <WeddingCountdown date={weddingDate} onDateChange={handleDateChange} />
-
-          {/* Planning Progress */}
-          <section>
-            <h2 className="text-base font-serif font-medium mb-3 text-zinc-700">Planning Progress</h2>
-            <ProjectStats
-              totalTasks={taskStats.total}
-              completedTasks={taskStats.completed}
-              totalGuests={stats.total}
-              confirmedGuests={stats.confirmed}
-              weddingDate={weddingDate}
-            />
-          </section>
 
           {/* Quick Actions */}
           <section>
