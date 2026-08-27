@@ -209,7 +209,7 @@ const PlannerClients = () => {
   const clientActions = (client: PlannerClient) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+        <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-7 sm:w-7 shrink-0">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -527,11 +527,11 @@ const PlannerClients = () => {
         </div>
 
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-xl">
-            <TabsTrigger value="all">All ({clients.filter(c => c.status !== 'archived').length})</TabsTrigger>
-            <TabsTrigger value="active">Active ({activeClients.length})</TabsTrigger>
-            <TabsTrigger value="completed">Completed ({completedClients.length})</TabsTrigger>
-            <TabsTrigger value="archived">Archived ({archivedClients.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-xl h-auto">
+            <TabsTrigger className="text-xs sm:text-sm" value="all">All ({clients.filter(c => c.status !== 'archived').length})</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm" value="active">Active ({activeClients.length})</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm" value="completed">Completed ({completedClients.length})</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm" value="archived">Archived ({archivedClients.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">

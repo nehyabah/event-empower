@@ -387,7 +387,7 @@ const PlannerClientWorkspace = () => {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                            className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 text-muted-foreground hover:text-destructive"
                             onClick={() => handleRemoveVendor(v)}
                             aria-label={`Remove ${v.business_name || "vendor"}`}
                           >
@@ -504,7 +504,7 @@ const PlannerClientWorkspace = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                          className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 text-muted-foreground hover:text-destructive"
                           onClick={() => handleRemoveVendor(v)}
                           aria-label={`Remove ${v.business_name || "vendor"}`}
                         >

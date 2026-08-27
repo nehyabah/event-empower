@@ -291,11 +291,11 @@ const PlannerTasks = () => {
 
         <TooltipProvider>
         <Tabs defaultValue="all" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-md">
-            <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming ({upcomingTasks.length})</TabsTrigger>
-            <TabsTrigger value="overdue">Overdue ({overdueTasks.length})</TabsTrigger>
-            <TabsTrigger value="completed">Done ({completedTasks.length})</TabsTrigger>
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-md h-auto">
+            <TabsTrigger className="text-xs sm:text-sm" value="all">All ({tasks.length})</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm" value="upcoming">Upcoming ({upcomingTasks.length})</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm" value="overdue">Overdue ({overdueTasks.length})</TabsTrigger>
+            <TabsTrigger className="text-xs sm:text-sm" value="completed">Done ({completedTasks.length})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">

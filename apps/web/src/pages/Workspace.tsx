@@ -240,7 +240,7 @@ const Workspace = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-5 w-full mb-8 h-10 p-1 bg-muted/60 rounded-lg">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full mb-8 h-auto sm:h-10 p-1 bg-muted/60 rounded-lg">
             <TabsTrigger value="overview"    className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
             <TabsTrigger value="calendar"    className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Calendar</TabsTrigger>
             <TabsTrigger value="visionboard" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
