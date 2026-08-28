@@ -48,6 +48,10 @@ router.post('/vendors/:id/unfeature', ...adminPlus, adminController.unfeatureVen
 router.post('/vendors/:id/suspend', ...adminPlus, adminController.suspendVendor);
 router.post('/vendors/:id/activate', ...adminPlus, adminController.activateVendor);
 
+// Planner review - the full profile a planner submits for approval had no
+// admin-facing view at all until this route existed.
+router.get('/planners/:id', ...allAdmins, adminController.getPlanner);
+
 // Inquiry management
 router.get('/inquiries', ...supportPlus, adminController.listInquiries);
 router.get('/inquiries/:id', ...supportPlus, adminController.getInquiry);

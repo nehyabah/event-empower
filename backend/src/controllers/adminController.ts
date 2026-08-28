@@ -16,6 +16,7 @@ import {
   VendorInquiryModel,
   InquiryMessageModel,
 } from '../models/VendorProfile.js';
+import { PlannerProfileModel } from '../models/PlannerProfile.js';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -818,7 +819,14 @@ export const adminController = {
       const [services, images, user, featured] = await Promise.all([
         VendorServiceModel.findByVendorId(profile.id),
         VendorImageModel.findByVendorId(profile.id),
-        queryOne<{ email: string | null }>('SELECT email FROM users WHERE id = $1', [profile.user_id]),
+        queryOne<{
+          email: string | null; approval_status: string; auth_provider: string | null;
+          created_at: Date; onboarding_submitted_at: Date | null;
+        }>(
+          `SELECT email, approval_status, auth_provider, created_at, onboarding_submitted_at
+             FROM users WHERE id = $1`,
+          [profile.user_id]
+        ),
         queryOne<{ is_featured: boolean }>('SELECT is_featured FROM vendor_profiles WHERE id = $1', [profile.id]),
       ]);
 
@@ -830,7 +838,40 @@ export const adminController = {
         services,
         images,
         email: user?.email || null,
+        approvalStatus: user?.approval_status || null,
+        authProvider: user?.auth_provider || null,
+        createdAt: user?.created_at || null,
+        onboardingSubmittedAt: user?.onboarding_submitted_at || null,
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getPlanner(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = String(req.params.id);
+      const [profile, user] = await Promise.all([
+        PlannerProfileModel.getByUserId(userId),
+        queryOne<{
+          id: string; name: string | null; email: string | null; phone: string | null;
+          approval_status: string; auth_provider: string | null; created_at: Date;
+          onboarding_submitted_at: Date | null; business_name: string | null;
+          instagram_handle: string | null; whatsapp_phone: string | null; city: string | null;
+        }>(
+          `SELECT id, name, email, phone, approval_status, auth_provider, created_at,
+                  onboarding_submitted_at, business_name, instagram_handle, whatsapp_phone, city
+             FROM users WHERE id = $1 AND user_type = 'planner'`,
+          [userId]
+        ),
+      ]);
+
+      if (!user) {
+        res.status(404).json({ error: 'Planner not found' });
+        return;
+      }
+
+      res.json({ profile: profile || null, user });
     } catch (error) {
       next(error);
     }
@@ -2424,13 +2465,38 @@ export const adminController = {
         id: string; name: string | null; email: string | null; phone: string | null;
         user_type: string; business_name: string | null; instagram_handle: string | null;
         whatsapp_phone: string | null; city: string | null; created_at: Date;
+        onboarding_submitted_at: Date | null; auth_provider: string | null;
+        vendor_profile_id: string | null;
       }>(
-        `SELECT id, name, email, phone, user_type, business_name, instagram_handle,
-                whatsapp_phone, city, created_at
-         FROM users
-         WHERE approval_status = 'pending' AND user_type IN ('vendor', 'planner')
-         ORDER BY created_at ASC`
+        `SELECT u.id, u.name, u.email, u.phone, u.user_type, u.business_name, u.instagram_handle,
+                u.whatsapp_phone, u.city, u.created_at, u.onboarding_submitted_at, u.auth_provider,
+                vp.id AS vendor_profile_id
+         FROM users u
+         LEFT JOIN vendor_profiles vp ON vp.user_id = u.id
+         WHERE u.approval_status = 'pending' AND u.user_type IN ('vendor', 'planner')
+         ORDER BY u.onboarding_submitted_at IS NULL DESC, u.onboarding_submitted_at ASC, u.created_at ASC`
       );
+
+      // Duplicate detection: the same phone, Instagram handle or business
+      // name showing up on more than one pending or approved account is
+      // worth a human's attention before either one is approved.
+      const dupeRows = await query<{ value: string; count: string }>(
+        `SELECT lower(business_name) AS value, COUNT(*)::text AS count
+           FROM users
+          WHERE user_type IN ('vendor', 'planner') AND business_name IS NOT NULL
+            AND approval_status IN ('pending', 'approved')
+          GROUP BY lower(business_name)
+         HAVING COUNT(*) > 1
+         UNION ALL
+         SELECT lower(instagram_handle), COUNT(*)::text
+           FROM users
+          WHERE user_type IN ('vendor', 'planner') AND instagram_handle IS NOT NULL
+            AND approval_status IN ('pending', 'approved')
+          GROUP BY lower(instagram_handle)
+         HAVING COUNT(*) > 1`
+      );
+      const dupeValues = new Set(dupeRows.map(r => r.value));
+
       res.json(users.map(u => ({
         id: u.id,
         name: u.name,
@@ -2442,6 +2508,12 @@ export const adminController = {
         whatsappPhone: u.whatsapp_phone,
         city: u.city,
         createdAt: u.created_at,
+        onboardingSubmittedAt: u.onboarding_submitted_at,
+        authProvider: u.auth_provider,
+        vendorProfileId: u.vendor_profile_id,
+        isPossibleDuplicate:
+          (!!u.business_name && dupeValues.has(u.business_name.toLowerCase())) ||
+          (!!u.instagram_handle && dupeValues.has(u.instagram_handle.toLowerCase())),
       })));
     } catch (error) {
       next(error);
@@ -2475,11 +2547,21 @@ export const adminController = {
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      await query(
-        `UPDATE users SET approval_status = 'rejected', rejection_reason = $2 WHERE id = $1`,
+      const rejected = await queryOne<{ email: string | null; name: string | null }>(
+        `UPDATE users SET approval_status = 'rejected', rejection_reason = $2
+         WHERE id = $1 RETURNING email, name`,
         [id, reason || null]
       );
       res.json({ success: true });
+
+      // Best-effort, after responding: rejection previously sent nothing, so
+      // an applicant had no way to learn the outcome short of trying to sign
+      // in and hitting a wall. A mail outage must not undo the rejection.
+      if (rejected?.email) {
+        emailService
+          .sendAccountRejected({ toEmail: rejected.email, toName: rejected.name || '', reason: reason || null })
+          .catch(err => console.error('[admin] rejection email failed:', err));
+      }
     } catch (error) {
       next(error);
     }

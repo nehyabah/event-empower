@@ -206,6 +206,46 @@ export const emailService = {
     });
   },
 
+  /** Tells an applicant their account was not approved. Reject previously
+   *  sent nothing at all — the applicant just found themselves unable to sign
+   *  in, with no idea why. */
+  async sendAccountRejected({
+    toEmail,
+    toName,
+    reason,
+  }: {
+    toEmail: string;
+    toName: string;
+    reason: string | null;
+  }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — rejection for ${toEmail}`);
+      return;
+    }
+    const reasonLine = reason
+      ? `\n\nThe reviewer's note: ${reason}`
+      : '';
+    await deliver({
+      to: toEmail,
+      subject: "Update on your àjọyọ application",
+      html: buildNoticeHtml({
+        heading: "We can't approve this application",
+        greeting: toName ? `Hi ${toName},` : 'Hello,',
+        body: `After review, we're not able to approve your account at this time.${
+          reason ? ` ${reason}` : ''
+        } If you'd like to update your details and be reconsidered, reply to this
+               email and we'll take another look.`,
+        ctaLabel: 'Reply to this email',
+        ctaUrl: 'mailto:hello@ajoyoapp.com',
+      }),
+      text: buildNoticeText({
+        greeting: toName ? `Hi ${toName},` : 'Hello,',
+        body: `After review, we're not able to approve your account at this time.${reasonLine} If you'd like to update your details and be reconsidered, reply to this email and we'll take another look.`,
+        ctaUrl: 'mailto:hello@ajoyoapp.com',
+      }),
+    });
+  },
+
   async sendPlannerInvite({
     toEmail,
     toName,
