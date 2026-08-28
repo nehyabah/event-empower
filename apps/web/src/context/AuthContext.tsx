@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/api/client';
+import { clearLocalCache, scopeLocalCacheTo } from '@/lib/localCache';
 
 export type UserType = 'client' | 'vendor' | 'planner' | 'admin';
 
@@ -45,6 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const initialized = useRef(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (isLoading) return;
+    scopeLocalCacheTo(user?.id ?? null);
+  }, [isLoading, user?.id]);
 
   // Check for existing session on mount - only once
   useEffect(() => {
@@ -146,6 +152,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     apiClient.setAccessToken(null);
     queryClient.clear();
+    // The cache holds the couple's names, venue and date. Leaving it behind
+    // showed them to whoever signed in next on this browser.
+    clearLocalCache();
   };
 
   const applySession = (nextUser: AuthUser, accessToken: string) => {
