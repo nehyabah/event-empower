@@ -254,6 +254,16 @@ const SharedStoryPage = () => {
     } catch { /* ignore */ } finally { setIsSubmittingComment(false); }
   };
 
+  // Hooks must run on every render. Both of these sat below the early
+  // returns, so a render that bailed out ran fewer hooks than one that did
+  // not — which React treats as a hard error and blanks the page.
+  const heroSceneRef = useScrollScene<HTMLElement>();
+  useScrollReveal([
+    sectionOrder.filter((id) => !hiddenSections.includes(id)).join(","),
+    storyImages.length,
+    isLoading,
+  ]);
+
   if (notFound) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
@@ -290,9 +300,6 @@ const SharedStoryPage = () => {
     : coupleStory.weddingDate;
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
-  const heroSceneRef = useScrollScene<HTMLElement>();
-
-  useScrollReveal([visibleSections.join(","), isLoading]);
   const storyUserId = coupleStory.userId || coupleId;
 
   /**

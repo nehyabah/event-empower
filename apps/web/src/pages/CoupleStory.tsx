@@ -262,6 +262,15 @@ const CoupleStory = () => {
     } catch { toast.error("Failed to post message"); } finally { setIsSubmittingComment(false); }
   };
 
+  // Above every early return below — this component bails out for auth and
+  // again for loading, and a hook skipped on one render and called on the
+  // next is what React refuses to do.
+  useScrollReveal([
+    sectionOrder.filter((id) => !hiddenSections.includes(id)).join(","),
+    storyImages.length,
+    isLoadingStory,
+  ]);
+
   if (isLoading || !isAuthenticated) return null;
 
   if (isLoadingStory || !coupleStory) {
@@ -285,7 +294,6 @@ const CoupleStory = () => {
     : coupleStory.weddingDate;
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
-  useScrollReveal([visibleSections.join(","), storyImages.length]);
 
 
   // Accent color override style
