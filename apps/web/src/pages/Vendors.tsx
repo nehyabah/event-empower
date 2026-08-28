@@ -145,9 +145,7 @@ const VendorsPage = () => {
   }, [searchQuery, selectedCategory, selectedRegion]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [safetyAccepted, setSafetyAccepted] = useState(
-    () => localStorage.getItem("chatSafetyAccepted") === "1"
-  );
+  const [safetyAccepted, setSafetyAccepted] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({
     name: "",
@@ -166,6 +164,7 @@ const VendorsPage = () => {
       toast.error("Please sign in to message a vendor");
       return;
     }
+    setSafetyAccepted(false);
     setIsInquiryOpen(true);
   };
 
@@ -390,7 +389,6 @@ const VendorsPage = () => {
           {!safetyAccepted ? (
             <ChatSafetyIntro
               onAccept={() => {
-                localStorage.setItem("chatSafetyAccepted", "1");
                 setSafetyAccepted(true);
               }}
             />

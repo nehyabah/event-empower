@@ -24,6 +24,10 @@ const CACHED_KEYS = [
   "plannerTaskComments",
   "planr:clients-view",
   "userEmail",
+  // Retired: the chat safety notice used to be dismissed once per browser.
+  // It is now shown before each new conversation, so this key is dead and
+  // is cleared so an old acceptance cannot keep suppressing it.
+  "chatSafetyAccepted",
 ] as const;
 
 const OWNER_KEY = "cacheOwnerId";
