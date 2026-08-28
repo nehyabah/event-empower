@@ -99,6 +99,12 @@
     body.has-bottom-nav {
       padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
     }
+
+    /* Toasts sit bottom-centre on a phone, which is exactly where the bottom
+       nav lives. Lift them clear of it wherever that nav is showing. */
+    body.has-bottom-nav .toast-viewport {
+      bottom: calc(3.5rem + env(safe-area-inset-bottom));
+    }
   }
 
   /* A long unbroken string — a pasted URL, an email address in a table cell —
