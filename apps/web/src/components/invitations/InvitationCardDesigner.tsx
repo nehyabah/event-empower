@@ -42,7 +42,7 @@ export const InvitationCardDesigner = () => {
     return saved === "left" || saved === "right" ? saved : "center";
   });
   const [showRsvpBack, setShowRsvpBack] = useState(false);
-  const [showCardDesigner, setShowCardDesigner] = useState(false);
+  const [showCardDesigner, setShowCardDesigner] = useState(true);
   const [rsvpCode, setRsvpCode] = useState<string | null>(null);
   const [storySlug, setStorySlug] = useState<string | null>(null);
 
@@ -131,8 +131,8 @@ export const InvitationCardDesigner = () => {
 
             {showCardDesigner && (
               <div className="border-t">
-                <div className="bg-gradient-to-br from-zinc-100 to-zinc-200/80 p-3 flex items-center justify-center">
-                  <div className="w-full max-w-[260px] h-[340px] sm:max-w-[280px] sm:h-[380px]">
+                <div className="sticky top-16 z-10 bg-gradient-to-br from-zinc-100 to-zinc-200/80 p-3 flex items-center justify-center border-b">
+                  <div className="w-full max-w-[220px] h-[290px] sm:max-w-[260px] sm:h-[340px]">
                     <SaveTheDateCard
                       templateId={selectedTemplate}
                       names={{ partner1: partner1Name, partner2: partner2Name }}
@@ -146,7 +146,7 @@ export const InvitationCardDesigner = () => {
                   </div>
                 </div>
                 <div className="p-4 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label htmlFor="p1-mobile" className="text-xs text-muted-foreground">Partner 1</Label>
                       <Input id="p1-mobile" value={partner1Name} onChange={(e) => setPartner1Name(e.target.value)} className="h-9 text-sm" />
@@ -162,28 +162,28 @@ export const InvitationCardDesigner = () => {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Design</Label>
-                    <div className="flex gap-2.5 overflow-x-auto pb-2">
+                    <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4 snap-x snap-mandatory">
                       {saveTheDateTemplates.map((template) => (
                         <button
                           key={template.id}
                           type="button"
                           onClick={() => updateTemplate(template.id)}
-                          className={`shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                          className={`shrink-0 snap-start rounded-lg overflow-hidden border-2 transition-all ${
                             selectedTemplate === template.id
                               ? "border-zinc-900 shadow-md"
                               : "border-zinc-200 opacity-75 hover:opacity-100"
                           }`}
                         >
-                          <div className="relative w-14 h-[72px] overflow-hidden" style={{ backgroundColor: template.paper }}>
+                          <div className="relative w-20 h-[104px] overflow-hidden" style={{ backgroundColor: template.paper }}>
                             <template.Decor />
                             <span
-                              className="absolute inset-0 flex items-center justify-center text-[10px]"
+                              className="absolute inset-0 flex items-center justify-center text-xs"
                               style={{ fontFamily: template.nameFont, color: template.ink }}
                             >
                               A&nbsp;&amp;&nbsp;J
                             </span>
                           </div>
-                          <p className="text-[9px] py-0.5 px-1 truncate w-14 bg-white text-zinc-600">{template.name}</p>
+                          <p className="text-[10px] py-1 px-1 truncate w-20 bg-white text-zinc-600">{template.name}</p>
                         </button>
                       ))}
                     </div>
