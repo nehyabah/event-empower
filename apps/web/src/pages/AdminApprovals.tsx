@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   CheckCircle, XCircle, Instagram, Phone, MapPin, Briefcase, Store,
-  Loader2, ExternalLink,
+  Loader2, ExternalLink, AlertTriangle, Eye, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -25,6 +25,10 @@ interface PendingUser {
   whatsappPhone: string | null;
   city: string | null;
   createdAt: string;
+  onboardingSubmittedAt: string | null;
+  authProvider: string | null;
+  vendorProfileId: string | null;
+  isPossibleDuplicate: boolean;
 }
 
 const AdminApprovals = () => {
@@ -42,6 +46,16 @@ const AdminApprovals = () => {
     };
     load();
   }, []);
+
+  const submittedCount = pending.filter((u) => u.onboardingSubmittedAt).length;
+  const notSubmittedCount = pending.length - submittedCount;
+
+  const profileHref = (u: PendingUser) =>
+    u.userType === "vendor"
+      ? u.vendorProfileId
+        ? `/admin/vendors/${u.vendorProfileId}`
+        : null
+      : `/admin/planners/${u.id}`;
 
   const handleApprove = async (user: PendingUser) => {
     setActioningId(user.id);
@@ -91,7 +105,8 @@ const AdminApprovals = () => {
         <div>
           <h1 className="text-2xl font-semibold">Pending Approvals</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {pending.length} {pending.length === 1 ? "application" : "applications"} awaiting review
+            {submittedCount} {submittedCount === 1 ? "application" : "applications"} ready for review
+            {notSubmittedCount > 0 && ` · ${notSubmittedCount} still filling out their profile`}
           </p>
         </div>
         <Link to="/admin">
@@ -123,6 +138,20 @@ const AdminApprovals = () => {
                           : <><Briefcase className="h-3 w-3 mr-1" />Planner</>
                         }
                       </Badge>
+                      {u.onboardingSubmittedAt ? (
+                        <Badge variant="outline" className="text-xs text-emerald-700 border-emerald-300">
+                          Ready for review
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3 mr-1" />Still onboarding
+                        </Badge>
+                      )}
+                      {u.isPossibleDuplicate && (
+                        <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">
+                          <AlertTriangle className="h-3 w-3 mr-1" />Possible duplicate
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Contact info */}
@@ -171,15 +200,31 @@ const AdminApprovals = () => {
 
                     <p className="text-xs text-muted-foreground">
                       Applied {new Date(u.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                      {" · "}
+                      {u.authProvider === "google" ? "Google sign-in" : "Email sign-up"}
                     </p>
                   </div>
 
                   {/* Actions */}
                   <div className="flex sm:flex-col gap-2 shrink-0">
+                    {profileHref(u) ? (
+                      <Link to={profileHref(u)!}>
+                        <Button size="sm" variant="secondary" className="w-full">
+                          <Eye className="h-4 w-4 mr-1.5" />
+                          View full profile
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button size="sm" variant="secondary" disabled title="No profile saved yet">
+                        <Eye className="h-4 w-4 mr-1.5" />
+                        View full profile
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700 text-white"
-                      disabled={actioningId === u.id}
+                      disabled={actioningId === u.id || !u.onboardingSubmittedAt}
+                      title={!u.onboardingSubmittedAt ? "They have not finished their profile yet" : undefined}
                       onClick={() => handleApprove(u)}
                     >
                       {actioningId === u.id
@@ -213,7 +258,8 @@ const AdminApprovals = () => {
           </DialogHeader>
           <div className="space-y-3 py-2">
             <p className="text-sm text-muted-foreground">
-              Rejecting <strong>{rejectTarget?.businessName || rejectTarget?.name}</strong>. Optionally add a reason (not shown to the user publicly).
+              Rejecting <strong>{rejectTarget?.businessName || rejectTarget?.name}</strong>. This reason
+              is sent to them by email, so write it as you would to them directly.
             </p>
             <Textarea
               value={rejectReason}

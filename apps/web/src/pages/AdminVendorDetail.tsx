@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import {
   getAdminVendor,
   verifyAdminVendor,
@@ -16,6 +22,8 @@ import {
   suspendAdminVendor,
   activateAdminVendor,
   updateAdminVendor,
+  approveAdminUser,
+  rejectAdminUser,
 } from "@/services/api/adminService";
 
 const DetailRow = ({ label, value }: { label: string; value: string }) => (
@@ -29,9 +37,12 @@ const DetailRow = ({ label, value }: { label: string; value: string }) => (
 
 const AdminVendorDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const [editForm, setEditForm] = useState({
     business_name: "",
     category: "",
@@ -77,6 +88,35 @@ const AdminVendorDetail = () => {
     }
   };
 
+  const handleApprove = async () => {
+    if (!data) return;
+    setActionLoading(true);
+    try {
+      await approveAdminUser(data.profile.user_id);
+      toast.success(`${data.profile.business_name} approved`);
+      navigate("/admin/approvals");
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to approve");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!data) return;
+    setActionLoading(true);
+    try {
+      await rejectAdminUser(data.profile.user_id, rejectReason);
+      toast.success(`${data.profile.business_name} rejected`);
+      setRejecting(false);
+      navigate("/admin/approvals");
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to reject");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleAction = async (
     action: () => Promise<void>,
     confirmMsg?: string
@@ -96,12 +136,19 @@ const AdminVendorDetail = () => {
 
   return (
     <AdminLayout title="Vendor Profile">
-      <div className="flex items-center gap-2 text-sm text-slate-600">
-        <Link to="/admin/vendors" className="font-medium hover:text-slate-900">
-          Vendors
-        </Link>
-        <span>/</span>
-        <span>{data?.profile.business_name || "Profile"}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <Link to="/admin/vendors" className="font-medium hover:text-slate-900">
+            Vendors
+          </Link>
+          <span>/</span>
+          <span>{data?.profile.business_name || "Profile"}</span>
+        </div>
+        {data?.approvalStatus && (
+          <Badge variant={data.approvalStatus === "pending" ? "outline" : "secondary"}>
+            {data.approvalStatus}
+          </Badge>
+        )}
       </div>
 
       {actionError && (
@@ -139,11 +186,23 @@ const AdminVendorDetail = () => {
                   } • ${data.profile.is_featured ? "Featured" : "Not Featured"}`}
                 />
                 <DetailRow label="Rating" value={`${data.profile.rating} (${data.profile.review_count} reviews)`} />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <DetailRow label="Services" value={`${data.services.length} listed`} />
-                <DetailRow label="Images" value={`${data.images.length} uploaded`} />
+                <DetailRow
+                  label="Signed up"
+                  value={
+                    data.createdAt
+                      ? new Date(data.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })
+                      : "—"
+                  }
+                />
+                <DetailRow
+                  label="Submitted for review"
+                  value={
+                    data.onboardingSubmittedAt
+                      ? new Date(data.onboardingSubmittedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })
+                      : "Not yet"
+                  }
+                />
+                <DetailRow label="Account type" value={data.authProvider === "google" ? "Google sign-in" : "Email + password"} />
               </div>
 
               {data.profile.description && (
@@ -155,6 +214,59 @@ const AdminVendorDetail = () => {
                     {data.profile.description}
                   </p>
                 </div>
+              )}
+
+              {data.services.length > 0 && (
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Services ({data.services.length})
+                  </span>
+                  <div className="mt-2 divide-y rounded-md border">
+                    {data.services.map((svc) => (
+                      <div key={svc.id} className="flex items-start justify-between gap-4 p-3">
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">{svc.name}</p>
+                          {svc.description && (
+                            <p className="text-xs text-slate-600 mt-0.5">{svc.description}</p>
+                          )}
+                        </div>
+                        <span className="text-sm text-slate-700 shrink-0">
+                          {svc.price != null ? `₦${svc.price.toLocaleString()}` : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {data.images.length > 0 && (
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Photos ({data.images.length})
+                  </span>
+                  <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {data.images
+                      .slice()
+                      .sort((a, b) => a.display_order - b.display_order)
+                      .map((img) => (
+                        <a key={img.id} href={img.url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={img.url}
+                            alt={img.alt_text || "Vendor photo"}
+                            className={`aspect-square w-full rounded-lg object-cover border ${
+                              img.is_primary ? "ring-2 ring-primary" : ""
+                            }`}
+                          />
+                        </a>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {data.services.length === 0 && data.images.length === 0 && !data.profile.description && (
+                <p className="text-sm bg-amber-50 border border-amber-200 rounded px-3 py-2 text-amber-900">
+                  No description, services or photos have been added yet.
+                </p>
               )}
             </div>
           )}
@@ -234,6 +346,33 @@ const AdminVendorDetail = () => {
         </CardContent>
       </Card>
 
+      {data && data.approvalStatus === "pending" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Decision</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              disabled={actionLoading}
+              onClick={handleApprove}
+            >
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <CheckCircle className="h-4 w-4 mr-1.5" />}
+              Approve
+            </Button>
+            <Button
+              variant="outline"
+              className="border-red-300 text-red-600 hover:bg-red-50"
+              disabled={actionLoading}
+              onClick={() => { setRejecting(true); setRejectReason(""); }}
+            >
+              <XCircle className="h-4 w-4 mr-1.5" />
+              Reject
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {data && (
         <Card>
           <CardHeader>
@@ -303,6 +442,32 @@ const AdminVendorDetail = () => {
           </CardContent>
         </Card>
       )}
+      <Dialog open={rejecting} onOpenChange={setRejecting}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject application</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              This is sent to the applicant by email, so write it as you would to them
+              directly.
+            </p>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Reason for rejection..."
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejecting(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleRejectConfirm} disabled={actionLoading}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirm rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

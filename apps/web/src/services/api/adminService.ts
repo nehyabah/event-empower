@@ -89,7 +89,54 @@ export interface AdminVendorDetail {
     display_order: number;
   }>;
   email: string | null;
+  approvalStatus: string | null;
+  authProvider: string | null;
+  createdAt: string | null;
+  onboardingSubmittedAt: string | null;
 }
+
+export interface AdminPlannerDetail {
+  profile: {
+    id: string;
+    user_id: string;
+    bio: string | null;
+    tagline: string | null;
+    location: string | null;
+    website: string | null;
+    years_of_experience: number | null;
+    specializations: string[];
+    profile_image_url: string | null;
+    cover_image_url: string | null;
+    phone: string | null;
+    instagram: string | null;
+    facebook: string | null;
+    twitter: string | null;
+    created_at: string;
+    updated_at: string;
+  } | null;
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    approval_status: string;
+    auth_provider: string | null;
+    created_at: string;
+    onboarding_submitted_at: string | null;
+    business_name: string | null;
+    instagram_handle: string | null;
+    whatsapp_phone: string | null;
+    city: string | null;
+  };
+}
+
+export const getAdminPlanner = async (userId: string): Promise<AdminPlannerDetail> => {
+  const response = await apiClient.get<AdminPlannerDetail>(`/admin/planners/${userId}`);
+  if (response.error || !response.data) {
+    throw new Error(response.error || "Failed to load planner");
+  }
+  return response.data;
+};
 
 export interface AdminInquirySummary {
   id: string;
@@ -347,6 +394,20 @@ export const getAdminUser = async (userId: string): Promise<AdminUserDetail> => 
     throw new Error(response.error || "Failed to load user");
   }
   return response.data;
+};
+
+export const approveAdminUser = async (userId: string): Promise<void> => {
+  const response = await apiClient.post(`/admin/users/${userId}/approve`);
+  if (response.error) {
+    throw new Error(response.error || "Failed to approve user");
+  }
+};
+
+export const rejectAdminUser = async (userId: string, reason: string): Promise<void> => {
+  const response = await apiClient.post(`/admin/users/${userId}/reject`, { reason });
+  if (response.error) {
+    throw new Error(response.error || "Failed to reject user");
+  }
 };
 
 export const suspendAdminUser = async (userId: string): Promise<void> => {
