@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { VENDOR_CATEGORIES, NIGERIAN_STATES } from "@/lib/vendorTaxonomy";
 import OnboardingBanner from "@/components/auth/OnboardingBanner";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -281,10 +282,7 @@ const VendorProfile = () => {
       .finally(() => setIsSaving(false));
   };
 
-  const vendorCategories = [
-    "Venues", "Photographers", "Caterers", "Decorators", 
-    "Music & DJs", "Makeup Artists", "Wedding Attire", "Cakes", "Other"
-  ];
+  const vendorCategories = VENDOR_CATEGORIES;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -419,13 +417,24 @@ const VendorProfile = () => {
                             <span>Location *</span>
                           </div>
                         </Label>
-                        <Input 
-                          id="location" 
-                          name="location" 
-                          value={formData.location} 
-                          onChange={handleInputChange} 
-                          placeholder="City, State"
-                        />
+                        <select
+                          id="location"
+                          name="location"
+                          value={formData.location}
+                          onChange={handleInputChange as any}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        >
+                          <option value="">Select a state</option>
+                          {NIGERIAN_STATES.map((state) => (
+                            <option key={state} value={state}>{state}</option>
+                          ))}
+                          {/* Anything typed before this became a dropdown, so
+                              saving the form does not silently wipe it. */}
+                          {formData.location &&
+                            !NIGERIAN_STATES.includes(formData.location as never) && (
+                              <option value={formData.location}>{formData.location}</option>
+                            )}
+                        </select>
                       </div>
                       
                       <div className="space-y-2">

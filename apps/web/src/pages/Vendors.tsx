@@ -12,6 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { ChatSafetyIntro } from "@/components/safety/ChatSafetyNotice";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  VENDOR_CATEGORIES, NIGERIAN_STATES, ALL_CATEGORIES, ALL_LOCATIONS,
+  locationMatchesState,
+} from "@/lib/vendorTaxonomy";
 
 interface VendorImage {
   url: string;
@@ -122,8 +129,8 @@ const VendorCard = ({
 
 const VendorsPage = () => {
   const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [selectedRegion, setSelectedRegion] = useState("All Regions");
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
+  const [selectedRegion, setSelectedRegion] = useState(ALL_LOCATIONS);
   const [selectedVendor, setSelectedVendor] = useState<Omit<VendorCardProps, 'onViewDetails' | 'onChat'> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [vendors, setVendors] = useState<Omit<VendorCardProps, 'onViewDetails' | 'onChat'>[]>([]);
@@ -205,20 +212,20 @@ const VendorsPage = () => {
   }, []);
 
   const categoryOptions = useMemo(() => {
-    const categories = new Set(vendors.map(vendor => vendor.category).filter(Boolean));
-    return ["All Categories", ...Array.from(categories)];
+    const inUse = vendors.map(v => v.category).filter(Boolean);
+    // Canonical list first, plus any legacy value still on a live profile so
+    // those vendors stay reachable.
+    const extras = inUse.filter(c => !VENDOR_CATEGORIES.includes(c as never));
+    return [ALL_CATEGORIES, ...VENDOR_CATEGORIES, ...Array.from(new Set(extras))];
   }, [vendors]);
 
-  const regionOptions = useMemo(() => {
-    const regions = new Set(vendors.map(vendor => vendor.location).filter(Boolean));
-    return ["All Regions", ...Array.from(regions)];
-  }, [vendors]);
+  const regionOptions = useMemo(() => [ALL_LOCATIONS, ...NIGERIAN_STATES], []);
 
   const filteredVendors = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return vendors.filter(vendor => {
-      const matchesCategory = selectedCategory === "All Categories" || vendor.category === selectedCategory;
-      const matchesRegion = selectedRegion === "All Regions" || vendor.location === selectedRegion;
+      const matchesCategory = selectedCategory === ALL_CATEGORIES || vendor.category === selectedCategory;
+      const matchesRegion = locationMatchesState(vendor.location, selectedRegion);
       const matchesQuery =
         !query ||
         vendor.name.toLowerCase().includes(query) ||
@@ -228,7 +235,7 @@ const VendorsPage = () => {
     });
   }, [vendors, searchQuery, selectedCategory, selectedRegion]);
 
-  const activeFiltersCount = (selectedCategory !== "All Categories" ? 1 : 0) + (selectedRegion !== "All Regions" ? 1 : 0);
+  const activeFiltersCount = (selectedCategory !== ALL_CATEGORIES ? 1 : 0) + (selectedRegion !== ALL_LOCATIONS ? 1 : 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -259,7 +266,7 @@ const VendorsPage = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="shrink-0 relative"
+                className="shrink-0 relative sm:hidden"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
@@ -271,44 +278,45 @@ const VendorsPage = () => {
               </Button>
             </div>
 
-            {/* Filter Dropdowns - Collapsible on mobile */}
-            {showFilters && (
-              <div className="flex flex-col sm:flex-row gap-2 p-3 bg-muted/50 rounded-lg">
-                <select
-                  className="flex-1 bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categoryOptions.map(category => (
-                    <option key={category} value={category}>{category}</option>
+            {/* Filters. Always on from sm: up - hiding two dropdowns behind a
+                toggle on a wide screen only makes them harder to find. */}
+            <div className={`${showFilters ? "flex" : "hidden"} sm:flex flex-col sm:flex-row gap-2`}>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="sm:w-56">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
-                </select>
+                </SelectContent>
+              </Select>
 
-                <select
-                  className="flex-1 bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={selectedRegion}
-                  onChange={(e) => setSelectedRegion(e.target.value)}
-                >
-                  {regionOptions.map(region => (
-                    <option key={region} value={region}>{region}</option>
+              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                <SelectTrigger className="sm:w-56">
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {regionOptions.map((region) => (
+                    <SelectItem key={region} value={region}>{region}</SelectItem>
                   ))}
-                </select>
+                </SelectContent>
+              </Select>
 
-                {activeFiltersCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCategory("All Categories");
-                      setSelectedRegion("All Regions");
-                    }}
-                    className="text-xs"
-                  >
-                    Clear filters
-                  </Button>
-                )}
-              </div>
-            )}
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory(ALL_CATEGORIES);
+                    setSelectedRegion(ALL_LOCATIONS);
+                  }}
+                  className="text-xs shrink-0"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
 
             {/* Results count */}
             <p className="text-xs text-muted-foreground">
