@@ -13,6 +13,7 @@ import {
 import { CheckCircle, XCircle, Instagram, ExternalLink, Loader2 } from "lucide-react";
 import { getAdminPlanner, approveAdminUser, rejectAdminUser } from "@/services/api/adminService";
 import { ReviewField, CompletenessSummary } from "@/components/admin/ReviewField";
+import ReviewNotes from "@/components/admin/ReviewNotes";
 
 /**
  * Full review page for a planner applicant.
@@ -267,6 +268,8 @@ const AdminPlannerDetail = () => {
               </CardContent>
             </Card>
           )}
+
+          <ReviewNotes userId={data.user.id} initialNotes={data.user.admin_notes} />
 
           {isPending && (
             <Card>

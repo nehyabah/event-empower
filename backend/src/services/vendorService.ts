@@ -18,6 +18,7 @@ import { VendorReviewModel, VendorReview } from '../models/VendorReview.js';
 import { UserEventModel } from '../models/UserEvent.js';
 import { queryOne } from '../config/database.js';
 import { canSeeVendorContact, maskBusinessName } from './vendorContactAccess.js';
+import { notificationService } from './notificationService.js';
 
 /**
  * A vendor's name as this client should see it: full once they have booked
@@ -427,6 +428,18 @@ export const vendorService = {
       message,
     });
 
+    // An anonymous historical enquiry has no sender_id to notify.
+    if (inquiry.sender_id) {
+      void notificationService.inquiryMessagePosted({
+        inquiryId,
+        recipientUserId: inquiry.sender_id,
+        senderId: userId,
+        senderLabel: maskBusinessName(profile.business_name),
+        preview: message.slice(0, 140),
+        link: '/my-inquiries',
+      });
+    }
+
     // Update inquiry status to replied if it was new
     if (inquiry.status === 'new') {
       await VendorInquiryModel.update(inquiryId, { status: 'replied' });
@@ -578,12 +591,30 @@ export const vendorService = {
       throw new Error('Inquiry not found');
     }
 
-    return InquiryMessageModel.create({
+    const newMessage = await InquiryMessageModel.create({
       inquiry_id: inquiryId,
       sender_id: userId,
       sender_type: 'client',
       message,
     });
+
+    const [vendor, sender] = await Promise.all([
+      VendorProfileModel.findById(inquiry.vendor_id),
+      queryOne<{ name: string | null }>('SELECT name FROM users WHERE id = $1', [userId]),
+    ]);
+
+    if (vendor?.user_id) {
+      void notificationService.inquiryMessagePosted({
+        inquiryId,
+        recipientUserId: vendor.user_id,
+        senderId: userId,
+        senderLabel: sender?.name || 'A couple',
+        preview: message.slice(0, 140),
+        link: '/vendor-home',
+      });
+    }
+
+    return newMessage;
   },
 
   // ========== VENDOR PROJECTS ==========

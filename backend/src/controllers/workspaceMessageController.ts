@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { workspaceMessageService } from '../services/workspaceMessageService.js';
 import { WorkspaceEventModel } from '../models/WorkspaceEvent.js';
 import { checkMessage, recordFlag, violationMessage } from '../services/contentSafety.js';
+import { notificationService } from '../services/notificationService.js';
 
 const sendSchema = z.object({
   message: z.string().trim().min(1, 'Message cannot be empty').max(4000),
@@ -52,6 +53,15 @@ export const workspaceMessageController = {
 
       const message = await workspaceMessageService.send(req.user!.userId, req.params.eventId, parsed.data.message);
       res.status(201).json(message);
+
+      // After responding: the sender should not wait on fan-out, and a
+      // notification failure must not fail a message that is already saved.
+      void notificationService.workspaceMessagePosted({
+        eventId: req.params.eventId,
+        senderId: req.user!.userId,
+        senderName: message.sender_name,
+        preview: parsed.data.message.slice(0, 140),
+      });
     } catch (error) { handle(error, res, next); }
   },
 };

@@ -1,4 +1,4 @@
-import { queryOne } from '../config/database.js';
+import { query, queryOne } from '../config/database.js';
 import { NotificationModel, UserNotification } from '../models/Notification.js';
 
 /** The vendor's login and business name, from their profile id. */
@@ -25,6 +25,85 @@ export const notificationService = {
       NotificationModel.unreadCount(userId),
     ]);
     return { notifications, unread };
+  },
+
+  /**
+   * Tell everyone else on a wedding that a message was posted.
+   *
+   * Recipients are resolved the same way chat access is - the couple, their
+   * planner, and any non-cancelled vendor on the roster - so someone who can
+   * read the thread is exactly someone who gets told about it.
+   *
+   * Best-effort: a failed notification must never fail the message itself.
+   */
+  async workspaceMessagePosted(opts: {
+    eventId: string;
+    senderId: string;
+    senderName: string | null;
+    preview: string;
+  }): Promise<void> {
+    try {
+      const coupleNames = await coupleNameForEvent(opts.eventId);
+      const recipients = await query<{ user_id: string }>(
+        `SELECT DISTINCT u.id AS user_id
+           FROM user_events ue
+           JOIN users u ON (
+                u.id = ue.user_id
+             OR u.id = ue.planner_id
+             OR u.id IN (
+                  SELECT pc.planner_id FROM planner_clients pc
+                   WHERE pc.user_id = ue.user_id AND pc.invite_status = 'accepted'
+                )
+             OR u.id IN (
+                  SELECT vp.user_id FROM project_vendors pv
+                    JOIN vendor_profiles vp ON vp.id = pv.vendor_profile_id
+                   WHERE pv.event_id = ue.id AND pv.status <> 'cancelled'
+                )
+           )
+          WHERE ue.id = $1 AND u.id <> $2`,
+        [opts.eventId, opts.senderId]
+      );
+
+      await Promise.all(
+        recipients.map((r) =>
+          NotificationModel.upsertForEntity({
+            user_id: r.user_id,
+            type: 'workspace_message',
+            title: `New message in ${coupleNames}'s workspace`,
+            body: `${opts.senderName || 'Someone'}: ${opts.preview}`,
+            link: '/workspace',
+            actor_id: opts.senderId,
+            entity_id: opts.eventId,
+          })
+        )
+      );
+    } catch (err) {
+      console.error('[notifications] workspace message notice failed:', err);
+    }
+  },
+
+  /** Tell the other side of a vendor enquiry that they have a reply. */
+  async inquiryMessagePosted(opts: {
+    inquiryId: string;
+    recipientUserId: string;
+    senderId: string;
+    senderLabel: string;
+    preview: string;
+    link: string;
+  }): Promise<void> {
+    try {
+      await NotificationModel.upsertForEntity({
+        user_id: opts.recipientUserId,
+        type: 'inquiry_message',
+        title: `New message from ${opts.senderLabel}`,
+        body: opts.preview,
+        link: opts.link,
+        actor_id: opts.senderId,
+        entity_id: opts.inquiryId,
+      });
+    } catch (err) {
+      console.error('[notifications] inquiry message notice failed:', err);
+    }
   },
 
   markRead: (userId: string, id: string) => NotificationModel.markRead(userId, id),

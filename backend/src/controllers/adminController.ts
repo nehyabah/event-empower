@@ -821,9 +821,10 @@ export const adminController = {
         VendorImageModel.findByVendorId(profile.id),
         queryOne<{
           email: string | null; approval_status: string; auth_provider: string | null;
-          created_at: Date; onboarding_submitted_at: Date | null;
+          created_at: Date; onboarding_submitted_at: Date | null; admin_notes: string | null;
         }>(
-          `SELECT email, approval_status, auth_provider, created_at, onboarding_submitted_at
+          `SELECT email, approval_status, auth_provider, created_at, onboarding_submitted_at,
+                  admin_notes
              FROM users WHERE id = $1`,
           [profile.user_id]
         ),
@@ -842,6 +843,8 @@ export const adminController = {
         authProvider: user?.auth_provider || null,
         createdAt: user?.created_at || null,
         onboardingSubmittedAt: user?.onboarding_submitted_at || null,
+        adminNotes: user?.admin_notes || null,
+        userId: profile.user_id,
       });
     } catch (error) {
       next(error);
@@ -858,9 +861,11 @@ export const adminController = {
           approval_status: string; auth_provider: string | null; created_at: Date;
           onboarding_submitted_at: Date | null; business_name: string | null;
           instagram_handle: string | null; whatsapp_phone: string | null; city: string | null;
+          admin_notes: string | null;
         }>(
           `SELECT id, name, email, phone, approval_status, auth_provider, created_at,
-                  onboarding_submitted_at, business_name, instagram_handle, whatsapp_phone, city
+                  onboarding_submitted_at, business_name, instagram_handle, whatsapp_phone, city,
+                  admin_notes
              FROM users WHERE id = $1 AND user_type = 'planner'`,
           [userId]
         ),

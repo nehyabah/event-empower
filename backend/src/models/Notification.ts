@@ -3,7 +3,9 @@ import { query, queryOne } from '../config/database.js';
 export type NotificationType =
   | 'vendor_added_to_roster'
   | 'vendor_removed_from_roster'
-  | 'tagged_on_event';
+  | 'tagged_on_event'
+  | 'workspace_message'
+  | 'inquiry_message';
 
 export interface UserNotification {
   id: string;
@@ -41,6 +43,38 @@ export const NotificationModel = {
       `INSERT INTO user_notifications (user_id, type, title, body, link, actor_id, entity_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT DO NOTHING
+       RETURNING *`,
+      [
+        input.user_id,
+        input.type,
+        input.title,
+        input.body ?? null,
+        input.link ?? null,
+        input.actor_id ?? null,
+        input.entity_id ?? null,
+      ]
+    );
+  },
+
+  /**
+   * One live notification per conversation, refreshed by each new message.
+   *
+   * A plain create would be swallowed by the dedupe index the second time
+   * round, so a reader who had already cleared the first message would never
+   * be told about any that followed. This resets read_at instead, which is
+   * also what stops a busy thread producing a notification per message.
+   */
+  async upsertForEntity(input: CreateNotificationInput): Promise<UserNotification | null> {
+    return queryOne<UserNotification>(
+      `INSERT INTO user_notifications (user_id, type, title, body, link, actor_id, entity_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (user_id, type, entity_id) WHERE entity_id IS NOT NULL
+       DO UPDATE SET title = EXCLUDED.title,
+                     body = EXCLUDED.body,
+                     link = EXCLUDED.link,
+                     actor_id = EXCLUDED.actor_id,
+                     read_at = NULL,
+                     created_at = NOW()
        RETURNING *`,
       [
         input.user_id,

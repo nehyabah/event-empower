@@ -95,6 +95,9 @@ export interface AdminVendorDetail {
   authProvider: string | null;
   createdAt: string | null;
   onboardingSubmittedAt: string | null;
+  adminNotes: string | null;
+  /** The owning account id. Notes live on users, not vendor_profiles. */
+  userId: string | null;
 }
 
 export interface AdminPlannerDetail {
@@ -129,6 +132,7 @@ export interface AdminPlannerDetail {
     instagram_handle: string | null;
     whatsapp_phone: string | null;
     city: string | null;
+    admin_notes: string | null;
   };
 }
 

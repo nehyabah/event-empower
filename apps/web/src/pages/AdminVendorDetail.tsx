@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { ReviewField, CompletenessSummary } from "@/components/admin/ReviewField";
+import ReviewNotes from "@/components/admin/ReviewNotes";
 import {
   getAdminVendor,
   verifyAdminVendor,
@@ -381,6 +382,8 @@ const AdminVendorDetail = () => {
           )}
         </CardContent>
       </Card>
+
+      {data && <ReviewNotes userId={data.userId} initialNotes={data.adminNotes} />}
 
       {data && data.approvalStatus === "pending" && (
         <Card>
