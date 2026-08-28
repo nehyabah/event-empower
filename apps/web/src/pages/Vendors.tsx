@@ -3,7 +3,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Star, SlidersHorizontal } from "lucide-react";
+import { Search, MapPin, Star, SlidersHorizontal, MessageSquare, Eye } from "lucide-react";
 import VendorDetail from "@/components/vendors/VendorDetail";
 import { vendorService, VendorDetails } from "@/services/api/vendorService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { ChatSafetyIntro } from "@/components/safety/ChatSafetyNotice";
 
 interface VendorImage {
   url: string;
@@ -43,6 +44,7 @@ interface VendorCardProps {
     website?: string;
   };
   onViewDetails: () => void;
+  onChat: () => void;
 }
 
 interface ReviewSummary {
@@ -71,15 +73,13 @@ const VendorCard = ({
   reviewCount,
   imageUrl,
   services,
-  onViewDetails
+  onViewDetails,
+  onChat,
 }: VendorCardProps) => {
   const startingPrice = getStartingPrice(services);
   return (
-    <div
-      className="bg-card border rounded-xl overflow-hidden transition-all hover:shadow-lg active:scale-[0.98] cursor-pointer"
-      onClick={onViewDetails}
-    >
-      <div className="relative">
+    <div className="bg-card border rounded-xl overflow-hidden transition-all hover:shadow-lg flex flex-col">
+      <div className="relative cursor-pointer" onClick={onViewDetails}>
         <div
           className="h-40 sm:h-48 bg-cover bg-center bg-muted"
           style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
@@ -104,6 +104,17 @@ const VendorCard = ({
             <span className="text-xs font-medium text-primary shrink-0">{startingPrice}</span>
           )}
         </div>
+
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" variant="outline" className="flex-1" onClick={onViewDetails}>
+            <Eye className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">View</span>
+          </Button>
+          <Button size="sm" className="flex-1" onClick={onChat}>
+            <MessageSquare className="h-3.5 w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">Chat</span>
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -113,9 +124,9 @@ const VendorsPage = () => {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
-  const [selectedVendor, setSelectedVendor] = useState<Omit<VendorCardProps, 'onViewDetails'> | null>(null);
+  const [selectedVendor, setSelectedVendor] = useState<Omit<VendorCardProps, 'onViewDetails' | 'onChat'> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [vendors, setVendors] = useState<Omit<VendorCardProps, 'onViewDetails'>[]>([]);
+  const [vendors, setVendors] = useState<Omit<VendorCardProps, 'onViewDetails' | 'onChat'>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const PAGE_SIZE = 12;
@@ -125,6 +136,9 @@ const VendorsPage = () => {
     setVisibleCount(PAGE_SIZE);
   }, [searchQuery, selectedCategory, selectedRegion]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+  const [safetyAccepted, setSafetyAccepted] = useState(
+    () => localStorage.getItem("chatSafetyAccepted") === "1"
+  );
   const [isSending, setIsSending] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({
     name: "",
@@ -133,12 +147,17 @@ const VendorsPage = () => {
     message: "",
   });
 
-  const handleViewVendorDetails = (vendor: Omit<VendorCardProps, 'onViewDetails'>) => {
+  const handleViewVendorDetails = (vendor: Omit<VendorCardProps, 'onViewDetails' | 'onChat'>) => {
     setSelectedVendor(vendor);
   };
 
   const handleOpenInquiry = () => {
     if (!selectedVendor) return;
+    setIsInquiryOpen(true);
+  };
+
+  const handleChat = (vendor: Omit<VendorCardProps, 'onViewDetails' | 'onChat'>) => {
+    setSelectedVendor(vendor);
     setIsInquiryOpen(true);
   };
 
@@ -313,6 +332,7 @@ const VendorsPage = () => {
                   key={`${vendor.name}-${index}`}
                   {...vendor}
                   onViewDetails={() => handleViewVendorDetails(vendor)}
+                  onChat={() => handleChat(vendor)}
                 />
               ))
             )}
@@ -348,6 +368,14 @@ const VendorsPage = () => {
           <DialogHeader>
             <DialogTitle>Send Inquiry to {selectedVendor?.name}</DialogTitle>
           </DialogHeader>
+          {!safetyAccepted ? (
+            <ChatSafetyIntro
+              onAccept={() => {
+                localStorage.setItem("chatSafetyAccepted", "1");
+                setSafetyAccepted(true);
+              }}
+            />
+          ) : (
           <div className="space-y-4">
             {user ? (
               <p className="text-sm text-muted-foreground">
@@ -405,7 +433,12 @@ const VendorsPage = () => {
                 {isSending ? "Sending..." : "Send Inquiry"}
               </Button>
             </div>
+            <p className="text-[11px] text-muted-foreground border-t pt-3">
+              Don't share phone numbers, emails or links — messages that contain them
+              are blocked. Chats are monitored for safety.
+            </p>
           </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -416,7 +449,7 @@ const VendorsPage = () => {
 
 export default VendorsPage;
 
-const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps, 'onViewDetails'>[] => {
+const mapVendorDetailsToCards = (vendors: VendorDetails[]): Omit<VendorCardProps, 'onViewDetails' | 'onChat'>[] => {
   const placeholderImage =
     "data:image/svg+xml;utf8," +
     encodeURIComponent(

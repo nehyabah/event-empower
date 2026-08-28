@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Send } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { ChatSafetyBanner } from "@/components/safety/ChatSafetyNotice";
 import {
   workspaceMessageService,
   WorkspaceMessage,
@@ -110,6 +111,7 @@ const WorkspaceChat = ({ eventId }: WorkspaceChatProps) => {
 
   return (
     <div className="flex flex-col rounded-xl border bg-card overflow-hidden">
+      <ChatSafetyBanner />
       {participants.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 border-b px-4 py-2.5 bg-muted/40">
           <span className="text-xs text-muted-foreground mr-1">In this chat:</span>

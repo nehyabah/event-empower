@@ -8,7 +8,8 @@ import {
   Heart,
   Globe,
   Plane,
-  Star
+  Star,
+  Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -287,27 +288,44 @@ const VendorDetail = ({
             {/* Contact */}
             <div>
               <h3 className="text-sm font-medium mb-2">Contact</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{contact.email}</span>
+              {contact.email || contact.phone || contact.website ? (
+                <div className="space-y-2 text-sm">
+                  {contact.email && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{contact.email}</span>
+                    </div>
+                  )}
+                  {contact.phone && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Phone className="h-4 w-4 shrink-0" />
+                      <span>{contact.phone}</span>
+                    </div>
+                  )}
+                  {contact.website && (
+                    <a
+                      href={contact.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-primary hover:underline"
+                    >
+                      <Globe className="h-4 w-4 shrink-0" />
+                      <span>Visit Website</span>
+                    </a>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-4 w-4 shrink-0" />
-                  <span>{contact.phone}</span>
+              ) : (
+                <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Lock className="h-4 w-4 shrink-0" />
+                    <span className="tracking-widest">••• ••• ••••</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Contact details unlock once this vendor is booked. Until then, message
+                    them here — it keeps a record of what you agreed.
+                  </p>
                 </div>
-                {contact.website && (
-                  <a
-                    href={contact.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-primary hover:underline"
-                  >
-                    <Globe className="h-4 w-4 shrink-0" />
-                    <span>Visit Website</span>
-                  </a>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
