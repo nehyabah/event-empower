@@ -4,6 +4,33 @@ import { userService } from '../services/userService.js';
 import { vendorService } from '../services/vendorService.js';
 import { storageService } from '../services/storageService.js';
 import { reminderService } from '../services/reminderService.js';
+import { UserModel } from '../models/User.js';
+
+
+function toAuthUserJson(user: import('../models/User.js').User) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    userType: user.user_type,
+    avatarUrl: user.avatar_url,
+    approvalStatus: user.approval_status,
+    onboardingSubmittedAt: user.onboarding_submitted_at
+      ? new Date(user.onboarding_submitted_at).toISOString()
+      : null,
+    notifyReminders: user.notify_reminders,
+    notifyProductUpdates: user.notify_product_updates,
+    notifyNewsletter: user.notify_newsletter,
+  };
+}
+
+const updateMeSchema = z.object({
+  name: z.string().trim().min(1).max(255).optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
+  notifyReminders: z.boolean().optional(),
+  notifyProductUpdates: z.boolean().optional(),
+  notifyNewsletter: z.boolean().optional(),
+});
 
 type UploadRequest = Request & { file?: { buffer: Buffer; mimetype: string; originalname: string } };
 
@@ -564,6 +591,54 @@ export const userController = {
   },
 
   // ========== DASHBOARD ==========
+
+  async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const user = await UserModel.findById(req.user!.userId);
+      if (!user) {
+        res.status(404).json({ error: 'Account not found' });
+        return;
+      }
+      res.json(toAuthUserJson(user));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const input = updateMeSchema.parse(req.body);
+
+      if (input.email) {
+        const existing = await UserModel.findByEmail(input.email);
+        if (existing && existing.id !== req.user!.userId) {
+          res.status(409).json({ error: 'That email is already in use.' });
+          return;
+        }
+      }
+
+      const updated = await UserModel.update(req.user!.userId, {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.notifyReminders !== undefined ? { notify_reminders: input.notifyReminders } : {}),
+        ...(input.notifyProductUpdates !== undefined ? { notify_product_updates: input.notifyProductUpdates } : {}),
+        ...(input.notifyNewsletter !== undefined ? { notify_newsletter: input.notifyNewsletter } : {}),
+      });
+
+      if (!updated) {
+        res.status(404).json({ error: 'Account not found' });
+        return;
+      }
+
+      res.json(toAuthUserJson(updated));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors[0]?.message || 'Invalid input' });
+        return;
+      }
+      next(error);
+    }
+  },
 
   async getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
