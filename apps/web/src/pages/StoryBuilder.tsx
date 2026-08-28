@@ -8,6 +8,7 @@ import { Loader2, ExternalLink, AlertCircle, CheckCircle2, Palette } from "lucid
 import SectionRail from "@/components/story-builder/SectionRail";
 import SectionEditor from "@/components/story-builder/SectionEditor";
 import SitePreview from "@/components/story-builder/SitePreview";
+import AppearancePanel from "@/components/story-builder/AppearancePanel";
 import { useAuth } from "@/context/AuthContext";
 import { storyService, StoryBundle } from "@/services/api/storyService";
 import { SectionContext, SectionId, siteReadiness } from "@/lib/storySections";
@@ -29,6 +30,7 @@ const StoryBuilder = () => {
   const [order, setOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
   const [hidden, setHidden] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<SectionId | null>(null);
+  const [showAppearance, setShowAppearance] = useState(false);
   const [isSavingLayout, setIsSavingLayout] = useState(false);
 
   const load = async () => {
@@ -182,7 +184,7 @@ const StoryBuilder = () => {
                   hidden={hidden}
                   ctx={ctx}
                   activeId={activeId}
-                  onSelect={(id) => setActiveId(activeId === id ? null : id)}
+                  onSelect={(id) => { setShowAppearance(false); setActiveId(activeId === id ? null : id); }}
                   onToggleHidden={(id) =>
                     persistLayout(
                       order,
@@ -192,20 +194,25 @@ const StoryBuilder = () => {
                   onReorder={(next) => persistLayout(next, hidden)}
                 />
 
-                <Button variant="outline" className="w-full" asChild>
-                  <Link to="/couple-story">
-                    <Palette className="h-4 w-4 mr-2" />
-                    Theme, fonts &amp; publishing
-                  </Link>
+                <Button
+                  variant={showAppearance ? "default" : "outline"}
+                  className="w-full"
+                  onClick={() => {
+                    setShowAppearance((v) => !v);
+                    setActiveId(null);
+                  }}
+                >
+                  <Palette className="h-4 w-4 mr-2" />
+                  Appearance &amp; publishing
                 </Button>
               </div>
 
               <div className="space-y-4">
-                <SectionEditor
-                  sectionId={activeId}
-                  bundle={bundle}
-                  onSaved={load}
-                />
+                {showAppearance ? (
+                  <AppearancePanel bundle={bundle} onSaved={load} />
+                ) : (
+                  <SectionEditor sectionId={activeId} bundle={bundle} onSaved={load} />
+                )}
                 <SitePreview
                   userId={user?.id}
                   focusSection={activeId}

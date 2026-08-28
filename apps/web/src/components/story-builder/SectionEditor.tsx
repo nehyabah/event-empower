@@ -84,7 +84,7 @@ const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
           { key: "title", label: "What happened", placeholder: "We met", required: true },
           { key: "date", label: "When", type: "date" },
           { key: "description", label: "Tell the story", multiline: true },
-          { key: "image_url", label: "Photo URL", placeholder: "https://…" },
+          { key: "image_url", label: "Photo", type: "image" },
         ],
         primary: (i: any) => i.title,
         secondary: (i: any) => i.description || i.date || null,
@@ -102,7 +102,7 @@ const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
           { key: "role", label: "Role", placeholder: "Chief bridesmaid", required: true },
           { key: "side", label: "Side", placeholder: "bride or groom" },
           { key: "bio", label: "About them", multiline: true },
-          { key: "image_url", label: "Photo URL", placeholder: "https://…" },
+          { key: "image_url", label: "Photo", type: "image" },
         ],
         primary: (i: any) => i.name,
         secondary: (i: any) => i.role || null,
@@ -149,7 +149,7 @@ const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
       return {
         noun: "photo",
         fields: [
-          { key: "url", label: "Photo URL", placeholder: "https://…", required: true },
+          { key: "url", label: "Photo", type: "image", required: true },
           { key: "caption", label: "Caption" },
         ],
         primary: (i: any) => i.caption || "Photo",

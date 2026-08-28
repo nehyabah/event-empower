@@ -8,7 +8,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronDown, ChevronUp, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
+import { storyService } from "@/services/api/storyService";
 
 /**
  * Add, edit, reorder and remove the entries behind a list-backed section.
@@ -24,6 +25,7 @@ export interface ListFieldSpec {
   label: string;
   placeholder?: string;
   multiline?: boolean;
+  /** "image" renders a file picker; anything else is passed to <input type>. */
   type?: string;
   required?: boolean;
 }
@@ -58,6 +60,7 @@ const ListSectionEditor = <T extends { id: string }>({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<T | null>(null);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
   const blank = () => Object.fromEntries(spec.fields.map((f) => [f.key, ""]));
 
@@ -219,7 +222,52 @@ const ListSectionEditor = <T extends { id: string }>({
                 {f.label}
                 {f.required && <span className="text-muted-foreground font-normal"> (required)</span>}
               </Label>
-              {f.multiline ? (
+              {f.type === "image" ? (
+                <div className="space-y-2">
+                  {draft[f.key] && (
+                    <img
+                      src={draft[f.key]}
+                      alt=""
+                      className="h-28 w-full rounded-md object-cover border"
+                    />
+                  )}
+                  <label className="flex items-center justify-center gap-2 rounded-md border border-dashed px-3 py-3 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50">
+                    {uploadingKey === f.key ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading…
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4" />
+                        {draft[f.key] ? "Replace photo" : "Choose a photo"}
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingKey !== null}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingKey(f.key);
+                        try {
+                          const { url } = await storyService.uploadWishlistImage(file);
+                          setDraft((d) => ({ ...d!, [f.key]: url }));
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Upload failed");
+                        } finally {
+                          setUploadingKey(null);
+                          // Clearing lets the same file be picked again after a
+                          // failure, which the browser otherwise ignores.
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              ) : f.multiline ? (
                 <Textarea
                   id={`l-${f.key}`}
                   rows={3}
