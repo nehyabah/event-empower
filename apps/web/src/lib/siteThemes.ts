@@ -445,56 +445,6 @@ export const siteThemes: ThemeConfig[] = [
     },
   },
   {
-    id: "garden",
-    name: "Modern Botanical",
-    previewColor: "bg-[#F0F4F2]",
-    styles: {
-      fontHeading: "font-serif",
-      fontBody: "font-sans",
-      bg: "bg-[#F0F4F2]",
-      text: "text-emerald-950",
-      subtext: "text-emerald-800/60",
-      accent: "text-emerald-600",
-      card: "bg-white/80 backdrop-blur-xl border border-white/60 shadow-lg shadow-emerald-900/5 rounded-3xl",
-      button:
-        "bg-emerald-900 text-white hover:bg-emerald-800 rounded-2xl px-6 shadow-lg shadow-emerald-900/20",
-      heroOverlay: "bg-emerald-950/20",
-      heroLayout: "items-center text-center",
-      heroTitle:
-        "text-5xl md:text-7xl font-serif font-normal text-white drop-shadow-md",
-      heroMeta: "text-white/90 font-medium tracking-wide",
-      image: "rounded-3xl shadow-md shadow-emerald-900/10",
-      badge:
-        "bg-emerald-900/10 backdrop-blur-md border border-emerald-900/10 text-emerald-100 rounded-2xl",
-      divider: "hidden",
-      wishCard:
-        "bg-[#fffff0] shadow-md border border-emerald-100/50 rotate-1 hover:rotate-2 transition-transform",
-      pinColor: "text-emerald-600",
-      sectionPadding: "py-24 md:py-32",
-      sectionBgAlt: "bg-emerald-950/[0.03]",
-      sectionLabel: "text-xs font-medium tracking-[0.15em] uppercase opacity-50",
-      sectionDivider: "hidden",
-      cardHover: "hover:border-emerald-300/50 hover:shadow-emerald-200/30 hover:shadow-lg hover:scale-[1.02] transition-all duration-500",
-      imageHover: "group-hover:scale-105 group-hover:brightness-105 transition-all duration-700",
-      galleryColumns: "columns-1 md:columns-2 gap-12 space-y-12",
-      galleryItemClass: "break-inside-avoid",
-      galleryHover: "group-hover:scale-105 group-hover:brightness-105 transition-all duration-700",
-      coupleLayout: "gap-8",
-      coupleOffset: "",
-      detailsMiddleCard: "md:scale-110 z-10",
-      wishCardRounding: "rounded-2xl",
-      inputStyle: "border-emerald-200/60 text-emerald-950 placeholder-emerald-400/50 rounded-2xl focus:ring-1 focus:ring-emerald-400/40",
-      navButton: "bg-white/80 text-emerald-900 hover:bg-white",
-      floatingButton: "bg-emerald-900/40",
-      heroDateVenue: "text-white/90 font-medium tracking-wide text-base md:text-lg",
-      heroDateVenueLayout: "flex flex-row items-center gap-4 md:gap-6 mt-6",
-      heroDivider: "w-1 h-1 rounded-full bg-white/40",
-      heroCountdown: "mt-10 flex items-center gap-6 md:gap-8 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl px-8 py-5",
-      heroCountdownUnit: "text-3xl md:text-4xl font-serif text-white tabular-nums",
-      heroCountdownLabel: "text-[9px] uppercase tracking-[0.15em] text-white/60 font-medium mt-1",
-    },
-  },
-  {
     id: "golden-hour",
     name: "Golden Hour",
     previewColor: "bg-amber-50",
@@ -542,106 +492,6 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-10 flex items-center gap-8 md:gap-12",
       heroCountdownUnit: "text-4xl md:text-5xl font-serif font-light italic text-white tabular-nums drop-shadow-lg",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.2em] text-amber-100/50 font-light mt-1",
-    },
-  },
-  {
-    id: "riviera",
-    name: "Riviera",
-    previewColor: "bg-sky-50",
-    styles: {
-      fontHeading: "font-serif",
-      fontBody: "font-sans",
-      bg: "bg-sky-50",
-      text: "text-sky-950",
-      subtext: "text-sky-700/60",
-      accent: "text-sky-500",
-      card: "bg-white rounded-2xl shadow-lg shadow-sky-100/50 border border-sky-100",
-      button:
-        "bg-sky-700 text-white hover:bg-sky-800 rounded-xl px-8 shadow-md shadow-sky-700/20",
-      heroOverlay: "bg-gradient-to-t from-sky-950/30 via-transparent to-sky-900/10",
-      heroLayout: "items-center text-center",
-      heroTitle:
-        "text-5xl md:text-8xl font-serif font-normal tracking-tight text-white drop-shadow-md",
-      heroMeta: "text-white/90 font-light tracking-wide",
-      image: "rounded-2xl shadow-md shadow-sky-200/30",
-      badge:
-        "bg-white/15 backdrop-blur-md border border-white/20 text-white rounded-xl",
-      divider: "hidden",
-      wishCard:
-        "bg-white shadow-md border border-sky-100 hover:-translate-y-1 transition-transform",
-      pinColor: "text-sky-500",
-      sectionPadding: "py-24 md:py-32",
-      sectionBgAlt: "bg-sky-50/60",
-      sectionLabel: "text-xs font-bold tracking-[0.2em] uppercase opacity-50",
-      sectionDivider: "w-20 h-px bg-sky-200 mx-auto my-4 rounded-full",
-      cardHover: "hover:shadow-sky-200/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-500",
-      imageHover: "group-hover:scale-105 transition-transform duration-700",
-      galleryColumns: "grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[250px]",
-      galleryItemClass: "first:col-span-2 first:row-span-2",
-      galleryHover: "group-hover:scale-105 transition-transform duration-700",
-      coupleLayout: "gap-8",
-      coupleOffset: "",
-      detailsMiddleCard: "md:scale-110 z-10",
-      wishCardRounding: "rounded-xl",
-      inputStyle: "border-sky-200 text-sky-950 placeholder-sky-400/50 rounded-xl focus:ring-1 focus:ring-sky-400/40",
-      navButton: "bg-white/80 text-sky-800 hover:bg-white",
-      floatingButton: "bg-sky-700/20",
-      heroDateVenue: "text-white/90 font-light tracking-wide text-base md:text-lg",
-      heroDateVenueLayout: "flex flex-row items-center gap-3 md:gap-6 mt-6 flex-wrap justify-center",
-      heroDivider: "w-6 h-px bg-white/30 hidden md:block",
-      heroCountdown: "mt-10 flex items-center gap-4 md:gap-6 bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4",
-      heroCountdownUnit: "text-2xl md:text-3xl font-sans font-medium text-white tabular-nums",
-      heroCountdownLabel: "text-[9px] uppercase tracking-[0.15em] text-white/50 font-medium mt-1",
-    },
-  },
-  {
-    id: "chateau",
-    name: "Chateau",
-    previewColor: "bg-violet-50",
-    styles: {
-      fontHeading: "font-serif",
-      fontBody: "font-sans",
-      bg: "bg-[#FAF8FF]",
-      text: "text-violet-950",
-      subtext: "text-violet-400",
-      accent: "text-violet-300",
-      card: "bg-white/90 backdrop-blur-sm rounded-[2rem] shadow-xl shadow-violet-100/40 border border-violet-100",
-      button:
-        "bg-violet-800 text-white hover:bg-violet-900 rounded-full px-8 shadow-md shadow-violet-800/20",
-      heroOverlay: "bg-gradient-to-b from-violet-950/20 via-transparent to-violet-950/30",
-      heroLayout: "items-center text-center",
-      heroTitle:
-        "text-5xl md:text-8xl font-serif font-medium italic text-white drop-shadow-md",
-      heroMeta: "text-violet-100/90 font-light",
-      image: "rounded-[1.5rem] shadow-lg shadow-violet-200/20",
-      badge:
-        "bg-white/15 backdrop-blur-md border border-white/20 text-white rounded-full",
-      divider: "hidden",
-      wishCard:
-        "bg-white shadow-lg border border-violet-100 hover:shadow-xl transition-shadow",
-      pinColor: "text-violet-400",
-      sectionPadding: "py-28 md:py-36",
-      sectionBgAlt: "bg-violet-50/50",
-      sectionLabel: "text-xs font-medium tracking-[0.2em] uppercase italic opacity-50",
-      sectionDivider: "w-16 h-px bg-violet-200/60 mx-auto my-4",
-      cardHover: "hover:border-violet-300/50 hover:shadow-violet-200/30 hover:shadow-lg hover:scale-[1.02] transition-all duration-500",
-      imageHover: "group-hover:scale-105 group-hover:brightness-105 transition-all duration-700",
-      galleryColumns: "columns-1 sm:columns-2 lg:columns-3 gap-8 space-y-8",
-      galleryItemClass: "break-inside-avoid",
-      galleryHover: "group-hover:scale-105 group-hover:brightness-105 transition-all duration-700",
-      coupleLayout: "gap-8",
-      coupleOffset: "",
-      detailsMiddleCard: "md:scale-110 z-10 shadow-xl shadow-violet-100/40",
-      wishCardRounding: "rounded-2xl",
-      inputStyle: "border-violet-200 text-violet-950 placeholder-violet-400/40 rounded-2xl focus:ring-1 focus:ring-violet-400/40",
-      navButton: "bg-white/80 text-violet-800 hover:bg-white",
-      floatingButton: "bg-violet-800/20",
-      heroDateVenue: "text-violet-100/90 font-light text-lg md:text-xl",
-      heroDateVenueLayout: "flex flex-col items-center gap-3 mt-6",
-      heroDivider: "text-violet-200/40 text-sm",
-      heroCountdown: "mt-10 flex items-center gap-8 md:gap-12 backdrop-blur-sm bg-white/5 border border-white/10 rounded-full px-10 py-5",
-      heroCountdownUnit: "text-3xl md:text-4xl font-serif italic text-white tabular-nums",
-      heroCountdownLabel: "text-[9px] uppercase tracking-[0.2em] text-violet-200/40 font-light mt-1",
     },
   },
   {
@@ -694,64 +544,23 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdownLabel: "text-[8px] uppercase tracking-[0.3em] text-white/30 font-bold mt-2",
     },
   },
-  {
-    id: "bohemian",
-    name: "Bohemian",
-    previewColor: "bg-orange-50",
-    styles: {
-      fontHeading: "font-serif",
-      fontBody: "font-sans",
-      bg: "bg-[#FDF6F0]",
-      text: "text-orange-950",
-      subtext: "text-orange-800/50",
-      accent: "text-green-700/60",
-      card: "bg-white/70 backdrop-blur-sm rounded-2xl shadow-md shadow-orange-200/20 border border-orange-100/50",
-      button:
-        "bg-orange-800 text-white hover:bg-orange-900 rounded-full px-8 shadow-md shadow-orange-800/20",
-      heroOverlay: "bg-gradient-to-t from-orange-950/30 via-transparent to-orange-950/10",
-      heroLayout: "items-center text-center",
-      heroTitle:
-        "text-5xl md:text-8xl font-serif font-normal text-white drop-shadow-md",
-      heroMeta: "text-orange-100/90 font-light tracking-wide",
-      image: "rounded-xl shadow-md shadow-orange-200/20",
-      badge:
-        "bg-white/15 backdrop-blur-md border border-white/20 text-white rounded-full",
-      divider: "hidden",
-      wishCard:
-        "bg-[#FFFCF7] shadow-md border border-orange-100/60 rotate-1 hover:rotate-0 transition-transform",
-      pinColor: "text-orange-600",
-      sectionPadding: "py-20 md:py-28",
-      sectionBgAlt: "bg-orange-50/50",
-      sectionLabel: "text-xs font-bold tracking-[0.15em] uppercase opacity-50",
-      sectionDivider: "flex items-center justify-center gap-2 mx-auto my-4 [&>span]:w-1.5 [&>span]:h-1.5 [&>span]:rounded-full [&>span]:bg-orange-300",
-      cardHover: "hover:border-orange-200 hover:shadow-orange-200/20 hover:shadow-lg hover:rotate-[-0.5deg] transition-all duration-500",
-      imageHover: "group-hover:scale-105 group-hover:rotate-1 transition-all duration-700",
-      galleryColumns: "columns-1 md:columns-2 gap-6 space-y-6",
-      galleryItemClass: "break-inside-avoid odd:rotate-1 even:-rotate-1",
-      galleryHover: "group-hover:scale-105 group-hover:rotate-0 transition-all duration-700",
-      coupleLayout: "gap-8",
-      coupleOffset: "",
-      detailsMiddleCard: "md:scale-110 z-10",
-      wishCardRounding: "rounded-xl",
-      inputStyle: "border-orange-200 text-orange-950 placeholder-orange-400/40 rounded-xl focus:ring-1 focus:ring-orange-400/40",
-      navButton: "bg-white/80 text-orange-900 hover:bg-white",
-      floatingButton: "bg-orange-800/20",
-      heroDateVenue: "text-orange-100/90 font-light tracking-wide text-base md:text-lg",
-      heroDateVenueLayout: "flex flex-col items-center gap-2 mt-6",
-      heroDivider: "flex items-center gap-1.5 [&>span]:w-1 [&>span]:h-1 [&>span]:rounded-full [&>span]:bg-white/40",
-      heroCountdown: "mt-10 flex items-center gap-6 md:gap-8",
-      heroCountdownUnit: "text-3xl md:text-4xl font-serif text-white tabular-nums drop-shadow-md",
-      heroCountdownLabel: "text-[9px] uppercase tracking-[0.15em] text-orange-100/50 font-medium mt-1",
-    },
-  },
 ];
 
+/** Where a site lands if its saved theme no longer exists. */
+export const FALLBACK_THEME_ID = "editorial";
+
 export function getTheme(themeId: string): ThemeConfig {
-  return siteThemes.find((t) => t.id === themeId) || siteThemes[0];
+  return (
+    siteThemes.find((t) => t.id === themeId) ||
+    siteThemes.find((t) => t.id === FALLBACK_THEME_ID) ||
+    siteThemes[0]
+  );
 }
 
+const DARK_THEMES = new Set(["midnight", "noir", "aurum", "terrazzo"]);
+
 export function isDarkTheme(themeId: string): boolean {
-  return themeId === "midnight";
+  return DARK_THEMES.has(themeId);
 }
 
 export const DEFAULT_SECTION_ORDER = [
