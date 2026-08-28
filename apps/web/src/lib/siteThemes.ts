@@ -53,6 +53,12 @@ export interface ThemeStyles {
   heroMotion: string;
   /** Runs once on the hero's text block. */
   heroTextMotion: string;
+  /**
+   * How the photo gallery is built and how it moves. The largest single
+   * difference between one template and another, because the photographs
+   * are the best thing on the page.
+   */
+  galleryStyle: "marquee" | "stack" | "drift" | "mosaic" | "alternating";
 }
 
 export interface ThemeConfig {
@@ -168,6 +174,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 70,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-hero-lift",
+      galleryStyle: "marquee",
     },
   },
   {
@@ -222,6 +229,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 180,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-reveal-drift",
+      galleryStyle: "stack",
     },
   },
   {
@@ -272,6 +280,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 110,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-reveal-glow",
+      galleryStyle: "drift",
     },
   },
   {
@@ -324,6 +333,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 90,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-hero-lift",
+      galleryStyle: "alternating",
     },
   },
   {
@@ -375,6 +385,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 100,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-reveal-settle",
+      galleryStyle: "mosaic",
     },
   },
   {
@@ -428,6 +439,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 80,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-hero-lift",
+      galleryStyle: "alternating",
     },
   },
   {
@@ -482,6 +494,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 120,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-reveal-glow",
+      galleryStyle: "drift",
     },
   },
   {
@@ -536,6 +549,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 100,
       heroMotion: "animate-ken-burns",
       heroTextMotion: "animate-hero-lift",
+      galleryStyle: "drift",
     },
   },
   {
@@ -590,6 +604,7 @@ export const siteThemes: ThemeConfig[] = [
       revealStagger: 60,
       heroMotion: "",
       heroTextMotion: "animate-hero-lift",
+      galleryStyle: "marquee",
     },
   },
 ];

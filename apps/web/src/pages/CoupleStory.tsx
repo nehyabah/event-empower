@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import StoryGallery from "@/components/couple-story/StoryGallery";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -294,6 +296,7 @@ const CoupleStory = () => {
     : coupleStory.weddingDate;
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
+  useScrollReveal([visibleSections.join(","), storyImages.length]);
 
 
   // Accent color override style
@@ -368,24 +371,20 @@ const CoupleStory = () => {
         if (storyImages.length === 0) return null;
         return (
           <section key="gallery" className={`${s.sectionPadding} ${s.sectionBgAlt}`}>
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-16">
-                <span className={`${s.sectionLabel} ${s.accent}`}>Memories</span>
-                <h2 className={`text-4xl md:text-5xl mt-3 ${s.fontHeading}`}>Gallery</h2>
-              </div>
-              <div className={`${s.galleryColumns} max-w-7xl mx-auto`}>
-                {storyImages.map((image) => (
-                  <div key={image.id} className={`${s.galleryItemClass} relative group overflow-hidden ${s.image}`}>
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-10 duration-500" />
-                    <img src={image.url} alt={image.caption || "Story moment"} className={`w-full h-full object-cover transform ${s.galleryHover}`} />
-                    {image.caption && (
-                      <div className="absolute bottom-0 left-0 right-0 p-6 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-4 group-hover:translate-y-0">
-                        <p className="text-white font-medium drop-shadow-md">{image.caption}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+            <div className="text-center mb-16 container mx-auto px-4">
+              <span className={`${s.sectionLabel} ${s.accent}`}>Memories</span>
+              <h2 className={`text-4xl md:text-5xl mt-3 ${s.fontHeading}`}>Gallery</h2>
+            </div>
+            {/* Same component as the public site, so the couple's own view
+                cannot drift from what their guests actually see. */}
+            <div className={s.galleryStyle === "marquee" ? "" : "container mx-auto px-4"}>
+              <StoryGallery
+                images={storyImages}
+                style={s.galleryStyle}
+                imageClass={s.image}
+                hoverClass={s.galleryHover}
+                revealClass={s.reveal}
+              />
             </div>
           </section>
         );
