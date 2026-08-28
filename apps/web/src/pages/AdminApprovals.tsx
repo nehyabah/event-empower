@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   CheckCircle, XCircle, Instagram, Phone, MapPin, Briefcase, Store,
-  Loader2, ExternalLink, AlertTriangle, Eye, Clock,
+  Loader2, ExternalLink, AlertTriangle, Eye, Clock, Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -37,6 +38,8 @@ const AdminApprovals = () => {
   const [rejectTarget, setRejectTarget] = useState<PendingUser | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"ready" | "incomplete" | "all">("ready");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -49,6 +52,16 @@ const AdminApprovals = () => {
 
   const submittedCount = pending.filter((u) => u.onboardingSubmittedAt).length;
   const notSubmittedCount = pending.length - submittedCount;
+
+  const visible = pending.filter((u) => {
+    if (tab === "ready" && !u.onboardingSubmittedAt) return false;
+    if (tab === "incomplete" && u.onboardingSubmittedAt) return false;
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return [u.businessName, u.name, u.email, u.city]
+      .filter(Boolean)
+      .some((f) => f!.toLowerCase().includes(q));
+  });
 
   const profileHref = (u: PendingUser) =>
     u.userType === "vendor"
@@ -114,17 +127,55 @@ const AdminApprovals = () => {
         </Link>
       </div>
 
-      {pending.length === 0 ? (
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+        <div className="flex gap-1 p-1 bg-muted/60 rounded-lg w-full sm:w-auto">
+          {([
+            ["ready", `Ready (${submittedCount})`],
+            ["incomplete", `Incomplete (${notSubmittedCount})`],
+            ["all", `All (${pending.length})`],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setTab(value)}
+              className={`flex-1 sm:flex-none whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                tab === value
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by business, name, email or city..."
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-1">All caught up!</h3>
-            <p className="text-muted-foreground text-sm">No pending applications at the moment.</p>
+            <h3 className="text-lg font-medium mb-1">
+              {pending.length === 0 ? "All caught up!" : "Nothing matches"}
+            </h3>
+            <p className="text-muted-foreground text-sm">
+              {pending.length === 0
+                ? "No pending applications at the moment."
+                : "Try a different tab or search term."}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {pending.map((u) => (
+          {visible.map((u) => (
             <Card key={u.id}>
               <CardContent className="p-5">
                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">

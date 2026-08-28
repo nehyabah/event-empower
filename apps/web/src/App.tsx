@@ -47,6 +47,7 @@ import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminVendors from "./pages/AdminVendors";
 import AdminVendorDetail from "./pages/AdminVendorDetail";
 import AdminPlannerDetail from "./pages/AdminPlannerDetail";
+import AdminFlags from "./pages/AdminFlags";
 import AdminInquiries from "./pages/AdminInquiries";
 import AdminInquiryDetail from "./pages/AdminInquiryDetail";
 import AdminAnalytics from "./pages/AdminAnalytics";
@@ -348,6 +349,11 @@ const AppRoutes = () => {
       <Route path="/admin/inquiries/:id" element={
         <RequireAuth allowedTypes={["admin"]}>
           <AdminInquiryDetail />
+        </RequireAuth>
+      } />
+      <Route path="/admin/flags" element={
+        <RequireAuth allowedTypes={["admin"]}>
+          <AdminFlags />
         </RequireAuth>
       } />
       <Route path="/admin/approvals" element={
