@@ -396,6 +396,26 @@ export const getAdminUser = async (userId: string): Promise<AdminUserDetail> => 
   return response.data;
 };
 
+export interface AdminMessageFlag {
+  userId: string | null;
+  name: string | null;
+  email: string | null;
+  userType: string | null;
+  isActive: boolean | null;
+  flagCount: number;
+  lastAt: string;
+  violations: string[];
+  samples: Array<{ text: string; surface: string; created_at: string }>;
+}
+
+export const getAdminMessageFlags = async (): Promise<AdminMessageFlag[]> => {
+  const response = await apiClient.get<AdminMessageFlag[]>("/admin/message-flags");
+  if (response.error || !response.data) {
+    throw new Error(response.error || "Failed to load safety flags");
+  }
+  return response.data;
+};
+
 export const approveAdminUser = async (userId: string): Promise<void> => {
   const response = await apiClient.post(`/admin/users/${userId}/approve`);
   if (response.error) {

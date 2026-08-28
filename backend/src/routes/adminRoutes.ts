@@ -25,6 +25,9 @@ router.get('/dashboard/activity', ...allAdmins, adminController.dashboardActivit
 // User management
 // Pending approvals
 router.get('/pending-approvals', ...supportPlus, adminController.listPendingApprovals);
+
+// Blocked contact-swap attempts, grouped by who made them.
+router.get('/message-flags', ...supportPlus, adminController.listMessageFlags);
 router.post('/users/:id/approve', ...adminPlus, adminController.approveUser);
 router.post('/users/:id/reject', ...adminPlus, adminController.rejectUser);
 

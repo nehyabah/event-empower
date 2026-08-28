@@ -2459,6 +2459,59 @@ export const adminController = {
 
   // ========== APPROVALS ==========
 
+  /**
+   * Blocked attempts to swap contact details in chat.
+   *
+   * Grouped by person rather than listed flat: one blocked message is a
+   * mistake, the same account doing it repeatedly is the thing worth acting
+   * on, and a flat list buries that.
+   */
+  async listMessageFlags(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const limit = Math.min(Number(req.query.limit) || 50, 200);
+
+      const rows = await query<{
+        user_id: string | null; name: string | null; email: string | null;
+        user_type: string | null; is_active: boolean | null;
+        flag_count: string; last_at: Date; violations: string[];
+        samples: Array<{ text: string; surface: string; created_at: string }>;
+      }>(
+        `SELECT mf.user_id,
+                u.name, u.email, u.user_type, u.is_active,
+                COUNT(*)::text AS flag_count,
+                MAX(mf.created_at) AS last_at,
+                ARRAY(SELECT DISTINCT unnest(array_agg(mf.violations))) AS violations,
+                (ARRAY_AGG(
+                   jsonb_build_object('text', mf.attempted_text, 'surface', mf.surface,
+                                      'created_at', mf.created_at)
+                   ORDER BY mf.created_at DESC
+                 ))[1:3] AS samples
+           FROM message_flags mf
+           LEFT JOIN users u ON u.id = mf.user_id
+          GROUP BY mf.user_id, u.name, u.email, u.user_type, u.is_active
+          ORDER BY COUNT(*) DESC, MAX(mf.created_at) DESC
+          LIMIT $1`,
+        [limit]
+      );
+
+      res.json(
+        rows.map((r) => ({
+          userId: r.user_id,
+          name: r.name,
+          email: r.email,
+          userType: r.user_type,
+          isActive: r.is_active,
+          flagCount: Number(r.flag_count),
+          lastAt: r.last_at,
+          violations: r.violations || [],
+          samples: r.samples || [],
+        }))
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async listPendingApprovals(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const users = await query<{
