@@ -107,6 +107,23 @@
     }
   }
 
+  /* Scroll reveal. Elements marked data-reveal are held hidden until they
+     enter the viewport, then run whichever animation their theme supplies.
+     The hidden state is scoped to when JS is driving it, so a failure to
+     hydrate can never leave a page permanently blank. */
+  [data-reveal]:not(.is-revealed) {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal]:not(.is-revealed) {
+      opacity: 1;
+    }
+    [data-reveal] {
+      animation: none !important;
+    }
+  }
+
   /* A long unbroken string — a pasted URL, an email address in a table cell —
      forces its container wider than the viewport on a narrow screen. */
   p,

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useSearchParams, useParams, Link } from "react-router-dom";
 import {
   Heart,
@@ -263,11 +264,23 @@ const SharedStoryPage = () => {
     : coupleStory.weddingDate;
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
+
+  useScrollReveal([visibleSections.join(","), isLoading]);
   const storyUserId = coupleStory.userId || coupleId;
 
-  /** Anchor for the builder preview to scroll to. */
+  /**
+   * Anchor for the builder preview to scroll to, and the scroll-reveal
+   * boundary. The animation class comes from the theme, so a template's
+   * motion is part of how it reads rather than a global default.
+   */
   const renderSection = (sectionId: string) => (
-    <div key={sectionId} id={`section-${sectionId}`} data-section={sectionId}>
+    <div
+      key={sectionId}
+      id={`section-${sectionId}`}
+      data-section={sectionId}
+      data-reveal
+      className={s.reveal}
+    >
       {renderSectionBody(sectionId)}
     </div>
   );
@@ -344,8 +357,16 @@ const SharedStoryPage = () => {
                 <h2 className={`text-4xl md:text-5xl mt-3 ${s.fontHeading}`}>Gallery</h2>
               </div>
               <div className={`${s.galleryColumns} max-w-7xl mx-auto`}>
-                {storyImages.map((image) => (
-                  <div key={image.id} className={`${s.galleryItemClass} relative group overflow-hidden ${s.image}`}>
+                {storyImages.map((image, i) => (
+                  <div
+                    key={image.id}
+                    data-reveal
+                    // Staggering by position is what makes a grid feel composed
+                    // rather than every tile landing at the same instant. Capped
+                    // so a large gallery does not trail for seconds.
+                    data-reveal-delay={Math.min(i, 7) * s.revealStagger}
+                    className={`${s.galleryItemClass} ${s.reveal} relative group overflow-hidden ${s.image}`}
+                  >
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity z-10 duration-500" />
                     <img src={image.url} alt={image.caption || "Story moment"} className={`w-full h-full object-cover transform ${s.galleryHover}`} />
                     {image.caption && (
@@ -535,7 +556,11 @@ const SharedStoryPage = () => {
         <section id="section-hero" data-section="hero" className="relative h-[100dvh] w-full overflow-hidden flex flex-col justify-center" ref={heroRef}>
           <div className="absolute inset-0 z-0">
             <div className={`absolute inset-0 ${s.heroOverlay} z-10 transition-colors duration-700`} />
-            <img src={coupleStory.bannerImage} alt="Couple" className={`w-full h-full object-cover transition-transform duration-[20s] ease-linear scale-105 ${isLoading ? "blur-sm" : "scale-100"}`} />
+            <img
+            src={coupleStory.bannerImage}
+            alt="Couple"
+            className={`w-full h-full object-cover ${s.heroMotion} ${isLoading ? "blur-sm" : ""}`}
+          />
           </div>
           <div className={`relative z-20 container px-4 flex flex-col animate-fade-in-up transition-all duration-700 ${s.heroLayout}`}>
             <h1 className={`${s.heroTitle} transition-all duration-500`}>{coupleStory.title}</h1>

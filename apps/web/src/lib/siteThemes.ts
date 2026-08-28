@@ -41,6 +41,18 @@ export interface ThemeStyles {
   heroCountdown: string;
   heroCountdownUnit: string;
   heroCountdownLabel: string;
+  /**
+   * Motion. Applied by the section renderer to elements marked data-reveal,
+   * so how a template moves is part of its identity rather than the same
+   * fade on every theme.
+   */
+  reveal: string;
+  /** Milliseconds between staggered siblings; 0 reveals them together. */
+  revealStagger: number;
+  /** Runs on the hero image for the life of the page. */
+  heroMotion: string;
+  /** Runs once on the hero's text block. */
+  heroTextMotion: string;
 }
 
 export interface ThemeConfig {
@@ -152,6 +164,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-12 flex items-center gap-8 md:gap-12",
       heroCountdownUnit: "text-4xl md:text-5xl font-sans font-light text-white tabular-nums tracking-tight",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.3em] text-white/40 mt-2",
+      reveal: "animate-reveal-wipe",
+      revealStagger: 70,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-hero-lift",
     },
   },
   {
@@ -202,6 +218,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-14 flex items-start gap-10 md:gap-16",
       heroCountdownUnit: "text-3xl md:text-5xl font-serif font-light text-white tabular-nums",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.35em] text-white/50 mt-2",
+      reveal: "animate-reveal-drift",
+      revealStagger: 180,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-reveal-drift",
     },
   },
   {
@@ -248,6 +268,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-12 flex items-center gap-8 md:gap-12 border-y border-[#c9a227]/20 py-6 px-2",
       heroCountdownUnit: "text-3xl md:text-5xl font-serif font-light text-[#c9a227] tabular-nums",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.3em] text-[#f2e9dc]/50 mt-2",
+      reveal: "animate-reveal-glow",
+      revealStagger: 110,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-reveal-glow",
     },
   },
   {
@@ -296,6 +320,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-10 flex items-center gap-7 md:gap-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-7 py-4",
       heroCountdownUnit: "text-3xl md:text-4xl font-serif font-light text-white tabular-nums",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.2em] text-white/60 mt-1",
+      reveal: "animate-reveal-rise",
+      revealStagger: 90,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-hero-lift",
     },
   },
   {
@@ -343,6 +371,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-11 flex items-center gap-7 md:gap-10 bg-[#0f3d3e]/60 backdrop-blur-md border border-[#e6a17a]/20 rounded-3xl px-8 py-5",
       heroCountdownUnit: "text-3xl md:text-5xl font-serif font-light text-[#e6a17a] tabular-nums",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.25em] text-[#f0ece3]/55 mt-1.5",
+      reveal: "animate-reveal-settle",
+      revealStagger: 100,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-reveal-settle",
     },
   },
   {
@@ -392,6 +424,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-10 flex items-center gap-6 md:gap-10 backdrop-blur-sm bg-white/10 border border-white/15 rounded-full px-8 py-4",
       heroCountdownUnit: "text-3xl md:text-4xl font-serif font-light text-white tabular-nums",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.2em] text-white/50 font-medium mt-1",
+      reveal: "animate-reveal-rise",
+      revealStagger: 80,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-hero-lift",
     },
   },
   {
@@ -442,6 +478,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-10 flex items-center gap-0 border border-zinc-700",
       heroCountdownUnit: "text-2xl md:text-3xl font-sans font-bold text-white tabular-nums px-5 py-3 border-r border-zinc-700 last:border-r-0 bg-zinc-900/60 backdrop-blur-sm",
       heroCountdownLabel: "text-[8px] uppercase tracking-[0.3em] text-amber-200/50 font-bold mt-1",
+      reveal: "animate-reveal-glow",
+      revealStagger: 120,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-reveal-glow",
     },
   },
   {
@@ -492,6 +532,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-10 flex items-center gap-8 md:gap-12",
       heroCountdownUnit: "text-4xl md:text-5xl font-serif font-light italic text-white tabular-nums drop-shadow-lg",
       heroCountdownLabel: "text-[9px] uppercase tracking-[0.2em] text-amber-100/50 font-light mt-1",
+      reveal: "animate-reveal-rise",
+      revealStagger: 100,
+      heroMotion: "animate-ken-burns",
+      heroTextMotion: "animate-hero-lift",
     },
   },
   {
@@ -542,6 +586,10 @@ export const siteThemes: ThemeConfig[] = [
       heroCountdown: "mt-12 flex items-center gap-0",
       heroCountdownUnit: "text-4xl md:text-6xl font-sans font-black text-white tabular-nums px-4 md:px-6 leading-none",
       heroCountdownLabel: "text-[8px] uppercase tracking-[0.3em] text-white/30 font-bold mt-2",
+      reveal: "animate-reveal-unmask",
+      revealStagger: 60,
+      heroMotion: "",
+      heroTextMotion: "animate-hero-lift",
     },
   },
 ];

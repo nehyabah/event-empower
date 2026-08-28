@@ -99,6 +99,43 @@ export default {
         'float': {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' }
+        },
+        /* Scroll-reveal vocabulary. Each theme picks one, so motion is part
+           of a template's identity rather than the same fade everywhere. */
+        'reveal-rise': {
+          '0%': { opacity: '0', transform: 'translateY(34px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
+        'reveal-drift': {
+          '0%': { opacity: '0', transform: 'translateY(64px) scale(0.985)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+        },
+        /* Editorial wipe: the content is uncovered rather than faded in. */
+        'reveal-wipe': {
+          '0%': { opacity: '1', clipPath: 'inset(100% 0 0 0)' },
+          '100%': { opacity: '1', clipPath: 'inset(0 0 0 0)' }
+        },
+        'reveal-unmask': {
+          '0%': { opacity: '1', clipPath: 'inset(0 100% 0 0)' },
+          '100%': { opacity: '1', clipPath: 'inset(0 0 0 0)' }
+        },
+        'reveal-settle': {
+          '0%': { opacity: '0', transform: 'translateY(28px) rotate(-1.2deg)' },
+          '60%': { opacity: '1', transform: 'translateY(-4px) rotate(0.3deg)' },
+          '100%': { opacity: '1', transform: 'translateY(0) rotate(0)' }
+        },
+        'reveal-glow': {
+          '0%': { opacity: '0', transform: 'scale(0.97)', filter: 'brightness(0.6)' },
+          '100%': { opacity: '1', transform: 'scale(1)', filter: 'brightness(1)' }
+        },
+        /* Slow hero zoom. Runs for the life of the page, not once. */
+        'ken-burns': {
+          '0%': { transform: 'scale(1.06)' },
+          '100%': { transform: 'scale(1.16)' }
+        },
+        'hero-lift': {
+          '0%': { opacity: '0', transform: 'translateY(40px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
         }
 			},
 			animation: {
@@ -109,7 +146,17 @@ export default {
         'fade-in-down': 'fade-in-down 0.8s ease-out',
         'slide-in-right': 'slide-in-right 0.8s ease-out',
         'pulse-soft': 'pulse-soft 3s infinite ease-in-out',
-        'float': 'float 6s infinite ease-in-out'
+        'float': 'float 6s infinite ease-in-out',
+        /* Durations and easings differ per theme, which is most of why one
+           template feels brisk and another feels unhurried. */
+        'reveal-rise': 'reveal-rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'reveal-drift': 'reveal-drift 1.5s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'reveal-wipe': 'reveal-wipe 0.9s cubic-bezier(0.76, 0, 0.24, 1) both',
+        'reveal-unmask': 'reveal-unmask 1.1s cubic-bezier(0.76, 0, 0.24, 1) both',
+        'reveal-settle': 'reveal-settle 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+        'reveal-glow': 'reveal-glow 1.2s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'ken-burns': 'ken-burns 24s ease-out forwards',
+        'hero-lift': 'hero-lift 1.1s cubic-bezier(0.16, 1, 0.3, 1) both'
 			},
       fontFamily: {
         serif: ['Cormorant Garamond', 'Georgia', 'serif'],

@@ -295,6 +295,7 @@ const CoupleStory = () => {
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
 
+
   // Accent color override style
   const accentStyle = accentColor ? { "--accent-override": accentColor } as React.CSSProperties : undefined;
 
