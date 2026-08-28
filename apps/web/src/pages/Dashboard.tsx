@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatNumber } from "@/lib/number";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import {
@@ -348,7 +349,7 @@ const Dashboard = () => {
               <TabsTrigger value="card"   className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Design</TabsTrigger>
               <TabsTrigger value="rsvp"   className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Send &amp; replies</TabsTrigger>
               <TabsTrigger value="guests" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Guests{stats.total ? ` (${stats.total})` : ""}
+                Guests{stats.total ? ` (${formatNumber(stats.total)})` : ""}
               </TabsTrigger>
             </TabsList>
 

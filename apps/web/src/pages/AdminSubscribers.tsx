@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { formatNumber } from "@/lib/number";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,7 +153,7 @@ const AdminSubscribers = () => {
               {/* Pagination */}
               <div className="flex items-center justify-between border-t border-slate-100 pt-4">
                 <span className="text-sm text-slate-500">
-                  Showing {Math.min(offset + 1, data.total)}&ndash;{Math.min(offset + limit, data.total)} of {data.total}
+                  Showing {formatNumber(Math.min(offset + 1, data.total))}&ndash;{formatNumber(Math.min(offset + limit, data.total))} of {formatNumber(data.total)}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <Button variant="outline" size="sm" onClick={() => setPage((c) => Math.max(c - 1, 1))} disabled={page === 1} className="h-8 px-3 text-xs">Previous</Button>
