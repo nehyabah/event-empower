@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireApproved } from '../middleware/requireApproved.js';
 import multer from 'multer';
 import { vendorController } from '../controllers/vendorController.js';
-import { authenticate, requireUserType } from '../middleware/auth.js';
+import { authenticate, optionalAuth, requireUserType } from '../middleware/auth.js';
 
 const router = Router();
 const upload = multer({
@@ -35,8 +35,10 @@ router.post(
   vendorController.uploadVendorImage
 );
 
-// Public vendor directory
-router.get('/', vendorController.getVendors);
-router.get('/:id', vendorController.getVendor);
+// Public vendor directory. optionalAuth so contact details can be unlocked
+// for a couple who has actually booked this vendor - anonymous browsers and
+// everyone else get them masked.
+router.get('/', optionalAuth, vendorController.getVendors);
+router.get('/:id', optionalAuth, vendorController.getVendor);
 
 export default router;

@@ -3,7 +3,9 @@ import { notifyOnboardingSubmitted } from '../services/onboardingService.js';
 import { z } from 'zod';
 import { vendorService } from '../services/vendorService.js';
 import { storageService } from '../services/storageService.js';
+import { canSeeVendorContact, maskVendorContact } from '../services/vendorContactAccess.js';
 import { env } from '../config/env.js';
+import { checkMessage, recordFlag, violationMessage } from '../services/contentSafety.js';
 
 const vendorProfileSchema = z.object({
   businessName: z.string().min(1, 'Business name is required'),
@@ -124,8 +126,14 @@ const parseStorageKey = (value: string | null | undefined) => {
   return null;
 };
 
-const mapVendorDetails = async (vendor: Awaited<ReturnType<typeof vendorService.getVendorById>>) => {
+const mapVendorDetails = async (
+  vendor: Awaited<ReturnType<typeof vendorService.getVendorById>>,
+  viewerUserId?: string
+) => {
   if (!vendor) return null;
+
+  // Direct contact details are masked until this viewer has booked them.
+  const unlocked = await canSeeVendorContact(viewerUserId, vendor.profile.id);
 
   const profileImageKey = parseStorageKey(vendor.profile.profile_image_url);
   const coverImageKey = parseStorageKey(vendor.profile.cover_image_url);
@@ -148,13 +156,16 @@ const mapVendorDetails = async (vendor: Awaited<ReturnType<typeof vendorService.
   );
 
   return {
-    profile: {
-      ...vendor.profile,
-      profile_image_url: profileImageUrl,
-      cover_image_url: coverImageUrl,
-      profile_image_key: profileImageKey,
-      cover_image_key: coverImageKey,
-    },
+    profile: maskVendorContact(
+      {
+        ...vendor.profile,
+        profile_image_url: profileImageUrl,
+        cover_image_url: coverImageUrl,
+        profile_image_key: profileImageKey,
+        cover_image_key: coverImageKey,
+      },
+      unlocked
+    ),
     services: vendor.services,
     images,
     reviews: vendor.reviews,
@@ -165,7 +176,7 @@ export const vendorController = {
   async getVendors(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const vendors = await vendorService.listVendors();
-      const mapped = await Promise.all(vendors.map((vendor) => mapVendorDetails(vendor)));
+      const mapped = await Promise.all(vendors.map((vendor) => mapVendorDetails(vendor, _req.user?.userId)));
       res.json(mapped.filter(Boolean));
     } catch (error) {
       next(error);
@@ -179,7 +190,7 @@ export const vendorController = {
         res.status(404).json({ error: 'Vendor not found' });
         return;
       }
-      const mapped = await mapVendorDetails(vendor);
+      const mapped = await mapVendorDetails(vendor, req.user?.userId);
       res.json(mapped);
     } catch (error) {
       next(error);
@@ -189,7 +200,9 @@ export const vendorController = {
   async getMyVendorProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const vendor = await vendorService.getVendorByUserId(req.user!.userId);
-      const mapped = await mapVendorDetails(vendor);
+      // Their own profile - passing the viewer keeps their contact details
+      // visible to them in the editor.
+      const mapped = await mapVendorDetails(vendor, req.user!.userId);
       res.json(mapped);
     } catch (error) {
       next(error);
@@ -352,6 +365,24 @@ export const vendorController = {
       }
 
       const data = validation.data;
+
+      // The opening message is the most likely place to paste a number, so
+      // it gets the same check as every reply after it.
+      const safety = checkMessage(data.message);
+      if (!safety.ok) {
+        if (req.user?.userId) {
+          void recordFlag({
+            userId: req.user.userId,
+            surface: 'inquiry',
+            contextId: null,
+            violations: safety.violations,
+            text: data.message,
+          });
+        }
+        res.status(422).json({ error: violationMessage(safety.violations), safetyBlocked: true });
+        return;
+      }
+
       const inquiry = await vendorService.createVendorInquiry({
         vendor_id: data.vendorId,
         sender_id: req.user?.userId || null,
@@ -489,6 +520,19 @@ export const vendorController = {
       const validation = sendMessageSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const safety = checkMessage(validation.data.message);
+      if (!safety.ok) {
+        void recordFlag({
+          userId: req.user!.userId,
+          surface: 'inquiry',
+          contextId: req.params.id,
+          violations: safety.violations,
+          text: validation.data.message,
+        });
+        res.status(422).json({ error: violationMessage(safety.violations), safetyBlocked: true });
         return;
       }
 
