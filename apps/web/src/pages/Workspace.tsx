@@ -229,15 +229,7 @@ const Workspace = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="container mx-auto px-4 pt-20 pb-16">
-        {/* Header */}
-        <div className="mb-6 pt-4">
-          <h1 className="text-2xl md:text-3xl font-serif font-medium tracking-tight">{coupleNames}</h1>
-          {event.event_date && (
-            <p className="text-muted-foreground mt-1 text-sm">{formatDate(event.event_date)}</p>
-          )}
-        </div>
-
+      <main className="container mx-auto px-4 pt-24 pb-16">
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-5 sm:h-10">
