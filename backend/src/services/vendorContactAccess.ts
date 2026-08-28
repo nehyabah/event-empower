@@ -56,6 +56,34 @@ export async function canSeeVendorContact(
   return Boolean(booked);
 }
 
+/**
+ * Hides the middle of a business name, leaving the first and last word.
+ *
+ * A couple should be judging the portfolio, not searching the business up
+ * and arranging things off-platform before anything is booked.
+ *
+ * Honest limitation: a two-word name has no middle, so the rule as stated
+ * would hide nothing. Those fall back to masking the interior of the last
+ * word, which is weaker - a short name is simply harder to obscure while
+ * staying recognisable.
+ */
+export function maskBusinessName(name: string | null | undefined): string {
+  if (!name) return 'Vendor';
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'Vendor';
+
+  const veil = (w: string) =>
+    w.length <= 2 ? '•'.repeat(w.length) : w[0] + '•'.repeat(Math.max(2, w.length - 1));
+
+  if (words.length >= 3) {
+    return [words[0], '•••', words[words.length - 1]].join(' ');
+  }
+  if (words.length === 2) {
+    return `${words[0]} ${veil(words[1])}`;
+  }
+  return veil(words[0]);
+}
+
 type ContactFields = {
   email: string | null;
   phone: string | null;
@@ -68,7 +96,7 @@ type ContactFields = {
  * the frontend types stay unchanged; `contact_unlocked` tells the UI whether
  * to render the details or the locked state.
  */
-export function maskVendorContact<T extends ContactFields>(
+export function maskVendorContact<T extends ContactFields & { business_name?: string }>(
   profile: T,
   unlocked: boolean
 ): T & { contact_unlocked: boolean } {
@@ -79,6 +107,9 @@ export function maskVendorContact<T extends ContactFields>(
     phone: null,
     website: null,
     social_links: [],
+    ...(profile.business_name !== undefined
+      ? { business_name: maskBusinessName(profile.business_name) }
+      : {}),
     contact_unlocked: false,
   };
 }
