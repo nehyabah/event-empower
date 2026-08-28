@@ -126,6 +126,19 @@ const parseStorageKey = (value: string | null | undefined) => {
   return null;
 };
 
+/**
+ * Accepts either an ordinary URL or a `data:` image, returning something safe
+ * to store. Existing URLs and storage keys pass straight through.
+ */
+const toStoredImage = async (
+  userId: string,
+  value: string | undefined
+): Promise<string | undefined> => {
+  if (!value) return value;
+  const key = await storageService.storeDataUri(`vendors/${userId}`, value);
+  return key ?? value;
+};
+
 const mapVendorDetails = async (
   vendor: Awaited<ReturnType<typeof vendorService.getVendorById>>,
   viewerUserId?: string
@@ -137,12 +150,19 @@ const mapVendorDetails = async (
 
   const profileImageKey = parseStorageKey(vendor.profile.profile_image_url);
   const coverImageKey = parseStorageKey(vendor.profile.cover_image_url);
+  // Anything already stored as a data URI is dropped rather than served. One
+  // vendor's cover image was 1.5MB of base64, which every visitor to the
+  // directory downloaded — on mobile data, for a page they were only
+  // browsing. Dropping it degrades to no cover image, which is survivable;
+  // shipping it is not.
+  const dropInline = (v: string | null) => (v && v.startsWith('data:') ? null : v);
+
   const profileImageUrl = profileImageKey
     ? await storageService.getSignedUrl(profileImageKey)
-    : vendor.profile.profile_image_url;
+    : dropInline(vendor.profile.profile_image_url);
   const coverImageUrl = coverImageKey
     ? await storageService.getSignedUrl(coverImageKey)
-    : vendor.profile.cover_image_url;
+    : dropInline(vendor.profile.cover_image_url);
 
   const images = await Promise.all(
     vendor.images.map(async (image) => {
@@ -465,8 +485,11 @@ export const vendorController = {
         phone: data.phone,
         website: data.website,
         open_to_travel: data.openToTravel,
-        profile_image_url: data.profileImageUrl,
-        cover_image_url: data.coverImageUrl,
+        // A data URI here would be stored verbatim and then shipped inside
+        // every directory response. Converting to a stored file keeps the
+        // column holding a reference rather than the image itself.
+        profile_image_url: await toStoredImage(req.user!.userId, data.profileImageUrl),
+        cover_image_url: await toStoredImage(req.user!.userId, data.coverImageUrl),
         social_links: data.socialLinks,
         services: (data.services || []).map(service => ({
           name: service.name,

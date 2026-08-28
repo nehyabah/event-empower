@@ -143,7 +143,53 @@ async function normaliseImage(file: { buffer: Buffer; mimetype: string; original
   }
 }
 
+/** Rough byte length of a base64 payload, without decoding it. */
+function base64Bytes(b64: string): number {
+  return Math.floor((b64.length * 3) / 4);
+}
+
 export const storageService = {
+  /**
+   * Turns a `data:` image URI into a stored file and returns its key.
+   *
+   * Image fields are plain strings, so a client could put an entire encoded
+   * image in one — and one did: a single vendor's cover image was 1.5MB of
+   * base64 inlined into every directory response, which every visitor on
+   * mobile data paid for. Converting on write keeps the column holding a
+   * reference rather than a payload.
+   *
+   * Returns null for anything that is not a data URI, so callers can pass
+   * ordinary URLs straight through.
+   */
+  async storeDataUri(folder: string, value: string | null | undefined): Promise<string | null> {
+    if (!value || !value.startsWith('data:')) return null;
+
+    const match = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(value);
+    if (!match) return null;
+
+    const [, mimetype, isBase64, payload] = match;
+    if (!mimetype.startsWith('image/')) return null;
+
+    // Guard before allocating: a malformed or hostile URI should not be
+    // decoded into memory first.
+    if (isBase64 && base64Bytes(payload) > 12 * 1024 * 1024) {
+      throw Object.assign(new Error('That image is too large. Please use one under 12MB.'), {
+        statusCode: 400,
+      });
+    }
+
+    const buffer = isBase64
+      ? Buffer.from(payload, 'base64')
+      : Buffer.from(decodeURIComponent(payload), 'utf8');
+
+    const { key } = await this.uploadImage(folder, {
+      buffer,
+      mimetype,
+      originalname: `upload.${mimetype.split('/')[1] || 'jpg'}`,
+    });
+    return key;
+  },
+
   async uploadImage(folder: string, file: { buffer: Buffer; mimetype: string; originalname: string }) {
     if (!s3 || !env.STORAGE_BUCKET) {
       throw new Error('Storage is not configured');
