@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { formatNumber } from "@/lib/number";
 import { formatCurrency } from "@/lib/currency";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -271,7 +272,7 @@ const Workspace = () => {
                     <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />{event.venue}</span>
                   )}
                   {event.guest_count_estimate > 0 && (
-                    <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-stone-400 shrink-0" />{event.guest_count_estimate} guests</span>
+                    <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-stone-400 shrink-0" />{formatNumber(event.guest_count_estimate)} guests</span>
                   )}
                 </div>
                 {event.event_date && (() => {
@@ -297,7 +298,7 @@ const Workspace = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Guests RSVP'd</p>
-                    <p className="text-2xl font-bold">{guestStats.confirmed}<span className="text-sm font-normal text-muted-foreground"> / {guestStats.total}</span></p>
+                    <p className="text-2xl font-bold">{formatNumber(guestStats.confirmed)}<span className="text-sm font-normal text-muted-foreground"> / {formatNumber(guestStats.total)}</span></p>
                     <div className="h-1 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: guestStats.total > 0 ? `${(guestStats.confirmed / guestStats.total) * 100}%` : "0%" }} />
                     </div>
@@ -436,7 +437,7 @@ const Workspace = () => {
                     <Separator className="my-1" />
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Total invited</span>
-                      <span className="font-semibold">{guestStats.total}</span>
+                      <span className="font-semibold">{formatNumber(guestStats.total)}</span>
                     </div>
                   </CardContent>
                 </Card>

@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
+import { formatNumber } from "@/lib/number";
 import ApprovalGate from "@/components/auth/ApprovalGate";
 import { formatCurrency } from "@/lib/currency";
 import { useNavigate } from "react-router-dom";
@@ -744,15 +745,15 @@ const PlannerClients = () => {
                 <Separator />
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="p-2 bg-muted/50 rounded-lg">
-                    <p className="text-xl font-bold">{workspaceData.guestStats.total}</p>
+                    <p className="text-xl font-bold">{formatNumber(workspaceData.guestStats.total)}</p>
                     <p className="text-xs text-muted-foreground">Total</p>
                   </div>
                   <div className="p-2 bg-green-50 rounded-lg">
-                    <p className="text-xl font-bold text-green-700">{workspaceData.guestStats.confirmed}</p>
+                    <p className="text-xl font-bold text-green-700">{formatNumber(workspaceData.guestStats.confirmed)}</p>
                     <p className="text-xs text-green-600">Confirmed</p>
                   </div>
                   <div className="p-2 bg-amber-50 rounded-lg">
-                    <p className="text-xl font-bold text-amber-700">{workspaceData.guestStats.pending}</p>
+                    <p className="text-xl font-bold text-amber-700">{formatNumber(workspaceData.guestStats.pending)}</p>
                     <p className="text-xs text-amber-600">Pending</p>
                   </div>
                 </div>

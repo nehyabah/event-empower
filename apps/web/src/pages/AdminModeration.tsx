@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { formatNumber } from "@/lib/number";
 import { useQuery } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -158,7 +159,7 @@ const AdminModeration = () => {
               </Table>
 
               <div className="flex items-center justify-between text-sm text-slate-600">
-                <span>{data.total} total</span>
+                <span>{formatNumber(data.total)} total</span>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"

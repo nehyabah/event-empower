@@ -11,7 +11,9 @@ import {
 } from "@/context/ExpenseContext";
 import ExpenseForm from "./ExpenseForm";
 
-const money = (n: number) => "₦" + n.toLocaleString();
+import { formatCurrency } from "@/lib/currency";
+
+const money = (n: number) => formatCurrency(n);
 
 /** Due date with an overdue/soon flag, or a dash when none is set. */
 const DueDate = ({ expense }: { expense: Expense }) => {
