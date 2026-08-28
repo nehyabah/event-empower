@@ -36,6 +36,7 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Settings from "./pages/Settings";
+import StoryBuilder from "./pages/StoryBuilder";
 import VendorMessages from "./pages/VendorMessages";
 import ForgotPassword from "./pages/ForgotPassword";
 import BottomNav from "./components/layout/BottomNav";
@@ -157,6 +158,11 @@ const AppRoutes = () => {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/story-builder" element={
+        <RequireAuth allowedTypes={["client"]}>
+          <StoryBuilder />
+        </RequireAuth>
+      } />
       <Route path="/settings" element={
         <RequireAuth>
           <Settings />
