@@ -265,7 +265,14 @@ const SharedStoryPage = () => {
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
   const storyUserId = coupleStory.userId || coupleId;
 
-  const renderSection = (sectionId: string) => {
+  /** Anchor for the builder preview to scroll to. */
+  const renderSection = (sectionId: string) => (
+    <div key={sectionId} id={`section-${sectionId}`} data-section={sectionId}>
+      {renderSectionBody(sectionId)}
+    </div>
+  );
+
+  const renderSectionBody = (sectionId: string) => {
     switch (sectionId) {
       case "hero": return null;
       case "quote":
@@ -525,7 +532,7 @@ const SharedStoryPage = () => {
 
       {/* Hero */}
       {visibleSections.includes("hero") && (
-        <section className="relative h-[100dvh] w-full overflow-hidden flex flex-col justify-center" ref={heroRef}>
+        <section id="section-hero" data-section="hero" className="relative h-[100dvh] w-full overflow-hidden flex flex-col justify-center" ref={heroRef}>
           <div className="absolute inset-0 z-0">
             <div className={`absolute inset-0 ${s.heroOverlay} z-10 transition-colors duration-700`} />
             <img src={coupleStory.bannerImage} alt="Couple" className={`w-full h-full object-cover transition-transform duration-[20s] ease-linear scale-105 ${isLoading ? "blur-sm" : "scale-100"}`} />

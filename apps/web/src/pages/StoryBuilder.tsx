@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ExternalLink, AlertCircle, CheckCircle2, Palette } from "lucide-react";
 import SectionRail from "@/components/story-builder/SectionRail";
 import SectionEditor from "@/components/story-builder/SectionEditor";
+import SitePreview from "@/components/story-builder/SitePreview";
+import { useAuth } from "@/context/AuthContext";
 import { storyService, StoryBundle } from "@/services/api/storyService";
 import { SectionContext, SectionId, siteReadiness } from "@/lib/storySections";
 import { DEFAULT_SECTION_ORDER } from "@/lib/siteThemes";
@@ -20,6 +22,8 @@ import { DEFAULT_SECTION_ORDER } from "@/lib/siteThemes";
  * it, where it sits, and the form to fill it in.
  */
 const StoryBuilder = () => {
+  const { user } = useAuth();
+  const [previewKey, setPreviewKey] = useState(0);
   const [bundle, setBundle] = useState<StoryBundle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [order, setOrder] = useState<string[]>(DEFAULT_SECTION_ORDER);
@@ -31,6 +35,7 @@ const StoryBuilder = () => {
     try {
       const data = await storyService.getMyStory();
       setBundle(data);
+      setPreviewKey((k) => k + 1);
       setOrder(data.story?.section_order || DEFAULT_SECTION_ORDER);
       setHidden(data.story?.hidden_sections || []);
     } catch {
@@ -195,11 +200,16 @@ const StoryBuilder = () => {
                 </Button>
               </div>
 
-              <div className="lg:sticky lg:top-24">
+              <div className="space-y-4">
                 <SectionEditor
                   sectionId={activeId}
                   bundle={bundle}
                   onSaved={load}
+                />
+                <SitePreview
+                  userId={user?.id}
+                  focusSection={activeId}
+                  reloadKey={previewKey}
                 />
               </div>
             </div>
