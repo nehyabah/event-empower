@@ -24,7 +24,7 @@ import mediaRoutes from './routes/mediaRoutes.js';
 import { scheduler } from './services/scheduler.js';
 import { vendorController } from './controllers/vendorController.js';
 import { userController } from './controllers/userController.js';
-import { optionalAuth } from './middleware/auth.js';
+import { authenticate } from './middleware/auth.js';
 
 const app = express();
 
@@ -115,8 +115,10 @@ app.use('/api/notifications', notificationRoutes);
 // Re-signing proxy for stored images; see storageService for why URLs point here.
 app.use('/api/media', mediaRoutes);
 
-// Public inquiries (client -> vendor) — optionalAuth sets sender_id when logged in
-app.post('/api/inquiries', optionalAuth, vendorController.createInquiry);
+// Enquiries require an account. Anonymous senders left a vendor with no way
+// to reply, nothing to moderate, and no identity behind a message that the
+// safety rules are supposed to hold someone to.
+app.post('/api/inquiries', authenticate, vendorController.createInquiry);
 
 // Public RSVP endpoints (no auth required)
 app.get('/api/rsvp/:code', userController.getEventInfo);

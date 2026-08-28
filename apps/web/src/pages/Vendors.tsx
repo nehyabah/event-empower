@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { ChatSafetyIntro } from "@/components/safety/ChatSafetyNotice";
+import VendorChatModal from "@/components/vendors/VendorChatModal";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -143,6 +144,7 @@ const VendorsPage = () => {
     setVisibleCount(PAGE_SIZE);
   }, [searchQuery, selectedCategory, selectedRegion]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [safetyAccepted, setSafetyAccepted] = useState(
     () => localStorage.getItem("chatSafetyAccepted") === "1"
   );
@@ -160,17 +162,26 @@ const VendorsPage = () => {
 
   const handleOpenInquiry = () => {
     if (!selectedVendor) return;
+    if (!user) {
+      toast.error("Please sign in to message a vendor");
+      return;
+    }
     setIsInquiryOpen(true);
   };
 
+  // Chat opens the running conversation, not a fresh enquiry form.
   const handleChat = (vendor: Omit<VendorCardProps, 'onViewDetails' | 'onChat'>) => {
+    if (!user) {
+      toast.error("Please sign in to message a vendor");
+      return;
+    }
     setSelectedVendor(vendor);
-    setIsInquiryOpen(true);
+    setIsChatOpen(true);
   };
 
   const handleSubmitInquiry = async () => {
     if (!selectedVendor) return;
-    const senderName = user?.name?.trim() || user?.email?.trim() || inquiryForm.name.trim();
+    const senderName = user?.name?.trim() || user?.email?.trim() || "";
     if (!senderName || !inquiryForm.message.trim()) return;
 
     try {
@@ -385,32 +396,9 @@ const VendorsPage = () => {
             />
           ) : (
           <div className="space-y-4">
-            {user ? (
-              <p className="text-sm text-muted-foreground">
-                Sending as <span className="font-medium text-foreground">{user.name || user.email}</span>
-              </p>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="inquiry-name">Your Name</Label>
-                  <Input
-                    id="inquiry-name"
-                    value={inquiryForm.name}
-                    onChange={(e) => setInquiryForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Your full name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="inquiry-email">Email (optional)</Label>
-                  <Input
-                    id="inquiry-email"
-                    value={inquiryForm.email}
-                    onChange={(e) => setInquiryForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="you@example.com"
-                  />
-                </div>
-              </>
-            )}
+            <p className="text-sm text-muted-foreground">
+              Sending as <span className="font-medium text-foreground">{user?.name || user?.email}</span>
+            </p>
             <div className="space-y-2">
               <Label htmlFor="inquiry-date">Event Date (optional)</Label>
               <Input
@@ -436,7 +424,7 @@ const VendorsPage = () => {
               </Button>
               <Button
                 onClick={handleSubmitInquiry}
-                disabled={isSending || !inquiryForm.message.trim() || (!user && !inquiryForm.name.trim())}
+                disabled={isSending || !inquiryForm.message.trim()}
               >
                 {isSending ? "Sending..." : "Send Inquiry"}
               </Button>
@@ -449,6 +437,13 @@ const VendorsPage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <VendorChatModal
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        vendorProfileId={selectedVendor?.id ?? null}
+        vendorName={selectedVendor?.name ?? "Vendor"}
+      />
 
       <Footer />
     </div>
