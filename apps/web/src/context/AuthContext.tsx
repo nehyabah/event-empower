@@ -15,6 +15,11 @@ export interface AuthUser {
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   /** Null until a professional first submits their profile for review. */
   onboardingSubmittedAt?: string | null;
+  /** Only populated once /users/me has been fetched or saved - absent right
+   *  after login, since the sign-in response never carried these. */
+  notifyReminders?: boolean;
+  notifyProductUpdates?: boolean;
+  notifyNewsletter?: boolean;
 }
 
 export interface RegisterExtraFields {
@@ -36,7 +41,14 @@ interface AuthContextType {
   applySession: (user: AuthUser, accessToken: string) => void;
   sendPhoneOtp: (phone: string, channel: 'sms' | 'whatsapp') => Promise<void>;
   verifyPhoneOtp: (phone: string, code: string, userType?: UserType) => Promise<void>;
-  updateUser: (updates: { name?: string; userType?: UserType }) => Promise<void>;
+  updateUser: (updates: {
+    name?: string;
+    email?: string;
+    userType?: UserType;
+    notifyReminders?: boolean;
+    notifyProductUpdates?: boolean;
+    notifyNewsletter?: boolean;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -208,7 +220,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateUser = async (updates: { name?: string; userType?: UserType }) => {
+  const updateUser = async (updates: {
+    name?: string;
+    email?: string;
+    userType?: UserType;
+    notifyReminders?: boolean;
+    notifyProductUpdates?: boolean;
+    notifyNewsletter?: boolean;
+  }) => {
     const response = await apiClient.patch<AuthUser>('/users/me', updates);
 
     if (response.error) {

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import AuthModal from "@/components/auth/AuthModal";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -61,6 +61,14 @@ const AuthButtons = ({ isAuthenticated, isMobile = false }: AuthButtonsProps) =>
 
   return (
     <div className={isMobile ? "flex flex-col gap-2" : "hidden md:flex items-center gap-4"}>
+      <Button
+        variant="ghost"
+        className={isMobile ? "w-full justify-start" : "flex items-center gap-2"}
+        onClick={() => navigate("/settings")}
+      >
+        <Settings className={isMobile ? "mr-2 h-4 w-4" : "h-4 w-4"} />
+        Settings
+      </Button>
       <Button
         variant="outline"
         className={isMobile ? "w-full justify-start" : "flex items-center gap-2"}

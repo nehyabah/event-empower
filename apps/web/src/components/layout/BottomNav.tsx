@@ -11,6 +11,7 @@ import {
   Store,
   UserCircle,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
@@ -176,6 +177,14 @@ const BottomNav = () => {
             >
               <UserCircle className="h-4 w-4" />
               {ACCOUNT_LINK[user?.userType ?? "client"]?.label ?? "My profile"}
+            </Link>
+            <Link
+              to="/settings"
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm hover:bg-muted"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
             </Link>
             <button
               type="button"
