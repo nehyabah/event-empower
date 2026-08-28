@@ -23,6 +23,7 @@ import {
 } from "@/services/api/plannerService";
 import { usePlannerClients } from "@/hooks/usePlannerClients";
 import { VisionBoardCanvas } from "@/components/workspace/VisionBoardCanvas";
+import WorkspaceChat from "@/components/workspace/WorkspaceChat";
 import AddVendorToRosterDialog from "@/components/vendors/AddVendorToRosterDialog";
 import { ExpenseProvider } from "@/context/ExpenseContext";
 import ExpenseSummary from "@/components/expenses/ExpenseSummary";
@@ -260,13 +261,14 @@ const PlannerClientWorkspace = () => {
         </div>
 
         <Tabs defaultValue="overview" className="w-full" onValueChange={(v) => { if (v === "todos" && todos.length === 0 && !todosLoading) loadTodos(); }}>
-          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full mb-8 h-auto sm:h-10 p-1 bg-muted/60 rounded-lg">
-            <TabsTrigger value="overview"     className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
-            <TabsTrigger value="budget"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
-            <TabsTrigger value="vendors"      className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Vendors</TabsTrigger>
-            <TabsTrigger value="todos"        className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
-            <TabsTrigger value="vision-board" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Mood Board</TabsTrigger>
-            <TabsTrigger value="guests"       className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Guests</TabsTrigger>
+          <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-8 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-7 sm:h-10">
+            <TabsTrigger value="overview"     className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
+            <TabsTrigger value="budget"       className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
+            <TabsTrigger value="vendors"      className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Vendors</TabsTrigger>
+            <TabsTrigger value="todos"        className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
+            <TabsTrigger value="vision-board" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Mood Board</TabsTrigger>
+            <TabsTrigger value="guests"       className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Guests</TabsTrigger>
+            <TabsTrigger value="chat"         className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Chat</TabsTrigger>
           </TabsList>
 
           {/* ── Overview ── */}
@@ -623,6 +625,11 @@ const PlannerClientWorkspace = () => {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* ── Chat ── */}
+          <TabsContent value="chat">
+            <WorkspaceChat eventId={event.id} />
           </TabsContent>
         </Tabs>
 

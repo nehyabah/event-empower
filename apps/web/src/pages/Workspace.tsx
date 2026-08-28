@@ -20,6 +20,7 @@ import ClientCalendarTab from "@/components/calendar/ClientCalendarTab";
 import { formatDateOnly, daysUntilDate } from "@/lib/dates";
 import VendorReviewDialog from "@/components/vendors/VendorReviewDialog";
 import { VisionBoardCanvas } from "@/components/workspace/VisionBoardCanvas";
+import WorkspaceChat from "@/components/workspace/WorkspaceChat";
 import TodoList from "@/components/todos/TodoList";
 import CreateTodoList from "@/components/todos/CreateTodoList";
 import { TodoProvider } from "@/context/TodoContext";
@@ -232,7 +233,7 @@ const Workspace = () => {
       <main className="container mx-auto px-4 pt-24 pb-16">
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-5 sm:h-10">
+          <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-6 sm:h-10">
             <TabsTrigger value="overview"    className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
             <TabsTrigger value="calendar"    className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Calendar</TabsTrigger>
               <TabsTrigger value="visionboard" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
@@ -240,11 +241,17 @@ const Workspace = () => {
             </TabsTrigger>
             <TabsTrigger value="todos"       className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">To-Do Lists</TabsTrigger>
             <TabsTrigger value="budget"      className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Budget</TabsTrigger>
+            <TabsTrigger value="chat"        className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Chat</TabsTrigger>
           </TabsList>
 
           {/* ── Calendar ─────────────────────────────────────────────────── */}
           <TabsContent value="calendar">
             <ClientCalendarTab />
+          </TabsContent>
+
+          {/* ── Chat ─────────────────────────────────────────────────────── */}
+          <TabsContent value="chat">
+            <WorkspaceChat eventId={event.id} />
           </TabsContent>
 
           {/* ── Overview ─────────────────────────────────────────────────── */}

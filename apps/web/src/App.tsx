@@ -36,6 +36,7 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Settings from "./pages/Settings";
+import VendorMessages from "./pages/VendorMessages";
 import ForgotPassword from "./pages/ForgotPassword";
 import BottomNav from "./components/layout/BottomNav";
 import ScrollToTop from "./components/layout/ScrollToTop";
@@ -218,6 +219,11 @@ const AppRoutes = () => {
       <Route path="/vendor-calendar" element={
         <RequireAuth allowedTypes={["vendor"]}>
           <VendorCalendar />
+        </RequireAuth>
+      } />
+      <Route path="/vendor-messages" element={
+        <RequireAuth allowedTypes={["vendor"]}>
+          <VendorMessages />
         </RequireAuth>
       } />
 

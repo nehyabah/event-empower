@@ -12,6 +12,7 @@ import {
   UserCircle,
   LogOut,
   Settings,
+  MessageSquare,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
@@ -72,6 +73,7 @@ const MORE_ITEMS: Record<string, NavItem[]> = {
     { to: "/vendors", label: "Vendors", icon: Store },
   ],
   vendor: [
+    { to: "/vendor-messages", label: "Messages", icon: MessageSquare },
     { to: "/vendors", label: "Marketplace", icon: Store },
   ],
 };
