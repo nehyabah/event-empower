@@ -88,13 +88,13 @@ const VendorCard = ({
     <div className="bg-card border rounded-xl overflow-hidden transition-all hover:shadow-lg flex flex-col">
       <div className="relative cursor-pointer" onClick={onViewDetails}>
         <div
-          className="h-40 sm:h-48 bg-cover bg-center bg-muted"
+          className="h-56 sm:h-60 bg-cover bg-center bg-muted"
           style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
         />
       </div>
-      <div className="p-3 sm:p-4">
+      <div className="p-4 sm:p-5">
         <div className="flex justify-between items-start gap-2 mb-1">
-          <h3 className="font-medium text-base sm:text-lg truncate">{name}</h3>
+          <h3 className="font-medium text-lg truncate">{name}</h3>
           <div className="flex items-center shrink-0">
             <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400 mr-0.5" />
             <span className="text-sm font-medium">{rating.toFixed(1)}</span>
@@ -325,7 +325,7 @@ const VendorsPage = () => {
           </div>
 
           {/* Vendor Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-8">
             {isLoading ? (
               <div className="col-span-full text-center text-muted-foreground py-12">
                 Loading vendors...

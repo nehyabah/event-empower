@@ -87,22 +87,29 @@ const EventSetup = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <main className="flex-1 px-4 py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-md">
-          <h1 className="text-2xl font-serif font-medium tracking-tight">Tell us about your wedding</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Just the basics — everything here can be changed later.
-          </p>
+      <main className="flex-1 px-4 pt-24 pb-16">
+        <div className="mx-auto w-full max-w-lg">
+          <div className="text-center mb-8">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
+              Wedding details
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-serif font-medium tracking-tight">
+              Tell us about your wedding
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Just the basics — everything here can be changed later.
+            </p>
+          </div>
 
-          <Card className="mt-6">
-            <CardContent className="p-5 sm:p-6">
+          <Card>
+            <CardContent className="p-6 sm:p-8">
               {isLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                <form onSubmit={save} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <form onSubmit={save} className="space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="p1">Your name</Label>
                       <Input id="p1" value={partner1} onChange={(e) => setPartner1(e.target.value)} placeholder="Ada" />
@@ -123,7 +130,7 @@ const EventSetup = () => {
                     <Input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Eko Hotel, Lagos" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="guests">Expected guests</Label>
                       <Input
@@ -146,7 +153,7 @@ const EventSetup = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={isSaving}>
+                  <Button type="submit" size="lg" className="w-full mt-2" disabled={isSaving}>
                     {isSaving ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
