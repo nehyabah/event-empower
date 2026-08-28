@@ -36,18 +36,18 @@ const VendorChatModal = ({ open, onOpenChange, vendorProfileId, vendorName }: Ve
   const [isLoading, setIsLoading] = useState(false);
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [safetyAccepted, setSafetyAccepted] = useState(
-    () => localStorage.getItem("chatSafetyAccepted") === "1"
-  );
+  const [acknowledged, setAcknowledged] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open || !vendorProfileId) {
       setMessages([]);
       setDraft("");
+      setAcknowledged(false);
       return;
     }
     let cancelled = false;
+    setAcknowledged(false);
     setIsLoading(true);
     vendorService
       .getVendorConversation(vendorProfileId)
@@ -91,14 +91,9 @@ const VendorChatModal = ({ open, onOpenChange, vendorProfileId, vendorName }: Ve
           <DialogTitle className="text-base">{vendorName}</DialogTitle>
         </DialogHeader>
 
-        {!safetyAccepted ? (
+        {!isLoading && messages.length === 0 && !acknowledged ? (
           <div className="p-5">
-            <ChatSafetyIntro
-              onAccept={() => {
-                localStorage.setItem("chatSafetyAccepted", "1");
-                setSafetyAccepted(true);
-              }}
-            />
+            <ChatSafetyIntro onAccept={() => setAcknowledged(true)} />
           </div>
         ) : (
           <>
