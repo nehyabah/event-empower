@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { workspaceMessageService } from '../services/workspaceMessageService.js';
 import { WorkspaceEventModel } from '../models/WorkspaceEvent.js';
+import { checkMessage, recordFlag, violationMessage } from '../services/contentSafety.js';
 
 const sendSchema = z.object({
   message: z.string().trim().min(1, 'Message cannot be empty').max(4000),
@@ -34,6 +35,21 @@ export const workspaceMessageController = {
         res.status(400).json({ error: parsed.error.errors[0].message });
         return;
       }
+      // Vendors sit in this thread too, so the same contact-sharing rule
+      // applies here as in a pre-booking inquiry.
+      const safety = checkMessage(parsed.data.message);
+      if (!safety.ok) {
+        void recordFlag({
+          userId: req.user!.userId,
+          surface: 'workspace_chat',
+          contextId: req.params.eventId,
+          violations: safety.violations,
+          text: parsed.data.message,
+        });
+        res.status(422).json({ error: violationMessage(safety.violations), safetyBlocked: true });
+        return;
+      }
+
       const message = await workspaceMessageService.send(req.user!.userId, req.params.eventId, parsed.data.message);
       res.status(201).json(message);
     } catch (error) { handle(error, res, next); }

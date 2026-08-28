@@ -5,6 +5,7 @@ import { vendorService } from '../services/vendorService.js';
 import { storageService } from '../services/storageService.js';
 import { reminderService } from '../services/reminderService.js';
 import { UserModel } from '../models/User.js';
+import { checkMessage, recordFlag, violationMessage } from '../services/contentSafety.js';
 
 
 function toAuthUserJson(user: import('../models/User.js').User) {
@@ -687,6 +688,19 @@ export const userController = {
       const validation = sendMessageSchema.safeParse(req.body);
       if (!validation.success) {
         res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const safety = checkMessage(validation.data.message);
+      if (!safety.ok) {
+        void recordFlag({
+          userId: req.user!.userId,
+          surface: 'inquiry',
+          contextId: req.params.id,
+          violations: safety.violations,
+          text: validation.data.message,
+        });
+        res.status(422).json({ error: violationMessage(safety.violations), safetyBlocked: true });
         return;
       }
 
