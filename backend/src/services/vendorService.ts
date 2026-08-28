@@ -17,6 +17,21 @@ import { ProjectVendorModel, ProjectVendor } from '../models/ProjectVendor.js';
 import { VendorReviewModel, VendorReview } from '../models/VendorReview.js';
 import { UserEventModel } from '../models/UserEvent.js';
 import { queryOne } from '../config/database.js';
+import { canSeeVendorContact, maskBusinessName } from './vendorContactAccess.js';
+
+/**
+ * A vendor's name as this client should see it: full once they have booked
+ * them, masked while the relationship is still an enquiry.
+ */
+async function maskUnlessBooked(
+  viewerUserId: string,
+  vendor: { id: string; business_name: string } | null
+): Promise<string> {
+  if (!vendor) return 'Unknown Vendor';
+  const unlocked = await canSeeVendorContact(viewerUserId, vendor.id);
+  return unlocked ? vendor.business_name : maskBusinessName(vendor.business_name);
+}
+
 
 export interface VendorProfileInput {
   business_name: string;
@@ -447,7 +462,7 @@ export const vendorService = {
         ]);
         return {
           ...inquiry,
-          vendor_name: vendor?.business_name || 'Unknown Vendor',
+          vendor_name: await maskUnlessBooked(userId, vendor),
           unread_count: unreadCount,
         };
       })
@@ -478,7 +493,7 @@ export const vendorService = {
     return {
       inquiry: {
         ...inquiry,
-        vendor_name: vendor?.business_name || 'Unknown Vendor',
+        vendor_name: await maskUnlessBooked(userId, vendor),
       },
       messages,
       unreadCount,
