@@ -118,6 +118,12 @@ const VendorsPage = () => {
   const [vendors, setVendors] = useState<Omit<VendorCardProps, 'onViewDetails'>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const PAGE_SIZE = 12;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, selectedCategory, selectedRegion]);
   const [isInquiryOpen, setIsInquiryOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [inquiryForm, setInquiryForm] = useState({
@@ -302,7 +308,7 @@ const VendorsPage = () => {
                 No vendors found.
               </div>
             ) : (
-              filteredVendors.map((vendor, index) => (
+              filteredVendors.slice(0, visibleCount).map((vendor, index) => (
                 <VendorCard
                   key={`${vendor.name}-${index}`}
                   {...vendor}
@@ -313,9 +319,15 @@ const VendorsPage = () => {
           </div>
 
           {/* Load More */}
-          {filteredVendors.length > 0 && (
+          {filteredVendors.length > visibleCount && (
             <div className="flex justify-center">
-              <Button variant="outline" size="sm">Load More</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVisibleCount(count => count + PAGE_SIZE)}
+              >
+                Load More ({filteredVendors.length - visibleCount} more)
+              </Button>
             </div>
           )}
         </div>

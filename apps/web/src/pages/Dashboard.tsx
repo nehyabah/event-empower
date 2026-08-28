@@ -17,6 +17,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useGuests } from "@/hooks/useGuests";
 import RsvpSettingsCard from "@/components/invitations/RsvpSettingsCard";
@@ -34,13 +51,56 @@ import {
   Users,
 } from "lucide-react";
 
+/**
+ * Row actions for a guest.
+ *
+ * The trigger existed on both the card and the table row but was wired to
+ * nothing, so there was no way to correct an RSVP or remove a guest anywhere
+ * in the UI even though the API supported both.
+ */
+const GuestActionsMenu = ({
+  guest,
+  onStatusChange,
+  onDelete,
+}: {
+  guest: Guest;
+  onStatusChange: (guest: Guest, status: Guest["status"]) => void;
+  onDelete: (guest: Guest) => void;
+}) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8">
+        <MoreHorizontal className="h-4 w-4" />
+        <span className="sr-only">Actions for {guest.name}</span>
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      {(["confirmed", "pending", "declined"] as const)
+        .filter(status => status !== guest.status)
+        .map(status => (
+          <DropdownMenuItem key={status} onClick={() => onStatusChange(guest, status)}>
+            Mark as {status}
+          </DropdownMenuItem>
+        ))}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem className="text-destructive" onClick={() => onDelete(guest)}>
+        Remove guest
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
 // Mobile Guest Card Component
 const GuestCard = ({
   guest,
   onGenerateLink,
+  onStatusChange,
+  onDelete,
 }: {
   guest: Guest;
   onGenerateLink: (guest: Guest) => void;
+  onStatusChange: (guest: Guest, status: Guest["status"]) => void;
+  onDelete: (guest: Guest) => void;
 }) => (
   <div className="p-4 border-b last:border-b-0">
     <div className="flex items-start justify-between gap-3">
@@ -84,14 +144,12 @@ const GuestCard = ({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-9 w-9 sm:h-8 sm:w-8"
           onClick={() => onGenerateLink(guest)}
         >
           <LinkIcon className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
+        <GuestActionsMenu guest={guest} onStatusChange={onStatusChange} onDelete={onDelete} />
       </div>
     </div>
   </div>
@@ -101,9 +159,13 @@ const GuestCard = ({
 const GuestTableRow = ({
   guest,
   onGenerateLink,
+  onStatusChange,
+  onDelete,
 }: {
   guest: Guest;
   onGenerateLink: (guest: Guest) => void;
+  onStatusChange: (guest: Guest, status: Guest["status"]) => void;
+  onDelete: (guest: Guest) => void;
 }) => (
   <div className="grid grid-cols-12 p-4 items-center text-sm">
     <div className="col-span-3">
@@ -141,9 +203,7 @@ const GuestTableRow = ({
       >
         <LinkIcon className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="icon">
-        <MoreHorizontal className="h-4 w-4" />
-      </Button>
+      <GuestActionsMenu guest={guest} onStatusChange={onStatusChange} onDelete={onDelete} />
     </div>
   </div>
 );
@@ -158,7 +218,13 @@ const Dashboard = () => {
   const [newGuestGroup, setNewGuestGroup] = useState("Family");
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const { guests, stats, createGuest } = useGuests();
+  const { guests, stats, createGuest, updateGuest, deleteGuest } = useGuests();
+
+  const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
+
+  const handleGuestStatusChange = (guest: Guest, status: Guest["status"]) => {
+    void updateGuest(guest.id, { status });
+  };
 
   const addGuest = async () => {
     if (newGuestName && newGuestEmail) {
@@ -221,6 +287,8 @@ const Dashboard = () => {
               key={guest.id}
               guest={guest}
               onGenerateLink={generateGuestInviteLink}
+              onStatusChange={handleGuestStatusChange}
+              onDelete={setGuestToDelete}
             />
           ))
         ) : (
@@ -246,6 +314,8 @@ const Dashboard = () => {
                 key={guest.id}
                 guest={guest}
                 onGenerateLink={generateGuestInviteLink}
+                onStatusChange={handleGuestStatusChange}
+                onDelete={setGuestToDelete}
               />
             ))
           ) : (
@@ -274,10 +344,10 @@ const Dashboard = () => {
           {/* One page, three jobs: design the invitation, set how RSVPs work,
               and work the guest list. */}
           <Tabs defaultValue="card" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full max-w-md mb-6 h-10 p-1 bg-muted/60 rounded-lg">
-              <TabsTrigger value="card"   className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Design</TabsTrigger>
-              <TabsTrigger value="rsvp"   className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Send &amp; replies</TabsTrigger>
-              <TabsTrigger value="guests" className="rounded-md text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-3 sm:max-w-md sm:h-10">
+              <TabsTrigger value="card"   className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Design</TabsTrigger>
+              <TabsTrigger value="rsvp"   className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Send &amp; replies</TabsTrigger>
+              <TabsTrigger value="guests" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 Guests{stats.total ? ` (${stats.total})` : ""}
               </TabsTrigger>
             </TabsList>
@@ -461,6 +531,30 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </main>
+
+      <AlertDialog open={!!guestToDelete} onOpenChange={(open) => !open && setGuestToDelete(null)}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {guestToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes them from your guest list along with their RSVP. You can add
+              them again, but their reply will not come back.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (guestToDelete) void deleteGuest(guestToDelete.id);
+                setGuestToDelete(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Invitation Link Dialog */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
