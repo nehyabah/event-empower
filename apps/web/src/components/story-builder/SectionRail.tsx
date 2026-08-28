@@ -11,6 +11,12 @@ import { SectionContext, SECTION_BY_ID, SectionId } from "@/lib/storySections";
  */
 
 interface SectionRailProps {
+  /**
+   * Rendered directly beneath the open section, below lg only. On a phone,
+   * sending someone to a form further down the page meant scrolling past the
+   * rest of the list to reach what they just tapped.
+   */
+  inlineEditor?: React.ReactNode;
   order: string[];
   hidden: string[];
   ctx: SectionContext;
@@ -21,6 +27,7 @@ interface SectionRailProps {
 }
 
 const SectionRail = ({
+  inlineEditor,
   order,
   hidden,
   ctx,
@@ -48,8 +55,8 @@ const SectionRail = ({
         const active = activeId === id;
 
         return (
+          <div key={id}>
           <div
-            key={id}
             className={`flex items-start gap-2 p-2.5 sm:p-3 transition-colors ${
               active ? "bg-primary/5" : "hover:bg-muted/50"
             } ${isHidden ? "opacity-55" : ""}`}
@@ -116,6 +123,11 @@ const SectionRail = ({
                 className={`h-4 w-4 text-muted-foreground/50 ${active ? "rotate-90" : ""} transition-transform`}
               />
             </div>
+          </div>
+
+          {active && inlineEditor && (
+            <div className="lg:hidden border-t bg-muted/20 p-3">{inlineEditor}</div>
+          )}
           </div>
         );
       })}

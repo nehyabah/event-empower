@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ExternalLink, AlertCircle, CheckCircle2, Palette, Eye, EyeOff } from "lucide-react";
+import { Loader2, ExternalLink, AlertCircle, CheckCircle2, Palette, Eye, EyeOff, Monitor } from "lucide-react";
 import SectionRail from "@/components/story-builder/SectionRail";
 import SectionEditor from "@/components/story-builder/SectionEditor";
 import SitePreview from "@/components/story-builder/SitePreview";
@@ -35,15 +35,6 @@ const StoryBuilder = () => {
   // meant endless scrolling to do anything. The preview is opt-in below lg.
   const [showPreviewMobile, setShowPreviewMobile] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-
-  /** Picking a section on a phone should move you to its form, not leave you
-   *  scrolled halfway up a list of eleven. */
-  const focusEditor = () => {
-    if (window.matchMedia("(min-width: 1024px)").matches) return;
-    requestAnimationFrame(() => {
-      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  };
   const [isSavingLayout, setIsSavingLayout] = useState(false);
 
   const load = async () => {
@@ -137,6 +128,14 @@ const StoryBuilder = () => {
               </div>
             </div>
 
+            <div className="lg:hidden flex items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2.5">
+              <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                You can build your whole site from here, but it is easier on a laptop —
+                there you get the live preview side by side while you type.
+              </p>
+            </div>
+
             {/* What is left to do, rather than making them find out from the
                 published site. */}
             <Card
@@ -193,15 +192,16 @@ const StoryBuilder = () => {
                 </div>
 
                 <SectionRail
+                  inlineEditor={
+                    <SectionEditor sectionId={activeId} bundle={bundle} onSaved={load} />
+                  }
                   order={order}
                   hidden={hidden}
                   ctx={ctx}
                   activeId={activeId}
                   onSelect={(id) => {
                     setShowAppearance(false);
-                    const next = activeId === id ? null : id;
-                    setActiveId(next);
-                    if (next) focusEditor();
+                    setActiveId(activeId === id ? null : id);
                   }}
                   onToggleHidden={(id) =>
                     persistLayout(
@@ -218,7 +218,6 @@ const StoryBuilder = () => {
                   onClick={() => {
                     setShowAppearance((v) => !v);
                     setActiveId(null);
-                    if (!showAppearance) focusEditor();
                   }}
                 >
                   <Palette className="h-4 w-4 mr-2" />
@@ -230,7 +229,9 @@ const StoryBuilder = () => {
                 {showAppearance ? (
                   <AppearancePanel bundle={bundle} onSaved={load} />
                 ) : (
-                  <SectionEditor sectionId={activeId} bundle={bundle} onSaved={load} />
+                  <div className="hidden lg:block">
+                    <SectionEditor sectionId={activeId} bundle={bundle} onSaved={load} />
+                  </div>
                 )}
                 <div className="lg:hidden">
                   <Button
