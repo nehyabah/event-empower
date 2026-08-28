@@ -131,8 +131,8 @@ export const InvitationCardDesigner = () => {
 
             {showCardDesigner && (
               <div className="border-t">
-                <div className="sticky top-16 z-10 bg-gradient-to-br from-zinc-100 to-zinc-200/80 p-3 flex items-center justify-center border-b">
-                  <div className="w-full max-w-[220px] h-[290px] sm:max-w-[260px] sm:h-[340px]">
+                <div className="bg-gradient-to-br from-zinc-100 to-zinc-200/80 px-4 py-6 flex items-center justify-center border-b">
+                  <div className="w-[min(78vw,320px)] aspect-[13/17] min-h-[380px]">
                     <SaveTheDateCard
                       templateId={selectedTemplate}
                       names={{ partner1: partner1Name, partner2: partner2Name }}
