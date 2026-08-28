@@ -14,7 +14,13 @@ router.use(authenticate);
 
 // No requireUserType here, so a pending vendor or planner can otherwise reach
 // every write below. Couples and admins pass straight through.
-router.use(blockUnapprovedWrites());
+router.use(blockUnapprovedWrites([/^\/me(\/|$)/]));
+
+// Account settings - name, email, notification preferences. Exempted from
+// the approval gate above: a pending vendor or planner still needs to
+// manage their own account.
+router.get('/me', userController.getMe);
+router.patch('/me', userController.updateMe);
 
 // Dashboard
 router.get('/dashboard', userController.getDashboard);

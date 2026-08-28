@@ -26,6 +26,9 @@ export interface User {
   city: string | null;
   rejection_reason: string | null;
   approved_at: Date | null;
+  notify_reminders: boolean;
+  notify_product_updates: boolean;
+  notify_newsletter: boolean;
 }
 
 export interface CreateUserInput {
@@ -53,6 +56,9 @@ export interface UpdateUserInput {
   is_active?: boolean;
   suspended_at?: Date | null;
   deleted_at?: Date | null;
+  notify_reminders?: boolean;
+  notify_product_updates?: boolean;
+  notify_newsletter?: boolean;
 }
 
 export const UserModel = {
@@ -150,6 +156,18 @@ export const UserModel = {
     if (input.deleted_at !== undefined) {
       fields.push(`deleted_at = $${paramIndex++}`);
       values.push(input.deleted_at);
+    }
+    if (input.notify_reminders !== undefined) {
+      fields.push(`notify_reminders = $${paramIndex++}`);
+      values.push(input.notify_reminders);
+    }
+    if (input.notify_product_updates !== undefined) {
+      fields.push(`notify_product_updates = $${paramIndex++}`);
+      values.push(input.notify_product_updates);
+    }
+    if (input.notify_newsletter !== undefined) {
+      fields.push(`notify_newsletter = $${paramIndex++}`);
+      values.push(input.notify_newsletter);
     }
 
     if (fields.length === 0) {
