@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, User, Calendar, Mail, Clock, Archive, CheckCircle } from "lucide-react";
 import { vendorService, VendorInquiry, InquiryMessage } from "@/services/api/vendorService";
+import { ChatSafetyBanner } from "@/components/safety/ChatSafetyNotice";
 
 interface InquiryDetailModalProps {
   open: boolean;
@@ -235,6 +236,8 @@ const InquiryDetailModal = ({
                 </div>
               )}
             </div>
+
+            <ChatSafetyBanner />
 
             {/* Messages Thread */}
             <ScrollArea className="flex-1 px-6 py-4">
