@@ -122,7 +122,7 @@ const StoryCarousel = ({
                     size="icon"
                     className={cn(
                       "absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/20 hover:bg-black/40 text-white rounded-full",
-                      "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      "transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100"
                     )}
                     onClick={goToPrevious}
                   >
@@ -134,7 +134,7 @@ const StoryCarousel = ({
                     size="icon"
                     className={cn(
                       "absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/20 hover:bg-black/40 text-white rounded-full",
-                      "opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      "transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100"
                     )}
                     onClick={goToNext}
                   >

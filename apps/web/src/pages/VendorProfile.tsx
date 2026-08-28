@@ -298,11 +298,11 @@ const VendorProfile = () => {
           </p>
           
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="w-full mb-8">
-              <TabsTrigger value="profile" className="flex-1">Profile Information</TabsTrigger>
-              <TabsTrigger value="services" className="flex-1">Services & Pricing</TabsTrigger>
-              <TabsTrigger value="gallery" className="flex-1">Photo Gallery</TabsTrigger>
-              <TabsTrigger value="preview" className="flex-1">Preview Profile</TabsTrigger>
+            <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-8 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-4 sm:h-10">
+              <TabsTrigger value="profile" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm sm:flex-1">Profile</TabsTrigger>
+              <TabsTrigger value="services" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm sm:flex-1">Services &amp; Pricing</TabsTrigger>
+              <TabsTrigger value="gallery" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm sm:flex-1">Photo Gallery</TabsTrigger>
+              <TabsTrigger value="preview" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm sm:flex-1">Preview</TabsTrigger>
             </TabsList>
             
             <TabsContent value="profile" className="space-y-6">
@@ -616,7 +616,7 @@ const VendorProfile = () => {
                               alt={`Gallery image ${index + 1}`} 
                               className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="absolute inset-0 sm:bg-black/60 transition-opacity flex items-start justify-end p-1.5 sm:items-center sm:justify-center sm:p-0 sm:opacity-0 sm:group-hover:opacity-100">
                               <Button
                                 variant="destructive"
                                 size="sm"
