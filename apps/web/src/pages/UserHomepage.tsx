@@ -46,9 +46,9 @@ const UserHomepage = () => {
 
   const [weddingDate, setWeddingDate] = useState<Date | undefined>(() => {
     const saved = localStorage.getItem("weddingDate");
-    if (!saved) return new Date("2024-12-31");
+    if (!saved) return undefined;
     const parsed = new Date(saved);
-    return Number.isNaN(parsed.getTime()) ? new Date("2024-12-31") : parsed;
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
   });
 
   const [partner1Name, setPartner1Name] = useState(

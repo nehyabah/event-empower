@@ -11,6 +11,7 @@ const InvitationPage = () => {
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoading, setIsLoading] = useState(!!rsvpCode);
+  const [loadFailed, setLoadFailed] = useState(false);
   // Envelope intro: sealed → opening (flap lifts, card rises) → done (real card)
   const [eventData, setEventData] = useState<{
     partner1Name: string;
@@ -20,14 +21,17 @@ const InvitationPage = () => {
     storySlug: string | null;
   } | null>(null);
 
-  // Get fallback data from localStorage
-  const localWeddingDate = localStorage.getItem("weddingDate") || "2024-12-31";
-  const localParsedDate = new Date(localWeddingDate);
-  const localFormattedDate = localParsedDate.toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  // Only used when the couple previews their own card, where this browser
+  // holds their details. A guest arriving by link has none of it, so nothing
+  // here may invent a name or a date.
+  const localWeddingDate = localStorage.getItem("weddingDate");
+  const localFormattedDate = localWeddingDate
+    ? new Date(localWeddingDate).toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Date TBD";
   const localPartner1Name = localStorage.getItem("partner1Name") || "Partner 1";
   const localPartner2Name = localStorage.getItem("partner2Name") || "Partner 2";
   const localVenue = localStorage.getItem("venue") || "";
@@ -51,6 +55,7 @@ const InvitationPage = () => {
     const fetchEventInfo = async () => {
       try {
         const info = await rsvpService.getEventInfo(rsvpCode);
+        if (!info) setLoadFailed(true);
         if (info) {
           const eventDate = info.eventDate
             ? new Date(info.eventDate).toLocaleDateString(undefined, {
@@ -70,6 +75,7 @@ const InvitationPage = () => {
         }
       } catch (error) {
         console.error("Failed to fetch event info:", error);
+        setLoadFailed(true);
         toast.error("Could not load invitation details");
       } finally {
         setIsLoading(false);
@@ -99,6 +105,25 @@ const InvitationPage = () => {
   const partner2Name = eventData?.partner2Name || localPartner2Name;
   const formattedDate = eventData?.eventDate || localFormattedDate;
   const venue = eventData?.venue || localVenue;
+
+  // A guest followed a real link and we could not load the wedding behind it.
+  // Falling through would render whatever happens to be in this browser -
+  // for a guest, the placeholder names and no date at all.
+  if (rsvpCode && loadFailed) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-zinc-50 to-zinc-100">
+        <div className="text-center max-w-sm">
+          <h1 className="text-xl font-serif font-medium text-zinc-800 mb-2">
+            We couldn't open this invitation
+          </h1>
+          <p className="text-sm text-zinc-500">
+            The link may have expired, or it may have been mistyped. Please check with
+            the couple who invited you.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
