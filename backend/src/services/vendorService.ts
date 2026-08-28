@@ -500,6 +500,78 @@ export const vendorService = {
     };
   },
 
+  /**
+   * The couple's running conversation with one vendor, if it exists yet.
+   *
+   * Returns null rather than creating anything: vendor_inquiries.message is
+   * NOT NULL, so a thread cannot exist before its first message. Opening the
+   * chat window is not the same as starting a conversation, and a vendor
+   * should not get an empty enquiry every time someone clicks Chat.
+   */
+  async getConversationWithVendor(userId: string, vendorProfileId: string): Promise<{
+    inquiry: (VendorInquiry & { vendor_name: string }) | null;
+    messages: InquiryMessage[];
+  }> {
+    const [inquiry, vendor] = await Promise.all([
+      VendorInquiryModel.findBySenderAndVendor(userId, vendorProfileId),
+      VendorProfileModel.findById(vendorProfileId),
+    ]);
+
+    if (!inquiry) {
+      return { inquiry: null, messages: [] };
+    }
+
+    const messages = await InquiryMessageModel.listByInquiryId(inquiry.id);
+    await InquiryMessageModel.markAllAsReadByInquiryId(inquiry.id, 'client');
+
+    return {
+      inquiry: { ...inquiry, vendor_name: await maskUnlessBooked(userId, vendor) },
+      messages,
+    };
+  },
+
+  /**
+   * Send to a vendor, opening the thread on the first message.
+   *
+   * Keeping create-or-append on one call means the client never has to know
+   * whether a conversation already existed.
+   */
+  async messageVendor(
+    userId: string,
+    vendorProfileId: string,
+    message: string,
+    senderName: string,
+    senderEmail: string | null
+  ): Promise<{ inquiryId: string; message: InquiryMessage }> {
+    const existing = await VendorInquiryModel.findBySenderAndVendor(userId, vendorProfileId);
+
+    if (existing) {
+      const sent = await this.sendInquiryMessageAsClient(userId, existing.id, message);
+      return { inquiryId: existing.id, message: sent };
+    }
+
+    const inquiry = await this.createVendorInquiry({
+      vendor_id: vendorProfileId,
+      sender_id: userId,
+      sender_name: senderName,
+      sender_email: senderEmail,
+      event_date: null,
+      message,
+    });
+
+    // The opening message lives on the inquiry row itself, so mirror it into
+    // the thread - otherwise the first thing either side said is missing from
+    // the conversation they are both looking at.
+    const seeded = await InquiryMessageModel.create({
+      inquiry_id: inquiry.id,
+      sender_id: userId,
+      sender_type: 'client',
+      message,
+    });
+
+    return { inquiryId: inquiry.id, message: seeded };
+  },
+
   async sendInquiryMessageAsClient(userId: string, inquiryId: string, message: string): Promise<InquiryMessage> {
     const inquiry = await VendorInquiryModel.findByIdAndSenderId(inquiryId, userId);
     if (!inquiry) {

@@ -683,6 +683,53 @@ export const userController = {
     }
   },
 
+  async getVendorConversation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await vendorService.getConversationWithVendor(
+        req.user!.userId,
+        req.params.vendorProfileId
+      );
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async messageVendor(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const validation = sendMessageSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const safety = checkMessage(validation.data.message);
+      if (!safety.ok) {
+        void recordFlag({
+          userId: req.user!.userId,
+          surface: 'inquiry',
+          contextId: req.params.vendorProfileId,
+          violations: safety.violations,
+          text: validation.data.message,
+        });
+        res.status(422).json({ error: violationMessage(safety.violations), safetyBlocked: true });
+        return;
+      }
+
+      const me = await UserModel.findById(req.user!.userId);
+      const result = await vendorService.messageVendor(
+        req.user!.userId,
+        req.params.vendorProfileId,
+        validation.data.message,
+        me?.name || me?.email || 'A couple',
+        me?.email || null
+      );
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async sendMyInquiryMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const validation = sendMessageSchema.safeParse(req.body);

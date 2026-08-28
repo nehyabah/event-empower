@@ -624,6 +624,22 @@ export const VendorInquiryModel = {
       [id, senderId]
     );
   },
+
+  /**
+   * The one running conversation between this person and this vendor.
+   *
+   * A couple messaging the same vendor twice should land back in the same
+   * thread rather than opening a second one the vendor has to piece together.
+   */
+  async findBySenderAndVendor(senderId: string, vendorId: string): Promise<VendorInquiry | null> {
+    return queryOne<VendorInquiry>(
+      `SELECT * FROM vendor_inquiries
+        WHERE sender_id = $1 AND vendor_id = $2
+        ORDER BY created_at ASC
+        LIMIT 1`,
+      [senderId, vendorId]
+    );
+  },
 };
 
 export const InquiryMessageModel = {

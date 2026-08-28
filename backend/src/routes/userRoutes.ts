@@ -133,4 +133,10 @@ router.get('/inquiries', userController.listMyInquiries);
 router.get('/inquiries/:id', userController.getMyInquiry);
 router.post('/inquiries/:id/messages', userController.sendMyInquiryMessage);
 
+// Conversation with one vendor, addressed by vendor rather than by inquiry
+// id - the directory knows which vendor you tapped, not which thread (if any)
+// already exists.
+router.get('/vendors/:vendorProfileId/conversation', userController.getVendorConversation);
+router.post('/vendors/:vendorProfileId/messages', userController.messageVendor);
+
 export default router;

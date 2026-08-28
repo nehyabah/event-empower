@@ -483,7 +483,35 @@ export const vendorService = {
       throw new Error("Failed to send message");
     }
     return response.data;
+  },  /** The couple's running thread with one vendor, or null if none yet. */
+  async getVendorConversation(vendorProfileId: string): Promise<{
+    inquiry: (ClientInquiry & { vendor_name: string }) | null;
+    messages: InquiryMessage[];
+  }> {
+    const response = await apiClient.get<{
+      inquiry: (ClientInquiry & { vendor_name: string }) | null;
+      messages: InquiryMessage[];
+    }>(`/users/vendors/${vendorProfileId}/conversation`);
+    if (response.error) throw new Error(response.error);
+    return response.data || { inquiry: null, messages: [] };
   },
+
+  /** Send to a vendor; opens the thread on the first message. */
+  async messageVendor(vendorProfileId: string, message: string): Promise<{
+    inquiryId: string;
+    message: InquiryMessage;
+  }> {
+    const response = await apiClient.post<{ inquiryId: string; message: InquiryMessage }>(
+      `/users/vendors/${vendorProfileId}/messages`,
+      { message }
+    );
+    if (response.error || !response.data) {
+      throw new Error(response.error || "Failed to send message");
+    }
+    return response.data;
+  },
+
+
 };
 
 export default vendorService;
