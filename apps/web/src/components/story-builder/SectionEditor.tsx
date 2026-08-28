@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MousePointerClick, Info } from "lucide-react";
 import { storyService, StoryBundle, UpdateStoryInput } from "@/services/api/storyService";
 import { SECTION_BY_ID, SectionId } from "@/lib/storySections";
+import ListSectionEditor, { ListSectionSpec } from "./ListSectionEditor";
 
 /**
  * The form for whichever section is selected.
@@ -70,14 +71,124 @@ const FIELDS: Partial<
   ],
 };
 
-/** Sections whose content lives in their own tables and screens. */
-const MANAGED_ELSEWHERE: Partial<Record<SectionId, { to: string; label: string; note: string }>> = {
-  gallery: { to: "/couple-story", label: "Manage photos", note: "Photos are added on your site page." },
-  timeline: { to: "/couple-story", label: "Manage timeline", note: "Timeline moments are added on your site page." },
-  "wedding-party": { to: "/couple-story", label: "Manage wedding party", note: "Party members are added on your site page." },
-  travel: { to: "/couple-story", label: "Manage travel info", note: "Travel details are added on your site page." },
-  faq: { to: "/couple-story", label: "Manage FAQ", note: "Questions are added on your site page." },
-  registry: { to: "/couple-story", label: "Manage registry", note: "Gift list and bank details are managed on your site page." },
+/**
+ * Sections backed by their own tables. Each is the same shape — a list of
+ * records — so they share ListSectionEditor and differ only in this spec.
+ */
+const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
+  switch (sectionId) {
+    case "timeline":
+      return {
+        noun: "moment",
+        fields: [
+          { key: "title", label: "What happened", placeholder: "We met", required: true },
+          { key: "date", label: "When", type: "date" },
+          { key: "description", label: "Tell the story", multiline: true },
+          { key: "image_url", label: "Photo URL", placeholder: "https://…" },
+        ],
+        primary: (i: any) => i.title,
+        secondary: (i: any) => i.description || i.date || null,
+        add: (v) => storyService.addTimeline({ title: v.title, date: v.date || undefined, description: v.description || undefined, image_url: v.image_url || undefined }),
+        update: (id, v) => storyService.updateTimeline(id, { title: v.title, date: v.date || undefined, description: v.description || undefined, image_url: v.image_url || undefined }),
+        remove: (id) => storyService.deleteTimeline(id),
+        reorder: (ids) => storyService.reorderTimeline(ids),
+      } as unknown as ListSectionSpec<never>;
+
+    case "wedding-party":
+      return {
+        noun: "person",
+        fields: [
+          { key: "name", label: "Name", placeholder: "Chidinma", required: true },
+          { key: "role", label: "Role", placeholder: "Chief bridesmaid", required: true },
+          { key: "side", label: "Side", placeholder: "bride or groom" },
+          { key: "bio", label: "About them", multiline: true },
+          { key: "image_url", label: "Photo URL", placeholder: "https://…" },
+        ],
+        primary: (i: any) => i.name,
+        secondary: (i: any) => i.role || null,
+        add: (v) => storyService.addWeddingParty({ name: v.name, role: v.role, side: v.side || undefined, bio: v.bio || undefined, image_url: v.image_url || undefined }),
+        update: (id, v) => storyService.updateWeddingParty(id, { name: v.name, role: v.role, side: v.side || undefined, bio: v.bio || undefined, image_url: v.image_url || undefined }),
+        remove: (id) => storyService.deleteWeddingParty(id),
+        reorder: (ids) => storyService.reorderWeddingParty(ids),
+      } as unknown as ListSectionSpec<never>;
+
+    case "travel":
+      return {
+        noun: "place",
+        fields: [
+          { key: "title", label: "Name", placeholder: "Eko Hotel", required: true },
+          { key: "category", label: "Type", placeholder: "Hotel, transport, parking…" },
+          { key: "description", label: "Details", multiline: true },
+          { key: "address", label: "Address" },
+          { key: "link", label: "Link", placeholder: "https://…" },
+        ],
+        primary: (i: any) => i.title,
+        secondary: (i: any) => i.description || i.address || null,
+        add: (v) => storyService.addTravel({ title: v.title, category: v.category || undefined, description: v.description || undefined, address: v.address || undefined, link: v.link || undefined }),
+        update: (id, v) => storyService.updateTravel(id, { title: v.title, category: v.category || undefined, description: v.description || undefined, address: v.address || undefined, link: v.link || undefined }),
+        remove: (id) => storyService.deleteTravel(id),
+        reorder: (ids) => storyService.reorderTravel(ids),
+      } as unknown as ListSectionSpec<never>;
+
+    case "faq":
+      return {
+        noun: "question",
+        fields: [
+          { key: "question", label: "Question", placeholder: "Is there a dress code?", required: true },
+          { key: "answer", label: "Answer", multiline: true, required: true },
+        ],
+        primary: (i: any) => i.question,
+        secondary: (i: any) => i.answer || null,
+        add: (v) => storyService.addFaq({ question: v.question, answer: v.answer }),
+        update: (id, v) => storyService.updateFaq(id, { question: v.question, answer: v.answer }),
+        remove: (id) => storyService.deleteFaq(id),
+        reorder: (ids) => storyService.reorderFaq(ids),
+      } as unknown as ListSectionSpec<never>;
+
+    case "gallery":
+      return {
+        noun: "photo",
+        fields: [
+          { key: "url", label: "Photo URL", placeholder: "https://…", required: true },
+          { key: "caption", label: "Caption" },
+        ],
+        primary: (i: any) => i.caption || "Photo",
+        secondary: (i: any) => i.url,
+        add: (v) => storyService.addStoryImage({ url: v.url, caption: v.caption || null }),
+        remove: (id) => storyService.deleteStoryImage(id),
+      } as unknown as ListSectionSpec<never>;
+
+    case "registry":
+      return {
+        noun: "gift",
+        fields: [
+          { key: "name", label: "Item", placeholder: "Dinner set", required: true },
+          { key: "price", label: "Approximate price", placeholder: "45,000" },
+          { key: "link", label: "Where to buy", placeholder: "https://…" },
+        ],
+        primary: (i: any) => i.name,
+        secondary: (i: any) => i.price || null,
+        add: (v) => storyService.addWishlistItem({ name: v.name, price: v.price || null, link: v.link || null }),
+        update: (id, v) => storyService.updateWishlistItem(id, { name: v.name, price: v.price || null, link: v.link || null }),
+        remove: (id) => storyService.deleteWishlistItem(id),
+      } as unknown as ListSectionSpec<never>;
+
+    default:
+      return null;
+  }
+};
+
+/** The rows behind each list-backed section. */
+const listItems = (sectionId: SectionId, bundle: StoryBundle | null): Array<{ id: string }> => {
+  switch (sectionId) {
+    case "timeline": return bundle?.timeline ?? [];
+    case "wedding-party": return bundle?.weddingParty ?? [];
+    case "travel": return bundle?.travelInfo ?? [];
+    case "faq": return bundle?.faqItems ?? [];
+    case "gallery": return bundle?.images ?? [];
+    case "registry": return bundle?.wishlist ?? [];
+    default: return [];
+  }
 };
 
 const SectionEditor = ({ sectionId, bundle, onSaved }: SectionEditorProps) => {
@@ -137,7 +248,8 @@ const SectionEditor = ({ sectionId, bundle, onSaved }: SectionEditorProps) => {
     );
   }
 
-  const elsewhere = MANAGED_ELSEWHERE[def.id];
+  const spec = listSpec(def.id);
+  const items = listItems(def.id, bundle);
 
   return (
     <Card>
@@ -157,13 +269,15 @@ const SectionEditor = ({ sectionId, bundle, onSaved }: SectionEditorProps) => {
           </div>
         )}
 
-        {elsewhere && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">{elsewhere.note}</p>
-            <Button variant="outline" asChild>
-              <a href={elsewhere.to}>{elsewhere.label}</a>
-            </Button>
-          </div>
+        {spec && (
+          <ListSectionEditor items={items as never[]} spec={spec} onChanged={onSaved} />
+        )}
+
+        {def.id === "registry" && (
+          <p className="text-xs text-muted-foreground border-t pt-3">
+            Bank details for cash gifts are managed on your site page — they are
+            published publicly, so they are kept deliberately separate.
+          </p>
         )}
 
         {fields && (
