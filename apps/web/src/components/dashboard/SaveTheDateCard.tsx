@@ -49,24 +49,6 @@ const PngAccent = ({ src, box, flip, flipY, rotate, opacity, anchor = "left top"
   );
 };
 
-// One-line rose — the hand-sketched continuous-line bloom
-const LineRose = ({ ink = "#a98a72" }: { ink?: string }) => (
-  <svg viewBox="0 0 120 110" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-    <g fill="none" stroke={ink} strokeWidth="1.5" strokeLinecap="round">
-      {/* spiral heart of the bloom */}
-      <path d="M 60,42 a 3,3 0 1,1 5,2 a 6.5,6 0 1,1 -10,-3 a 10.5,10 0 1,1 16,8 a 15,14.5 0 1,1 -23,-10" />
-      {/* outer petal sweeps */}
-      <path d="M 41,38 C 38,26 47,16 60,15 C 74,14 84,24 84,37" opacity="0.85" />
-      <path d="M 84,37 C 90,46 88,58 79,64" opacity="0.7" />
-      <path d="M 41,38 C 34,46 34,57 41,64" opacity="0.7" />
-      {/* stem */}
-      <path d="M 60,64 C 59,76 58,88 58,102" />
-      {/* leaves */}
-      <path d="M 58,78 C 48,72 40,74 35,82 C 42,88 52,86 58,80" opacity="0.85" />
-      <path d="M 58,90 C 67,84 76,86 81,93 C 74,99 64,98 58,92" opacity="0.85" />
-    </g>
-  </svg>
-);
 
 // Gold demi-laurel — two mirrored arcs of small pointed leaves
 const LaurelArc = ({ gold = ["#c2a36b", "#ad8d52"] }: { gold?: string[] }) => (
@@ -125,6 +107,105 @@ export interface CardTemplate {
 
 export const saveTheDateTemplates: CardTemplate[] = [
   // ── Statement frames — artwork wraps the whole card ──
+  /*
+   * Plain designs. Not every couple wants florals, and a card carried
+   * entirely by type and colour is its own look rather than a fallback —
+   * so these lead the list instead of trailing it.
+   *
+   * noFrame keeps the printed double rule off them; the paper and the
+   * lettering are the design.
+   */
+  {
+    id: "plain-ivory",
+    name: "Ivory",
+    noFrame: true,
+    Decor: () => null,
+    paper: "#f7f4ee",
+    ink: "#2e2a24",
+    inkSoft: "#8b8377",
+    accent: "#b08968",
+    frame: "#e4ded2",
+    border: "#e4ded2",
+    accentBg: "#efe9dd",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+  {
+    id: "plain-ink",
+    name: "Ink",
+    noFrame: true,
+    dark: true,
+    Decor: () => null,
+    paper: "#1b1b1d",
+    ink: "#f2f0ec",
+    inkSoft: "#9c9890",
+    accent: "#c9a227",
+    frame: "#33322f",
+    border: "#33322f",
+    accentBg: "#26262a",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+  {
+    id: "plain-sage",
+    name: "Sage",
+    noFrame: true,
+    Decor: () => null,
+    paper: "#e7ebe3",
+    ink: "#33402f",
+    inkSoft: "#7d8a76",
+    accent: "#5c7052",
+    frame: "#d2d9cb",
+    border: "#d2d9cb",
+    accentBg: "#dbe2d4",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+  {
+    id: "plain-blush",
+    name: "Blush",
+    noFrame: true,
+    Decor: () => null,
+    paper: "#f6e9e6",
+    ink: "#4a3038",
+    inkSoft: "#9c7c83",
+    accent: "#b5697c",
+    frame: "#ecd8d4",
+    border: "#ecd8d4",
+    accentBg: "#f0dcd8",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
+  {
+    id: "plain-terracotta",
+    name: "Terracotta",
+    noFrame: true,
+    Decor: () => null,
+    paper: "#e8d5c8",
+    ink: "#4b2f24",
+    inkSoft: "#96725f",
+    accent: "#a85c3c",
+    frame: "#dcc3b2",
+    border: "#dcc3b2",
+    accentBg: "#e0c8b8",
+    headerFont: "'Cinzel', serif",
+    nameFont: "'Playfair Display', serif",
+    scriptFont: "'Great Vibes', cursive",
+    bodyFont: "'Cormorant Garamond', serif",
+    headerTracking: "0.42em",
+  },
   {
     id: "dusty-blue-romance",
     name: "Dusty Blue Romance",
@@ -166,69 +247,6 @@ export const saveTheDateTemplates: CardTemplate[] = [
     scriptFont: "'Great Vibes', cursive",
     bodyFont: "'Cormorant Garamond', serif",
     headerTracking: "0.42em",
-  },
-  {
-    id: "chintz-roses",
-    name: "Chintz Roses",
-    noFrame: true,
-    textStyle: { paddingTop: "4%", paddingBottom: "10%" },
-    Decor: () => (
-      <PngAccent src="/florals/chintz-frame.png" size="100% 100%"
-        box={{ inset: 0 }} />
-    ),
-    paper: "#fffdfd",
-    ink: "#6d3c50",
-    inkSoft: "#a8798c",
-    accent: "#cf6592",
-    frame: "#ecd4de",
-    border: "#f3e2e9",
-    accentBg: "#faedf2",
-    headerFont: "'Libre Baskerville', serif",
-    nameFont: "'Lora', serif",
-    scriptFont: "'Great Vibes', cursive",
-    bodyFont: "'Libre Baskerville', serif",
-    headerTracking: "0.35em",
-  },
-  {
-    id: "hydrangea-frame",
-    name: "Hydrangea Frame",
-    noFrame: true,
-    Decor: () => (
-      <PngAccent src="/florals/hydrangea-frame.png" size="100% 100%"
-        box={{ inset: 0 }} />
-    ),
-    paper: "#fffefc",
-    ink: "#5c5470",
-    inkSoft: "#938ba3",
-    accent: "#9d7bb0",
-    frame: "#ddd6e4",
-    border: "#e9e4ef",
-    accentBg: "#f4f0f7",
-    headerFont: "'Libre Baskerville', serif",
-    nameFont: "'Lora', serif",
-    scriptFont: "'Dancing Script', cursive",
-    bodyFont: "'Libre Baskerville', serif",
-    headerTracking: "0.35em",
-  },
-  {
-    id: "hydrangea-garden",
-    name: "Hydrangea Garden",
-    Decor: () => (
-      <PngAccent src="/florals/hydrangea-corners.png" size="100% 100%"
-        box={{ inset: 0 }} />
-    ),
-    paper: "#fefcfd",
-    ink: "#74505e",
-    inkSoft: "#ab8a96",
-    accent: "#e08aa4",
-    frame: "#eed4dd",
-    border: "#f4e2e8",
-    accentBg: "#fbedf1",
-    headerFont: "'Montserrat', sans-serif",
-    nameFont: "'Lora', serif",
-    scriptFont: "'Dancing Script', cursive",
-    bodyFont: "'Montserrat', sans-serif",
-    headerTracking: "0.48em",
   },
 
   // ── Corner pieces — one or two sprays, generous paper ──
@@ -422,27 +440,6 @@ export const saveTheDateTemplates: CardTemplate[] = [
     scriptFont: "'Dancing Script', cursive",
     bodyFont: "'Montserrat', sans-serif",
     headerTracking: "0.5em",
-  },
-  {
-    id: "line-rose",
-    name: "Line Rose",
-    Decor: () => (
-      <div className="absolute pointer-events-none" style={{ top: "5.5%", left: "50%", transform: "translateX(-50%)", width: "30%", height: "24%" }}>
-        <LineRose />
-      </div>
-    ),
-    paper: "#fcfaf6",
-    ink: "#5b5048",
-    inkSoft: "#a3968b",
-    accent: "#a98a72",
-    frame: "#ddd2c4",
-    border: "#eae2d6",
-    accentBg: "#f4eee6",
-    headerFont: "'Montserrat', sans-serif",
-    nameFont: "'Cormorant Garamond', serif",
-    scriptFont: "'Cormorant Garamond', serif",
-    bodyFont: "'Montserrat', sans-serif",
-    headerTracking: "0.55em",
   },
   {
     id: "rose-ribbon",
@@ -922,7 +919,7 @@ const SaveTheDateCard = ({
           className="absolute inset-0 w-full h-full rounded-xl overflow-hidden shadow-2xl"
           style={{
             backgroundColor: template.paper,
-            border: `1px solid ${template.border}`,
+            border: template.noFrame ? "none" : `1px solid ${template.border}`,
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
             // @ts-ignore
@@ -991,7 +988,7 @@ const SaveTheDateCard = ({
           className="absolute inset-0 w-full h-full rounded-xl overflow-hidden shadow-2xl flex flex-col"
           style={{
             backgroundColor: template.dark ? "#faf8f2" : template.paper,
-            border: `1px solid ${template.border}`,
+            border: template.noFrame ? "none" : `1px solid ${template.border}`,
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
             transform: "rotateY(180deg)",

@@ -328,7 +328,7 @@ const AdminUserDetail = () => {
                   <Label htmlFor="user_type">User Type</Label>
                   <select
                     id="user_type"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm"
                     value={editForm.user_type}
                     onChange={(e) => setEditForm({ ...editForm, user_type: e.target.value })}
                   >

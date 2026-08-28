@@ -23,7 +23,7 @@ import { formatDateOnly } from "@/lib/dates";
  */
 export const InvitationCardDesigner = () => {
   const [partner1Name, setPartner1Name] = useState(
-    () => localStorage.getItem("partner1Name") || "Partner 1",
+    () => localStorage.getItem("partner1Name") || "Bride",
   );
   const [partner2Name, setPartner2Name] = useState(
     () => localStorage.getItem("partner2Name") || "Partner",
@@ -148,17 +148,17 @@ export const InvitationCardDesigner = () => {
                 <div className="p-4 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label htmlFor="p1-mobile" className="text-xs text-muted-foreground">Partner 1</Label>
-                      <Input id="p1-mobile" value={partner1Name} onChange={(e) => setPartner1Name(e.target.value)} className="h-9 text-sm" />
+                      <Label htmlFor="p1-mobile" className="text-xs text-muted-foreground">Bride</Label>
+                      <Input id="p1-mobile" value={partner1Name} onChange={(e) => setPartner1Name(e.target.value)} className="h-9 text-base md:text-sm" />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="p2-mobile" className="text-xs text-muted-foreground">Partner 2</Label>
-                      <Input id="p2-mobile" value={partner2Name} onChange={(e) => setPartner2Name(e.target.value)} className="h-9 text-sm" />
+                      <Label htmlFor="p2-mobile" className="text-xs text-muted-foreground">Groom</Label>
+                      <Input id="p2-mobile" value={partner2Name} onChange={(e) => setPartner2Name(e.target.value)} className="h-9 text-base md:text-sm" />
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="venue-mobile" className="text-xs text-muted-foreground">Venue</Label>
-                    <Input id="venue-mobile" value={venue} onChange={(e) => setVenue(e.target.value)} className="h-9 text-sm" />
+                    <Input id="venue-mobile" value={venue} onChange={(e) => setVenue(e.target.value)} className="h-9 text-base md:text-sm" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Design</Label>
@@ -226,11 +226,11 @@ export const InvitationCardDesigner = () => {
               <div className="space-y-4 flex-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="p1" className="text-xs font-medium text-muted-foreground">Partner 1</Label>
+                    <Label htmlFor="p1" className="text-xs font-medium text-muted-foreground">Bride</Label>
                     <Input id="p1" value={partner1Name} onChange={(e) => setPartner1Name(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="p2" className="text-xs font-medium text-muted-foreground">Partner 2</Label>
+                    <Label htmlFor="p2" className="text-xs font-medium text-muted-foreground">Groom</Label>
                     <Input id="p2" value={partner2Name} onChange={(e) => setPartner2Name(e.target.value)} />
                   </div>
                 </div>
