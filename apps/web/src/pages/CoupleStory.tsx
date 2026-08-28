@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { StoryImage } from "@/components/couple-story/StoryEditor";
 import StoryGallery from "@/components/couple-story/StoryGallery";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useNavigate } from "react-router-dom";
@@ -25,14 +26,12 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import { useWishlist } from "@/context/useWishlist";
-import StoryEditor, { StoryImage } from "@/components/couple-story/StoryEditor";
 import { Comment } from "@/components/couple-story/CommentsSection";
 import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
 import WishlistForm from "@/components/wishlist/WishlistForm";
 import BankDetailsForm from "@/components/couple-story/BankDetailsForm";
 import type { ThemeStyles } from "@/lib/siteThemes";
-import SiteCustomizer from "@/components/couple-story/SiteCustomizer";
 import TimelineSection from "@/components/couple-story/sections/TimelineSection";
 import WeddingPartySection from "@/components/couple-story/sections/WeddingPartySection";
 import TravelSection from "@/components/couple-story/sections/TravelSection";
@@ -110,11 +109,9 @@ const CoupleStory = () => {
   const [storyImages, setStoryImages] = useState<StoryImage[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("editorial");
-  const [isEditingStory, setIsEditingStory] = useState(false);
   const [showWishlistForm, setShowWishlistForm] = useState(false);
   const [showBankForm, setShowBankForm] = useState(false);
   const [isLoadingStory, setIsLoadingStory] = useState(true);
-  const [showCustomizer, setShowCustomizer] = useState(false);
 
   // New premium fields
   const [accentColor, setAccentColor] = useState<string | null>(null);
@@ -243,14 +240,6 @@ const CoupleStory = () => {
     window.scrollTo({ top: window.innerHeight, behavior: "smooth" });
   };
 
-  const shareStory = () => {
-    if (!user?.id) { toast.error("Unable to generate share link"); return; }
-    const url = slug
-      ? `${window.location.origin}/s/${slug}`
-      : `${window.location.origin}/shared-story?id=${user.id}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Story URL copied to clipboard!");
-  };
 
   const handleScrollLeft = () => {
     carouselRef.current?.scrollBy({ left: -320, behavior: "smooth" });
@@ -536,63 +525,6 @@ const CoupleStory = () => {
     <div className={`min-h-screen transition-all duration-700 ease-in-out ${s.bg} ${s.text} ${s.fontBody}`} style={accentStyle}>
       {/* App menu bar — only on the couple's own editing view, never on the shared site */}
       <Navbar />
-
-      {/* Floating Action Menu — below the navbar */}
-      <div className="fixed top-24 right-6 z-40 flex flex-wrap gap-2 justify-end">
-        <Button
-          size="icon"
-          variant="outline"
-          className={`rounded-full backdrop-blur-md shadow-lg border-white/20 hover:bg-white/20 text-white ${s.floatingButton}`}
-          onClick={() => setShowCustomizer(true)}
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
-
-        <Button
-          variant="outline"
-          className={`backdrop-blur-md shadow-lg border-white/20 hover:bg-white/20 text-white ${s.floatingButton}`}
-          onClick={shareStory}
-        >
-          <Share2 className="w-4 h-4 mr-2" />Share
-        </Button>
-
-        <Dialog open={isEditingStory} onOpenChange={setIsEditingStory}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className={`backdrop-blur-md shadow-lg border-white/20 hover:bg-white/20 text-white ${s.floatingButton}`}>
-              <Edit className="w-4 h-4 mr-2" />Edit Story
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-5xl p-0 max-h-[85vh] overflow-hidden">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Edit your story</DialogTitle>
-              <DialogDescription>Update your details, story, and photos. Changes save when you click Save.</DialogDescription>
-            </DialogHeader>
-            <div className="p-6 pt-4 overflow-y-auto max-h-[70vh]">
-              <StoryEditor coupleStory={coupleStory} storyImages={storyImages} setStoryImages={setStoryImages} setCoupleStory={setCoupleStory} onStoryUpdated={() => setIsEditingStory(false)} />
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* SiteCustomizer */}
-      <SiteCustomizer
-        open={showCustomizer}
-        onClose={() => setShowCustomizer(false)}
-        selectedTheme={selectedTemplate}
-        onThemeChange={setSelectedTemplate}
-        accentColor={accentColor}
-        onAccentColorChange={setAccentColor}
-        fontPair={fontPair}
-        onFontPairChange={setFontPair}
-        sectionOrder={sectionOrder}
-        onSectionOrderChange={setSectionOrder}
-        hiddenSections={hiddenSections}
-        onHiddenSectionsChange={setHiddenSections}
-        slug={slug}
-        onSlugChange={setSlug}
-        sitePublished={sitePublished}
-        onPublishedChange={setSitePublished}
-      />
 
       {/* Hero Section (always rendered if visible) */}
       {visibleSections.includes("hero") && (

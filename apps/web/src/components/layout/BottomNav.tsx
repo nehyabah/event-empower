@@ -65,7 +65,6 @@ const ITEMS: Record<string, NavItem[]> = {
 const MORE_ITEMS: Record<string, NavItem[]> = {
   client: [
     { to: "/story-builder", label: "Wedding Site", icon: BookOpen },
-    { to: "/couple-story", label: "Preview Site", icon: Store },
     { to: "/todo-lists", label: "To-Do Lists", icon: CheckSquare },
     { to: "/expense-tracker", label: "Budget", icon: Briefcase },
     { to: "/my-inquiries", label: "My Enquiries", icon: Users },
