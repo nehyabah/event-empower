@@ -576,7 +576,7 @@ const PlannerClientWorkspace = () => {
                           {item.status === "todo" && !item.completed && (
                             <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">To do</span>
                           )}
-                          <button onClick={() => handleDeleteItem(list, item)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all">
+                          <button onClick={() => handleDeleteItem(list, item)} className="p-1.5 -m-1.5 sm:p-0 sm:m-0 text-muted-foreground hover:text-destructive transition-all sm:opacity-0 sm:group-hover:opacity-100">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>

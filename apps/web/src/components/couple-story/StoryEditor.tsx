@@ -440,14 +440,14 @@ const StoryEditor = ({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="flex w-full mb-4 overflow-x-auto">
-          <TabsTrigger value="basic" className="flex-1 min-w-[100px]">Basic Info</TabsTrigger>
-          <TabsTrigger value="stories" className="flex-1 min-w-[100px]">Partners</TabsTrigger>
-          <TabsTrigger value="images" className="flex-1 min-w-[80px]">Photos</TabsTrigger>
-          <TabsTrigger value="timeline" className="flex-1 min-w-[80px]">Timeline</TabsTrigger>
-          <TabsTrigger value="party" className="flex-1 min-w-[80px]">Party</TabsTrigger>
-          <TabsTrigger value="travel" className="flex-1 min-w-[80px]">Travel</TabsTrigger>
-          <TabsTrigger value="faq" className="flex-1 min-w-[60px]">FAQ</TabsTrigger>
+        <TabsList className="flex w-full justify-start mb-4 overflow-x-auto no-scrollbar h-auto p-1 gap-1 bg-muted/60 rounded-lg">
+          <TabsTrigger value="basic" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Basic Info</TabsTrigger>
+          <TabsTrigger value="stories" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Partners</TabsTrigger>
+          <TabsTrigger value="images" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Photos</TabsTrigger>
+          <TabsTrigger value="timeline" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Timeline</TabsTrigger>
+          <TabsTrigger value="party" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Party</TabsTrigger>
+          <TabsTrigger value="travel" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">Travel</TabsTrigger>
+          <TabsTrigger value="faq" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm">FAQ</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic" className="space-y-4">

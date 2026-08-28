@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { TodoItem } from "@/context/TodoContext";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, X } from "lucide-react";
+import { Calendar, ChevronDown, ChevronUp, X } from "lucide-react";
 
 interface TodoItemProps {
   item: TodoItem;
@@ -12,6 +12,10 @@ interface TodoItemProps {
   onDueDateChange?: (dueDate: string | null) => void;
   draggable?: boolean;
   isDragging?: boolean;
+  /** Touch reorder. Absent when the list is filtered, where "up" has no
+   *  meaningful target in the underlying order. */
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onDragStart?: (event: React.DragEvent<HTMLDivElement>) => void;
   onDragOver?: (event: React.DragEvent<HTMLDivElement>) => void;
   onDrop?: (event: React.DragEvent<HTMLDivElement>) => void;
@@ -45,6 +49,8 @@ const TodoItemComponent = ({
   onDueDateChange,
   draggable,
   isDragging,
+  onMoveUp,
+  onMoveDown,
   onDragStart,
   onDragOver,
   onDrop,
@@ -77,18 +83,19 @@ const TodoItemComponent = ({
 
   return (
     <div
-      className={`group p-2 border rounded-md transition ${isDragging ? "opacity-50 bg-muted" : "hover:bg-background"}`}
+      className={`group p-2.5 sm:p-2 border rounded-md transition ${isDragging ? "opacity-50 bg-muted" : "hover:bg-background"}`}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-2.5 sm:gap-2">
         <Checkbox
           id={item.id}
           checked={item.completed}
           onCheckedChange={onToggle}
+          className="h-5 w-5 sm:h-4 sm:w-4 shrink-0"
         />
         <label
           htmlFor={item.id}
@@ -99,7 +106,7 @@ const TodoItemComponent = ({
         <button
           type="button"
           onClick={handleStatusClick}
-          className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${statusClasses}`}
+          className={`rounded-full px-2.5 py-1 sm:px-2 sm:py-0.5 text-xs font-medium shrink-0 ${statusClasses}`}
         >
           {statusLabel}
         </button>
@@ -107,24 +114,46 @@ const TodoItemComponent = ({
           <button
             type="button"
             onClick={() => setShowDateInput(v => !v)}
-            className={`opacity-0 group-hover:opacity-100 transition shrink-0 ${item.dueDate ? "opacity-100" : ""} ${overdue ? "text-destructive" : "text-muted-foreground hover:text-foreground"}`}
+            className={`p-1.5 -m-1.5 sm:p-0 sm:m-0 transition shrink-0 sm:opacity-0 sm:group-hover:opacity-100 ${item.dueDate ? "sm:opacity-100" : ""} ${overdue ? "text-destructive" : "text-muted-foreground hover:text-foreground"}`}
             aria-label="Set due date"
           >
-            <Calendar className="h-3.5 w-3.5" />
+            <Calendar className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
           </button>
+        )}
+        {(onMoveUp || onMoveDown) && (
+          <div className="flex items-center sm:hidden shrink-0">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={!onMoveUp}
+              className="p-1 text-muted-foreground disabled:opacity-25"
+              aria-label="Move up"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={!onMoveDown}
+              className="p-1 text-muted-foreground disabled:opacity-25"
+              aria-label="Move down"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
         )}
         <button
           onClick={onDelete}
-          className="opacity-0 group-hover:opacity-100 transition text-muted-foreground hover:text-destructive shrink-0"
+          className="p-1.5 -m-1.5 sm:p-0 sm:m-0 transition text-muted-foreground hover:text-destructive shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
           aria-label="Delete todo"
         >
-          <X className="h-4 w-4" />
+          <X className="h-[18px] w-[18px] sm:h-4 sm:w-4" />
         </button>
       </div>
 
       {/* Due date display */}
       {item.dueDate && !showDateInput && (
-        <div className={`flex items-center gap-1 mt-1 ml-6 text-xs ${overdue && !item.completed ? "text-destructive" : "text-muted-foreground"}`}>
+        <div className={`flex items-center gap-1 mt-1 ml-7 sm:ml-6 text-xs ${overdue && !item.completed ? "text-destructive" : "text-muted-foreground"}`}>
           <Calendar className="h-3 w-3" />
           <span>{formatDueDate(item.dueDate)}</span>
           {onDueDateChange && (
@@ -142,14 +171,14 @@ const TodoItemComponent = ({
 
       {/* Inline date picker */}
       {showDateInput && onDueDateChange && (
-        <div className="mt-1 ml-6">
+        <div className="mt-1 ml-7 sm:ml-6">
           <input
             type="date"
             defaultValue={item.dueDate ?? ""}
             onChange={handleDateChange}
             onBlur={() => setShowDateInput(false)}
             autoFocus
-            className="text-xs border rounded px-1.5 py-0.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            className="text-xs border rounded px-2 py-1.5 sm:px-1.5 sm:py-0.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
       )}

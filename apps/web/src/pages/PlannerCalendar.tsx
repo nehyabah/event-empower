@@ -363,12 +363,12 @@ const PlannerCalendar = () => {
                     <TabsTrigger value="upcoming">Upcoming ({filteredUpcoming.length})</TabsTrigger>
                     <TabsTrigger value="past">Past ({pastEvents.length})</TabsTrigger>
                   </TabsList>
-                  <TabsContent value="upcoming" className="space-y-1 max-h-[400px] overflow-y-auto">
+                  <TabsContent value="upcoming" className="space-y-1 sm:max-h-[400px] sm:overflow-y-auto">
                     {filteredUpcoming.length === 0
                       ? <p className="text-center text-muted-foreground py-4">No upcoming events</p>
                       : filteredUpcoming.map((e, i) => renderEntry(e, i))}
                   </TabsContent>
-                  <TabsContent value="past" className="space-y-1 max-h-[400px] overflow-y-auto">
+                  <TabsContent value="past" className="space-y-1 sm:max-h-[400px] sm:overflow-y-auto">
                     {pastEvents.length === 0
                       ? <p className="text-center text-muted-foreground py-4">No past events</p>
                       : pastEvents

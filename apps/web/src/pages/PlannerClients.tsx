@@ -823,7 +823,7 @@ const PlannerClients = () => {
                             </span>
                             <button
                               onClick={() => todosClient && handleDeleteItem(todosClient.id, list, item)}
-                              className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                              className="shrink-0 p-1.5 -m-1.5 sm:p-0 sm:m-0 text-muted-foreground hover:text-destructive transition-all sm:opacity-0 sm:group-hover:opacity-100"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>

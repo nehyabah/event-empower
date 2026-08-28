@@ -80,6 +80,14 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
     setDraggingId(null);
   };
 
+  const handleMove = (itemId: string, direction: -1 | 1) => {
+    const ordered = [...todoList.items].sort((a, b) => a.sortOrder - b.sortOrder);
+    const index = ordered.findIndex(item => item.id === itemId);
+    const neighbour = ordered[index + direction];
+    if (!neighbour) return;
+    reorderTodoItems(todoList.id, reorderIds(todoList.items, itemId, neighbour.id));
+  };
+
   const handleDropOnItem = (event: React.DragEvent<HTMLDivElement>, targetId: string) => {
     event.preventDefault();
     const sourceId = event.dataTransfer.getData("text/plain");
@@ -213,7 +221,7 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
           </div>
 
           {/* Add Task Input */}
-          <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 mb-4">
+          <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 sm:py-2 mb-4">
             <PlusCircle className="h-4 w-4 text-muted-foreground shrink-0" />
             <input
               value={newItemText}
@@ -231,16 +239,16 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
               size="sm"
               onClick={handleAddItem}
               disabled={!newItemText.trim()}
-              className="h-7 px-2 text-xs shrink-0"
+              className="h-8 px-3 sm:h-7 sm:px-2 text-xs shrink-0"
             >
               Add
             </Button>
           </div>
 
           {/* Task List */}
-          <div className="space-y-2 max-h-[280px] sm:max-h-[320px] overflow-y-auto">
+          <div className="space-y-2 sm:max-h-[320px] sm:overflow-y-auto">
             {filteredItems.length > 0 ? (
-              filteredItems.map(item => (
+              filteredItems.map((item, index) => (
                 <TodoItemComponent
                   key={item.id}
                   item={item}
@@ -250,6 +258,16 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
                   onDueDateChange={(dueDate) => updateTodoItem(todoList.id, item.id, { dueDate })}
                   draggable
                   isDragging={draggingId === item.id}
+                  onMoveUp={
+                    itemFilter === "all" && index > 0
+                      ? () => handleMove(item.id, -1)
+                      : undefined
+                  }
+                  onMoveDown={
+                    itemFilter === "all" && index < filteredItems.length - 1
+                      ? () => handleMove(item.id, 1)
+                      : undefined
+                  }
                   onDragStart={(event) => handleDragStart(event, item.id)}
                   onDragOver={(event) => event.preventDefault()}
                   onDrop={(event) => handleDropOnItem(event, item.id)}
