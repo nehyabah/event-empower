@@ -318,6 +318,19 @@ export interface ReviewableVendor {
 }
 
 export const userService = {
+  // ========== ACCOUNT SETTINGS ==========
+
+  /** Seeds the settings page. AuthUser from login never carries the
+   *  notification fields, so the page fetches its own current values
+   *  rather than trusting whatever the session happened to load with. */
+  async getMyAccount(): Promise<import("@/context/AuthContext").AuthUser> {
+    const response = await apiClient.get<import("@/context/AuthContext").AuthUser>('/users/me');
+    if (response.error || !response.data) {
+      throw new Error(response.error || 'Failed to load account');
+    }
+    return response.data;
+  },
+
   // ========== USER EVENT ==========
 
   async getUserEvent(): Promise<UserEvent | null> {
