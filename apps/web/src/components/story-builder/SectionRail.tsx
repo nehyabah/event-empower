@@ -50,7 +50,7 @@ const SectionRail = ({
         return (
           <div
             key={id}
-            className={`flex items-start gap-2 p-3 transition-colors ${
+            className={`flex items-start gap-2 p-2.5 sm:p-3 transition-colors ${
               active ? "bg-primary/5" : "hover:bg-muted/50"
             } ${isHidden ? "opacity-55" : ""}`}
           >

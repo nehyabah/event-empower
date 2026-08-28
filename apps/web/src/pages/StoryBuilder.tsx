@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ExternalLink, AlertCircle, CheckCircle2, Palette } from "lucide-react";
+import { Loader2, ExternalLink, AlertCircle, CheckCircle2, Palette, Eye, EyeOff } from "lucide-react";
 import SectionRail from "@/components/story-builder/SectionRail";
 import SectionEditor from "@/components/story-builder/SectionEditor";
 import SitePreview from "@/components/story-builder/SitePreview";
@@ -31,6 +31,19 @@ const StoryBuilder = () => {
   const [hidden, setHidden] = useState<string[]>([]);
   const [activeId, setActiveId] = useState<SectionId | null>(null);
   const [showAppearance, setShowAppearance] = useState(false);
+  // On a phone the rail, the editor and a 70vh preview stacked vertically
+  // meant endless scrolling to do anything. The preview is opt-in below lg.
+  const [showPreviewMobile, setShowPreviewMobile] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  /** Picking a section on a phone should move you to its form, not leave you
+   *  scrolled halfway up a list of eleven. */
+  const focusEditor = () => {
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
   const [isSavingLayout, setIsSavingLayout] = useState(false);
 
   const load = async () => {
@@ -184,7 +197,12 @@ const StoryBuilder = () => {
                   hidden={hidden}
                   ctx={ctx}
                   activeId={activeId}
-                  onSelect={(id) => { setShowAppearance(false); setActiveId(activeId === id ? null : id); }}
+                  onSelect={(id) => {
+                    setShowAppearance(false);
+                    const next = activeId === id ? null : id;
+                    setActiveId(next);
+                    if (next) focusEditor();
+                  }}
                   onToggleHidden={(id) =>
                     persistLayout(
                       order,
@@ -200,6 +218,7 @@ const StoryBuilder = () => {
                   onClick={() => {
                     setShowAppearance((v) => !v);
                     setActiveId(null);
+                    if (!showAppearance) focusEditor();
                   }}
                 >
                   <Palette className="h-4 w-4 mr-2" />
@@ -207,17 +226,33 @@ const StoryBuilder = () => {
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4" ref={editorRef}>
                 {showAppearance ? (
                   <AppearancePanel bundle={bundle} onSaved={load} />
                 ) : (
                   <SectionEditor sectionId={activeId} bundle={bundle} onSaved={load} />
                 )}
-                <SitePreview
-                  userId={user?.id}
-                  focusSection={activeId}
-                  reloadKey={previewKey}
-                />
+                <div className="lg:hidden">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowPreviewMobile((v) => !v)}
+                  >
+                    {showPreviewMobile ? (
+                      <><EyeOff className="h-4 w-4 mr-2" />Hide preview</>
+                    ) : (
+                      <><Eye className="h-4 w-4 mr-2" />Show preview</>
+                    )}
+                  </Button>
+                </div>
+
+                <div className={showPreviewMobile ? "" : "hidden lg:block"}>
+                  <SitePreview
+                    userId={user?.id}
+                    focusSection={activeId}
+                    reloadKey={previewKey}
+                  />
+                </div>
               </div>
             </div>
           </div>

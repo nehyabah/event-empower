@@ -28,6 +28,15 @@ const SitePreview = ({ userId, focusSection, reloadKey }: SitePreviewProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [nonce, setNonce] = useState(0);
+  const [isNarrow, setIsNarrow] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 1024
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const src = userId ? `/shared-story?id=${encodeURIComponent(userId)}` : null;
 
@@ -118,7 +127,7 @@ const SitePreview = ({ userId, focusSection, reloadKey }: SitePreviewProps) => {
           className={`bg-white transition-all ${
             device === "mobile" ? "w-[390px] border-x" : "w-full"
           }`}
-          style={{ height: "70vh", minHeight: 480 }}
+          style={{ height: isNarrow ? "55vh" : "70vh", minHeight: isNarrow ? 320 : 480 }}
         />
       </div>
     </div>
