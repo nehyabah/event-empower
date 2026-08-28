@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatCurrency } from "@/lib/currency";
 import {
   X,
   ChevronLeft,
@@ -187,57 +188,51 @@ const VendorDetail = ({
               <p className="text-sm text-muted-foreground">{description}</p>
             </div>
 
-            {/* Services */}
+            {/* Packages. The name and what is included lead; the price is a
+                pill rather than the headline, since a package is a thing you
+                are buying and not just a number. */}
             {services.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium mb-3">Packages & Pricing</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <h3 className="text-sm font-medium mb-3">Packages</h3>
+                <div className="space-y-3">
                   {services.map((service, index) => {
                     const hasMin = service.price_min != null;
                     const hasMax = service.price_max != null;
-                    const hasPrice = hasMin || hasMax;
 
-                    const priceDisplay = hasMin && hasMax
-                      ? (
-                        <span>
-                          ₦{service.price_min!.toLocaleString()}
-                          <span className="text-muted-foreground font-normal text-sm"> – ₦{service.price_max!.toLocaleString()}</span>
-                        </span>
-                      )
+                    const priceText = hasMin && hasMax
+                      ? `${formatCurrency(service.price_min)} – ${formatCurrency(service.price_max)}`
                       : hasMin
-                      ? <span>₦{service.price_min!.toLocaleString()}</span>
-                      : hasMax
-                      ? <span>₦{service.price_max!.toLocaleString()}</span>
-                      : null;
-
-                    const priceLabel = hasMin && hasMax
-                      ? "Price range"
-                      : hasMin
-                      ? "Starting from"
-                      : "Up to";
+                        ? `From ${formatCurrency(service.price_min)}`
+                        : hasMax
+                          ? `Up to ${formatCurrency(service.price_max)}`
+                          : "Contact for pricing";
 
                     return (
                       <div
                         key={index}
-                        className="rounded-xl border bg-card p-4 flex flex-col gap-2 hover:shadow-sm transition-shadow"
+                        className="rounded-xl border bg-card p-4 sm:p-5 hover:shadow-sm transition-shadow"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold leading-tight">{service.name}</p>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <h4 className="font-medium leading-snug">{service.name}</h4>
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
+                              hasMin || hasMax
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {priceText}
+                          </span>
                         </div>
 
-                        {hasPrice && (
-                          <div>
-                            <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-0.5">{priceLabel}</p>
-                            <p className="text-lg font-bold text-primary leading-tight">{priceDisplay}</p>
-                          </div>
-                        )}
-
-                        {service.description && (
-                          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{service.description}</p>
-                        )}
-
-                        {!hasPrice && !service.description && (
-                          <p className="text-xs text-muted-foreground italic">Contact for pricing</p>
+                        {service.description ? (
+                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                            {service.description}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground/70 italic">
+                            No details added yet.
+                          </p>
                         )}
                       </div>
                     );
