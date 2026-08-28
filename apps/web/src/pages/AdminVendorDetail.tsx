@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { ReviewField, CompletenessSummary } from "@/components/admin/ReviewField";
 import {
   getAdminVendor,
   verifyAdminVendor,
@@ -172,49 +173,84 @@ const AdminVendorDetail = () => {
 
           {!isLoading && !error && data && !isEditing && (
             <div className="space-y-6">
+              <CompletenessSummary
+                fields={[
+                  { label: "Business name", value: data.profile.business_name, required: true },
+                  { label: "Category", value: data.profile.category, required: true },
+                  { label: "Location", value: data.profile.location, required: true },
+                  { label: "Description", value: data.profile.description, required: true },
+                  { label: "Phone", value: data.profile.phone, required: true },
+                  { label: "Email", value: data.profile.email || data.email, required: true },
+                  { label: "Packages", value: data.services, required: true },
+                  { label: "Photos", value: data.images, required: true },
+                  { label: "Website", value: data.profile.website },
+                  { label: "Cover image", value: data.profile.cover_image_url },
+                ]}
+              />
+
               <div className="grid gap-4 sm:grid-cols-2">
-                <DetailRow label="Business Name" value={data.profile.business_name} />
-                <DetailRow label="Category" value={data.profile.category} />
-                <DetailRow label="Location" value={data.profile.location || "—"} />
-                <DetailRow label="Email" value={data.profile.email || data.email || "—"} />
-                <DetailRow label="Phone" value={data.profile.phone || "—"} />
-                <DetailRow label="Website" value={data.profile.website || "—"} />
-                <DetailRow
-                  label="Status"
-                  value={`${data.profile.is_active ? "Active" : "Inactive"} • ${
-                    data.profile.is_verified ? "Verified" : "Unverified"
-                  } • ${data.profile.is_featured ? "Featured" : "Not Featured"}`}
+                <ReviewField label="Business name" value={data.profile.business_name} required />
+                <ReviewField label="Category" value={data.profile.category} required />
+                <ReviewField label="Location" value={data.profile.location} required />
+                <ReviewField label="Phone" value={data.profile.phone} required />
+                <ReviewField label="Email" value={data.profile.email || data.email} required />
+                <ReviewField
+                  label="Website"
+                  value={data.profile.website}
+                  href={data.profile.website || undefined}
                 />
-                <DetailRow label="Rating" value={`${data.profile.rating} (${data.profile.review_count} reviews)`} />
-                <DetailRow
+                <ReviewField
+                  label="Packages"
+                  value={data.services.length ? `${data.services.length} listed` : null}
+                  required
+                />
+                <ReviewField
+                  label="Photos"
+                  value={data.images.length ? `${data.images.length} uploaded` : null}
+                  required
+                />
+                <ReviewField
+                  label="Status"
+                  value={`${data.profile.is_active ? "Active" : "Inactive"} \u00b7 ${
+                    data.profile.is_verified ? "Verified" : "Unverified"
+                  } \u00b7 ${data.profile.is_featured ? "Featured" : "Not featured"}`}
+                />
+                <ReviewField
+                  label="Rating"
+                  value={`${data.profile.rating} (${data.profile.review_count} reviews)`}
+                />
+                <ReviewField
                   label="Signed up"
                   value={
                     data.createdAt
                       ? new Date(data.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })
-                      : "—"
+                      : null
                   }
                 />
-                <DetailRow
+                <ReviewField
                   label="Submitted for review"
                   value={
                     data.onboardingSubmittedAt
                       ? new Date(data.onboardingSubmittedAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })
-                      : "Not yet"
+                      : null
                   }
                 />
-                <DetailRow label="Account type" value={data.authProvider === "google" ? "Google sign-in" : "Email + password"} />
+                <ReviewField
+                  label="Account type"
+                  value={data.authProvider === "google" ? "Google sign-in" : "Email + password"}
+                />
               </div>
 
-              {data.profile.description && (
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Description
-                  </span>
-                  <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
-                    {data.profile.description}
-                  </p>
-                </div>
-              )}
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Description <span className="ml-1 text-slate-400 normal-case font-normal">(required)</span>
+                </span>
+                {data.profile.description ? (
+                  <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{data.profile.description}</p>
+                ) : (
+                  <p className="mt-1 text-sm italic text-amber-700">Not provided</p>
+                )}
+              </div>
 
               {data.services.length > 0 && (
                 <div>

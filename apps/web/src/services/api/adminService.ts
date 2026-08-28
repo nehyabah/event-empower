@@ -32,6 +32,8 @@ export interface AdminUserListResponse {
 export interface AdminUserDetail extends AdminUserSummary {
   updatedAt: string;
   adminNotes: string | null;
+  /** Returned by the API all along; the type simply never declared it. */
+  approvalStatus: "pending" | "approved" | "rejected" | null;
 }
 
 export interface AdminVendorSummary {
