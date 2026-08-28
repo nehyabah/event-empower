@@ -301,6 +301,22 @@ const VendorHomepage = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              <Card className="flex flex-col justify-center">
+                <CardContent className="p-5">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Messages</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Chat with a couple and their planner about a wedding you're
+                    booked on.
+                  </p>
+                  <Button size="sm" variant="outline" className="mt-3 w-full" asChild>
+                    <Link to="/vendor-messages">
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Open messages
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
