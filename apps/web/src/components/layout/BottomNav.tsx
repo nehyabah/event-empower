@@ -91,6 +91,11 @@ const ACCOUNT_LINK: Record<string, { to: string; label: string }> = {
 
 const BottomNav = () => {
   const { isAuthenticated, user, logout } = useAuth();
+
+  // The site builder previews the real page in an iframe. The app's own
+  // navigation drawing over that preview makes it look like the published
+  // site has edit controls on it, which it does not.
+  const inPreviewFrame = typeof window !== "undefined" && window.self !== window.top;
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [accountOpen, setAccountOpen] = useState(false);
@@ -103,11 +108,11 @@ const BottomNav = () => {
   // usually a submit button. A class on <body> lets one CSS rule reserve the
   // space, rather than every page remembering to add padding.
   useEffect(() => {
-    document.body.classList.toggle("has-bottom-nav", visible);
+    document.body.classList.toggle("has-bottom-nav", visible && !inPreviewFrame);
     return () => document.body.classList.remove("has-bottom-nav");
-  }, [visible]);
+  }, [visible, inPreviewFrame]);
 
-  if (!visible || !items) return null;
+  if (!visible || !items || inPreviewFrame) return null;
 
   return (
     <nav

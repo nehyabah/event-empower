@@ -9,6 +9,7 @@ import { Loader2, MousePointerClick, Info } from "lucide-react";
 import { storyService, StoryBundle, UpdateStoryInput } from "@/services/api/storyService";
 import { SECTION_BY_ID, SectionId } from "@/lib/storySections";
 import ListSectionEditor, { ListSectionSpec } from "./ListSectionEditor";
+import ImageField from "./ImageField";
 
 /**
  * The form for whichever section is selected.
@@ -43,7 +44,7 @@ const FIELDS: Partial<
 > = {
   hero: [
     { key: "title", label: "Headline", placeholder: "Ada & Obi" },
-    { key: "banner_image_url", label: "Banner image URL", placeholder: "https://…", help: "The large photo behind your names." },
+    { key: "banner_image_url", label: "Banner photo", type: "image", help: "The large photo behind your names." },
     { key: "hashtag", label: "Hashtag", placeholder: "#AdaWedsObi" },
   ],
   quote: [
@@ -58,10 +59,10 @@ const FIELDS: Partial<
   couple: [
     { key: "bride_name", label: "Bride's name", placeholder: "Ada" },
     { key: "bride_bio", label: "About her", multiline: true },
-    { key: "bride_image_url", label: "Her photo URL", placeholder: "https://…" },
+    { key: "bride_image_url", label: "Her photo", type: "image" },
     { key: "groom_name", label: "Groom's name", placeholder: "Obi" },
     { key: "groom_bio", label: "About him", multiline: true },
-    { key: "groom_image_url", label: "His photo URL", placeholder: "https://…" },
+    { key: "groom_image_url", label: "His photo", type: "image" },
   ],
   details: [
     { key: "wedding_date", label: "Wedding date", type: "date" },
@@ -260,13 +261,48 @@ const SectionEditor = ({ sectionId, bundle, onSaved }: SectionEditorProps) => {
 
       <CardContent className="space-y-4">
         {def.id === "wishes" && (
-          <div className="flex items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2.5">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Guests write these themselves — there is nothing to fill in. Hide the
-              section if you would rather not collect them.
-            </p>
-          </div>
+          <>
+            <div className="flex items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2.5">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Guests write these themselves. Hide the section if you would rather
+                not collect them.
+              </p>
+            </div>
+
+            {/* Previously there was nowhere in the app to actually read these -
+                a couple had to open their own public site to see what guests
+                had written. */}
+            {(bundle?.comments.length ?? 0) === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No wishes yet. They appear here as guests leave them.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {bundle!.comments.length}{" "}
+                  {bundle!.comments.length === 1 ? "wish" : "wishes"}
+                </p>
+                <div className="divide-y rounded-lg border max-h-80 overflow-y-auto">
+                  {bundle!.comments.map((c) => (
+                    <div key={c.id} className="p-3">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className="text-sm font-medium truncate">{c.name}</p>
+                        <span className="text-[11px] text-muted-foreground shrink-0">
+                          {new Date(c.created_at).toLocaleDateString("en-NG", {
+                            day: "numeric", month: "short", year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap break-words">
+                        {c.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {spec && (
@@ -285,7 +321,15 @@ const SectionEditor = ({ sectionId, bundle, onSaved }: SectionEditorProps) => {
             {fields.map((f) => (
               <div key={f.key as string} className="space-y-2">
                 <Label htmlFor={`f-${f.key as string}`}>{f.label}</Label>
-                {f.multiline ? (
+                {f.type === "image" ? (
+                  <ImageField
+                    value={draft[f.key as string] ?? ""}
+                    label={f.label}
+                    onChange={(url) =>
+                      setDraft((d) => ({ ...d, [f.key as string]: url }))
+                    }
+                  />
+                ) : f.multiline ? (
                   <Textarea
                     id={`f-${f.key as string}`}
                     rows={4}
