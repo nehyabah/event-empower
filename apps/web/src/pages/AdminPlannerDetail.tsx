@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle, XCircle, Instagram, ExternalLink, Loader2 } from "lucide-react";
 import { getAdminPlanner, approveAdminUser, rejectAdminUser } from "@/services/api/adminService";
+import { ReviewField, CompletenessSummary } from "@/components/admin/ReviewField";
 
 /**
  * Full review page for a planner applicant.
@@ -107,40 +108,86 @@ const AdminPlannerDetail = () => {
                 </p>
               )}
 
+              <CompletenessSummary
+                fields={[
+                  { label: "Name", value: data.user.name, required: true },
+                  { label: "Email", value: data.user.email, required: true },
+                  { label: "Phone", value: data.profile?.phone || data.user.phone, required: true },
+                  { label: "Location", value: data.profile?.location || data.user.city, required: true },
+                  { label: "Bio", value: data.profile?.bio, required: true },
+                  { label: "Tagline", value: data.profile?.tagline },
+                  { label: "Years of experience", value: data.profile?.years_of_experience },
+                  { label: "Specializations", value: data.profile?.specializations },
+                  { label: "Website", value: data.profile?.website },
+                  { label: "Instagram", value: data.profile?.instagram || data.user.instagram_handle },
+                  { label: "Profile photo", value: data.profile?.profile_image_url },
+                ]}
+              />
+
               <div className="grid gap-4 sm:grid-cols-2">
-                <DetailRow label="Name" value={data.user.name || "—"} />
-                <DetailRow label="Email" value={data.user.email || "—"} />
-                <DetailRow label="Phone" value={data.profile?.phone || data.user.phone || "—"} />
-                <DetailRow label="Location" value={data.profile?.location || data.user.city || "—"} />
-                <DetailRow label="Tagline" value={data.profile?.tagline || "—"} />
-                <DetailRow
-                  label="Experience"
+                <ReviewField label="Name" value={data.user.name} required />
+                <ReviewField label="Email" value={data.user.email} required />
+                <ReviewField label="Phone" value={data.profile?.phone || data.user.phone} required />
+                <ReviewField
+                  label="Location"
+                  value={data.profile?.location || data.user.city}
+                  required
+                />
+                <ReviewField label="Tagline" value={data.profile?.tagline} />
+                <ReviewField
+                  label="Years of experience"
                   value={
                     data.profile?.years_of_experience != null
                       ? `${data.profile.years_of_experience} years`
-                      : "—"
+                      : null
                   }
                 />
-                <DetailRow
+                <ReviewField
+                  label="Website"
+                  value={data.profile?.website}
+                  href={data.profile?.website || undefined}
+                />
+                <ReviewField
+                  label="Instagram"
+                  value={data.profile?.instagram || data.user.instagram_handle}
+                  href={
+                    data.profile?.instagram || data.user.instagram_handle
+                      ? igUrl(data.profile?.instagram || data.user.instagram_handle || "")
+                      : undefined
+                  }
+                />
+                <ReviewField label="WhatsApp" value={data.user.whatsapp_phone} />
+                <ReviewField
                   label="Signed up"
                   value={new Date(data.user.created_at).toLocaleDateString("en-NG", {
                     day: "numeric", month: "short", year: "numeric",
                   })}
                 />
-                <DetailRow
+                <ReviewField
                   label="Submitted for review"
                   value={
                     data.user.onboarding_submitted_at
                       ? new Date(data.user.onboarding_submitted_at).toLocaleDateString("en-NG", {
                           day: "numeric", month: "short", year: "numeric",
                         })
-                      : "Not yet"
+                      : null
                   }
                 />
-                <DetailRow
+                <ReviewField
                   label="Account type"
                   value={data.user.auth_provider === "google" ? "Google sign-in" : "Email + password"}
                 />
+              </div>
+
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Bio <span className="ml-1 text-slate-400 normal-case font-normal">(required)</span>
+                </span>
+                {data.profile?.bio ? (
+                  <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{data.profile.bio}</p>
+                ) : (
+                  <p className="mt-1 text-sm italic text-amber-700">Not provided</p>
+                )}
               </div>
 
               {data.profile?.specializations && data.profile.specializations.length > 0 && (

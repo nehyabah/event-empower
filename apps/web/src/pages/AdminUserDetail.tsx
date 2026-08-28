@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   activateAdminUser,
+  approveAdminUser,
+  rejectAdminUser,
   getAdminUser,
   softDeleteAdminUser,
   suspendAdminUser,
@@ -160,6 +162,59 @@ const AdminUserDetail = () => {
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
           {actionError}
         </p>
+      )}
+
+      {data?.approvalStatus === "pending" && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardHeader>
+            <CardTitle className="text-lg">Awaiting approval</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This account has not been reviewed yet.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={actionLoading}
+                onClick={async () => {
+                  if (!id) return;
+                  setActionLoading(true);
+                  try {
+                    await approveAdminUser(id);
+                    await refetch();
+                  } catch (err) {
+                    setActionError(err instanceof Error ? err.message : "Failed to approve");
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+              >
+                Approve
+              </Button>
+              <Button
+                variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50"
+                disabled={actionLoading}
+                onClick={async () => {
+                  if (!id) return;
+                  const reason = window.prompt("Reason for rejection (emailed to them):") ?? "";
+                  setActionLoading(true);
+                  try {
+                    await rejectAdminUser(id, reason);
+                    await refetch();
+                  } catch (err) {
+                    setActionError(err instanceof Error ? err.message : "Failed to reject");
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+              >
+                Reject
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Card>
