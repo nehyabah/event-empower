@@ -443,7 +443,7 @@ const VendorsPage = () => {
         vendorName={selectedVendor?.name ?? "Vendor"}
       />
 
-      <Footer />
+      {!user && <Footer />}
     </div>
   );
 };

@@ -3,7 +3,6 @@ import { VENDOR_CATEGORIES, NIGERIAN_STATES } from "@/lib/vendorTaxonomy";
 import OnboardingBanner from "@/components/auth/OnboardingBanner";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -795,7 +794,6 @@ const VendorProfile = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

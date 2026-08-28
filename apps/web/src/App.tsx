@@ -148,7 +148,11 @@ const AppRoutes = () => {
       <Route path="/shared-story" element={<SharedStoryPage />} />
       <Route path="/s/:slug" element={<SharedStoryPage />} />
       <Route path="/vendors" element={<Vendors />} />
-      <Route path="/vendor-profile" element={<VendorProfile />} />
+      <Route path="/vendor-profile" element={
+        <RequireAuth allowedTypes={["vendor"]}>
+          <VendorProfile />
+        </RequireAuth>
+      } />
       <Route path="/contact" element={<Contact />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
