@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useScrollScene } from "@/hooks/useScrollScene";
 import { useSearchParams, useParams, Link } from "react-router-dom";
 import {
   Heart,
@@ -74,6 +75,30 @@ function HeroCountdown({ date, styles: s }: { date: Date | undefined; styles: Th
     </div>
   );
 }
+
+/** One scroll-driven section. Its own scene, so progress is measured against
+ *  this section rather than the page. */
+const SceneSection = ({
+  sectionId,
+  revealClass,
+  children,
+}: {
+  sectionId: string;
+  revealClass: string;
+  children: React.ReactNode;
+}) => {
+  const ref = useScrollScene<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      id={`section-${sectionId}`}
+      data-section={sectionId}
+      className="scene"
+    >
+      <div className={`scene-settle ${revealClass ? "" : ""}`}>{children}</div>
+    </div>
+  );
+};
 
 const SharedStoryPage = () => {
   const [searchParams] = useSearchParams();
@@ -264,6 +289,7 @@ const SharedStoryPage = () => {
     : coupleStory.weddingDate;
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
+  const heroSceneRef = useScrollScene<HTMLElement>();
 
   useScrollReveal([visibleSections.join(","), isLoading]);
   const storyUserId = coupleStory.userId || coupleId;
@@ -274,15 +300,9 @@ const SharedStoryPage = () => {
    * motion is part of how it reads rather than a global default.
    */
   const renderSection = (sectionId: string) => (
-    <div
-      key={sectionId}
-      id={`section-${sectionId}`}
-      data-section={sectionId}
-      data-reveal
-      className={s.reveal}
-    >
+    <SceneSection key={sectionId} sectionId={sectionId} revealClass={s.reveal}>
       {renderSectionBody(sectionId)}
-    </div>
+    </SceneSection>
   );
 
   const renderSectionBody = (sectionId: string) => {
@@ -553,16 +573,26 @@ const SharedStoryPage = () => {
 
       {/* Hero */}
       {visibleSections.includes("hero") && (
-        <section id="section-hero" data-section="hero" className="relative h-[100dvh] w-full overflow-hidden flex flex-col justify-center" ref={heroRef}>
+        /* Pinned scene: the hero holds the viewport while the reader scrolls
+           through it, the photograph drifting behind the text as the text
+           lifts away. Two viewport-heights tall so there is something to
+           scroll through before it releases. */
+        <section
+          id="section-hero"
+          data-section="hero"
+          ref={heroSceneRef}
+          className="scene scene-pin"
+        >
+          <div className="scene-stage w-full flex flex-col justify-center" ref={heroRef}>
           <div className="absolute inset-0 z-0">
-            <div className={`absolute inset-0 ${s.heroOverlay} z-10 transition-colors duration-700`} />
+            <div className={`absolute inset-0 ${s.heroOverlay} z-10`} />
             <img
-            src={coupleStory.bannerImage}
-            alt="Couple"
-            className={`w-full h-full object-cover ${s.heroMotion} ${isLoading ? "blur-sm" : ""}`}
-          />
+              src={coupleStory.bannerImage}
+              alt="Couple"
+              className={`w-full h-full object-cover scene-parallax ${isLoading ? "blur-sm" : ""}`}
+            />
           </div>
-          <div className={`relative z-20 container px-4 flex flex-col animate-fade-in-up transition-all duration-700 ${s.heroLayout}`}>
+          <div className={`relative z-20 container px-4 flex flex-col scene-recede ${s.heroLayout}`}>
             <h1 className={`${s.heroTitle} transition-all duration-500`}>{coupleStory.title}</h1>
             <div className={`${s.heroDateVenueLayout}`}>
               <span className={s.heroDateVenue}>{formattedDate}</span>
@@ -577,9 +607,15 @@ const SharedStoryPage = () => {
             </div>
             <HeroCountdown date={!Number.isNaN(weddingDateObj.getTime()) ? weddingDateObj : undefined} styles={s} />
           </div>
-          <button onClick={scrollToContent} className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 text-white/50 hover:text-white transition-colors animate-bounce cursor-pointer">
+          <button
+            onClick={scrollToContent}
+            /* Fades out as the hero is scrolled through — it has done its job
+               by then and would otherwise sit over the next section. */
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 text-white/50 hover:text-white transition-colors animate-bounce cursor-pointer scene-recede"
+          >
             <ArrowDown className="w-6 h-6" />
           </button>
+          </div>
         </section>
       )}
 

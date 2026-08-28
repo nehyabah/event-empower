@@ -107,6 +107,70 @@
     }
   }
 
+  /* ── Scroll-driven scenes ──────────────────────────────────────────────
+     Sections previously just stacked and faded in. These are driven by how
+     far the reader has scrolled through them (--p, set by useScrollScene),
+     so the page responds continuously rather than firing once on entry.
+     Every rule degrades to a resting state when --p is absent. */
+
+  .scene {
+    --p: 0;
+    --p-signed: -1;
+  }
+
+  /* The hero holds the viewport while its content is scrolled through, then
+     releases. This is the single biggest reason a page reads as authored
+     rather than as a column of blocks. */
+  .scene-pin {
+    position: relative;
+    height: 200vh;
+  }
+  .scene-pin > .scene-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Background drifts slower than the page — depth without a library. */
+  .scene-parallax {
+    transform: translate3d(0, calc(var(--p) * 14vh - 7vh), 0) scale(1.18);
+    will-change: transform;
+  }
+
+  /* Foreground lifts away and dims as the reader scrolls past it. */
+  .scene-recede {
+    opacity: calc(1 - max(0, var(--p) - 0.55) * 2.6);
+    transform: translate3d(0, calc(max(0, var(--p) - 0.35) * -24vh), 0)
+               scale(calc(1 - max(0, var(--p) - 0.35) * 0.12));
+    will-change: transform, opacity;
+  }
+
+  /* Image grows very slightly as it crosses the viewport. */
+  .scene-zoom {
+    transform: scale(calc(1 + var(--p) * 0.12));
+    will-change: transform;
+  }
+
+  /* Content settles into place as it enters, rather than popping. */
+  .scene-settle {
+    opacity: clamp(0, calc(var(--p) * 2.4 - 0.3), 1);
+    transform: translate3d(0, calc((1 - clamp(0, var(--p) * 2, 1)) * 6vh), 0);
+    will-change: transform, opacity;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scene-pin { height: auto; }
+    .scene-pin > .scene-stage { position: relative; height: 100vh; }
+    .scene-parallax,
+    .scene-recede,
+    .scene-zoom,
+    .scene-settle {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
   /* Scroll reveal. Elements marked data-reveal are held hidden until they
      enter the viewport, then run whichever animation their theme supplies.
      The hidden state is scoped to when JS is driving it, so a failure to
