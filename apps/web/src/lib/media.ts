@@ -11,7 +11,7 @@
  * returned untouched.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { API_URL } from "@/lib/apiUrl";
 
 /** Origin of the API, derived from VITE_API_URL (which includes the /api path). */
 const apiOrigin = (): string => {

@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { API_URL } from "@/lib/apiUrl";
 
 export type VisionBoardItemType = 'note' | 'image' | 'concept';
 export type VisionBoardColor = 'cream' | 'blush' | 'sage' | 'lavender' | 'gold' | 'sky' | 'charcoal';
@@ -70,7 +71,6 @@ export const visionBoardService = {
   },
 
   async uploadImage(file: File): Promise<string> {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     const token = apiClient.getAccessToken();
     const form = new FormData();
     form.append('file', file);

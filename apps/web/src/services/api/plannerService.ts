@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { API_URL } from "@/lib/apiUrl";
 
 // ========== TYPES ==========
 
@@ -599,7 +599,6 @@ export const plannerService = {
 
   /** Upload an image onto a client's mood board and return its stored URL. */
   async uploadClientVisionBoardImage(clientId: string, file: File): Promise<string> {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     const token = apiClient.getAccessToken();
     const form = new FormData();
     form.append('file', file);

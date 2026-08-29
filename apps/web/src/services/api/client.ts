@@ -1,9 +1,4 @@
-// Single-domain deploy: the API is served from /api on this same origin, so the
-// production default needs no build-time variable (and no rebuild if the domain
-// changes). Dev still points at the separate backend on :3001.
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
+import { API_URL } from "@/lib/apiUrl";
 
 interface ApiResponse<T> {
   data?: T;
