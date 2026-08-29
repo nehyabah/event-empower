@@ -111,6 +111,12 @@ const MovableCardElement = ({
     onChange(id, clampElement({ x: layout.x + delta[0], y: layout.y + delta[1], scale: layout.scale }));
   };
 
+  // A caller that positions this itself — the floral layer passes
+  // "absolute inset-0" — must not be overridden. Tailwind emits .relative
+  // after .absolute, so hardcoding relative wins on specificity order and
+  // silently collapses that layer, which is how the flowers went missing.
+  const alreadyPositioned = /\b(absolute|fixed|sticky|relative)\b/.test(className);
+
   const interactive = editable
     ? `${dragging ? "cursor-grabbing" : "cursor-grab"} rounded transition-shadow ${
         selected ? "ring-1 ring-current/40 ring-offset-1" : "hover:ring-1 hover:ring-current/20"
@@ -119,7 +125,7 @@ const MovableCardElement = ({
 
   return (
     <div
-      className={`relative ${className} ${interactive}`}
+      className={`${alreadyPositioned ? "" : "relative"} ${className} ${interactive}`}
       style={{
         transform: `translate(${layout.x}%, ${layout.y}%) scale(${layout.scale})`,
         // Follows the pointer exactly while dragging; eases when nudged from
