@@ -68,7 +68,11 @@ app.use(helmet({
       mediaSrc: ["'self'", 'data:', 'blob:', ...uniqueStorageOrigins],
       connectSrc: ["'self'", 'https://accounts.google.com'],
       objectSrc: ["'none'"],
-      frameAncestors: ["'none'"],
+      // 'self' rather than 'none': the site builder previews the real
+      // wedding site in a same-origin iframe, and 'none' blocks that too —
+      // the preview showed "refused to connect". External sites still cannot
+      // embed the app, so the clickjacking protection is unchanged.
+      frameAncestors: ["'self'"],
     },
   },
   // helmet defaults to same-origin, which severs window.opener between this
