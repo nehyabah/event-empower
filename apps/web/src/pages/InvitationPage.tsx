@@ -45,6 +45,18 @@ const InvitationPage = () => {
   const textAlign: CardAlign =
     alignParam === "left" || alignParam === "right" ? alignParam : "center";
 
+  // Where the couple moved the wording. Absent params mean the default
+  // layout, so an older link still renders exactly as it used to.
+  const num = (key: string, fallback: number) => {
+    const v = Number(searchParams.get(key));
+    return Number.isFinite(v) && searchParams.get(key) !== null ? v : fallback;
+  };
+  const cardLayout = {
+    offsetX: num("x", 0),
+    offsetY: num("y", 0),
+    scale: num("s", 1),
+  };
+
   // Fetch event details from backend if we have an RSVP code
   useEffect(() => {
     if (!rsvpCode) {
@@ -166,7 +178,7 @@ const InvitationPage = () => {
           names={{ partner1: partner1Name, partner2: partner2Name }}
           date={formattedDate}
           venue={venue}
-          design={{ align: textAlign }}
+          design={{ align: textAlign, ...cardLayout }}
           isEditable={false}
           isFlipped={isFlipped}
           onFlip={() => setIsFlipped(!isFlipped)}

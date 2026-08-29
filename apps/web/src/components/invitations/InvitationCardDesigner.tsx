@@ -6,6 +6,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import SaveTheDateCard, {
   CardAlign,
   saveTheDateTemplates,
@@ -35,8 +36,21 @@ export const InvitationCardDesigner = () => {
     () => localStorage.getItem("weddingDate"),
   );
   const [selectedTemplate, setSelectedTemplate] = useState(
-    () => localStorage.getItem("saveTheDateTemplate") || "dusty-blue-romance",
+    () => localStorage.getItem("saveTheDateTemplate") || "plain-ivory",
   );
+  // Where the couple has moved the wording, and how big it is.
+  const [layout, setLayout] = useState<{ offsetX: number; offsetY: number; scale: number }>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("saveTheDateLayout") || "null");
+      if (saved && typeof saved === "object") {
+        return { offsetX: saved.offsetX ?? 0, offsetY: saved.offsetY ?? 0, scale: saved.scale ?? 1 };
+      }
+    } catch {
+      // Corrupt or unavailable storage; the default layout is fine.
+    }
+    return { offsetX: 0, offsetY: 0, scale: 1 };
+  });
+
   const [textAlign, setTextAlign] = useState<CardAlign>(() => {
     const saved = localStorage.getItem("saveTheDateAlign");
     return saved === "left" || saved === "right" ? saved : "center";
@@ -91,6 +105,14 @@ export const InvitationCardDesigner = () => {
     localStorage.setItem("saveTheDateAlign", a);
   };
 
+  const updateLayout = (next: Partial<{ offsetX: number; offsetY: number; scale: number }>) => {
+    setLayout((prev) => {
+      const merged = { ...prev, ...next };
+      localStorage.setItem("saveTheDateLayout", JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   const formattedWeddingDate =
     formatDateOnly(weddingDate, { month: "long", day: "numeric", year: "numeric" }) ?? "Date TBD";
 
@@ -138,7 +160,8 @@ export const InvitationCardDesigner = () => {
                       names={{ partner1: partner1Name, partner2: partner2Name }}
                       date={formattedWeddingDate}
                       venue={venue}
-                      design={{ align: textAlign }}
+                      design={{ align: textAlign, ...layout }}
+                      onDesignChange={(d) => updateLayout(d)}
                       isEditable={true}
                       isFlipped={showRsvpBack}
                       onFlip={() => setShowRsvpBack(!showRsvpBack)}
@@ -188,6 +211,30 @@ export const InvitationCardDesigner = () => {
                       ))}
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-muted-foreground">Text size</Label>
+                      <button
+                        type="button"
+                        onClick={() => updateLayout({ offsetX: 0, offsetY: 0, scale: 1 })}
+                        className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                      >
+                        Reset position
+                      </button>
+                    </div>
+                    <Slider
+                      value={[layout.scale]}
+                      min={0.7}
+                      max={1.3}
+                      step={0.02}
+                      onValueChange={([v]) => updateLayout({ scale: v })}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Drag the wording on the card to move it clear of the flowers.
+                      Easier on a laptop, where there is room to work.
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">Text Alignment</Label>
                     <div className="flex gap-1.5">
@@ -267,6 +314,29 @@ export const InvitationCardDesigner = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium text-muted-foreground">Text size</Label>
+                    <button
+                      type="button"
+                      onClick={() => updateLayout({ offsetX: 0, offsetY: 0, scale: 1 })}
+                      className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                      Reset position
+                    </button>
+                  </div>
+                  <Slider
+                    value={[layout.scale]}
+                    min={0.7}
+                    max={1.3}
+                    step={0.02}
+                    onValueChange={([v]) => updateLayout({ scale: v })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Drag the wording on the card to move it clear of the flowers.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-xs font-medium text-muted-foreground">Text Alignment</Label>
                   <div className="flex gap-1.5">
                     {alignOptions.map(({ value, icon: Icon }) => (
@@ -303,7 +373,8 @@ export const InvitationCardDesigner = () => {
                   names={{ partner1: partner1Name, partner2: partner2Name }}
                   date={formattedWeddingDate}
                   venue={venue}
-                  design={{ align: textAlign }}
+                  design={{ align: textAlign, ...layout }}
+                      onDesignChange={(d) => updateLayout(d)}
                   isEditable={true}
                   isFlipped={showRsvpBack}
                   onFlip={() => setShowRsvpBack(!showRsvpBack)}

@@ -17,20 +17,39 @@
 
 const TEMPLATE_KEY = "saveTheDateTemplate";
 const ALIGN_KEY = "saveTheDateAlign";
+const LAYOUT_KEY = "saveTheDateLayout";
 
 export const buildInvitationLink = (rsvpCode: string | null | undefined): string | null => {
   if (!rsvpCode) return null;
 
-  let template = "dusty-blue-romance";
+  // Was "dusty-blue-romance", which no longer exists — a link built before
+  // the couple picked anything would have named a deleted template.
+  let template = "plain-ivory";
   let align = "center";
+  let layout = { offsetX: 0, offsetY: 0, scale: 1 };
   try {
     template = localStorage.getItem(TEMPLATE_KEY) || template;
     align = localStorage.getItem(ALIGN_KEY) || align;
+    const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "null");
+    if (saved && typeof saved === "object") {
+      layout = {
+        offsetX: Number(saved.offsetX) || 0,
+        offsetY: Number(saved.offsetY) || 0,
+        scale: Number(saved.scale) || 1,
+      };
+    }
   } catch {
     // Private browsing can throw on access; the defaults are fine.
   }
 
-  return `${window.location.origin}/invitation/${rsvpCode}?t=${template}&a=${align}`;
+  const params = new URLSearchParams({ t: template, a: align });
+  // Only sent when moved from the default, so an untouched card keeps a
+  // short, readable link.
+  if (layout.offsetX) params.set("x", layout.offsetX.toFixed(1));
+  if (layout.offsetY) params.set("y", layout.offsetY.toFixed(1));
+  if (layout.scale !== 1) params.set("s", layout.scale.toFixed(2));
+
+  return `${window.location.origin}/invitation/${rsvpCode}?${params.toString()}`;
 };
 
 export default buildInvitationLink;

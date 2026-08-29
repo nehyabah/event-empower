@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -79,7 +79,27 @@ export type CardAlign = "left" | "center" | "right";
 
 export interface CardDesign {
   align?: CardAlign;
+  /**
+   * Where the text sits, as a percentage of the card. Templates put the
+   * wording dead centre, which on a heavily decorated card can land it on
+   * top of the florals — this lets a couple move it into the clear space
+   * the artwork leaves.
+   */
+  offsetX?: number;
+  offsetY?: number;
+  /** Text size relative to the template's own, 0.7–1.3. */
+  scale?: number;
 }
+
+/** Clamped so text can be nudged clear of the art without leaving the card. */
+export const OFFSET_LIMIT = 22;
+export const SCALE_RANGE = { min: 0.7, max: 1.3 } as const;
+
+export const clampDesign = (d: CardDesign): Required<Omit<CardDesign, "align">> => ({
+  offsetX: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, d.offsetX ?? 0)),
+  offsetY: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, d.offsetY ?? 0)),
+  scale: Math.max(SCALE_RANGE.min, Math.min(SCALE_RANGE.max, d.scale ?? 1)),
+});
 
 export interface CardTemplate {
   id: string;
@@ -628,6 +648,8 @@ interface SaveTheDateCardProps {
   venue: string;
   design?: CardDesign;
   isEditable?: boolean;
+  /** Fired while the text block is dragged, so the parent can persist it. */
+  onDesignChange?: (next: { offsetX: number; offsetY: number }) => void;
   isFlipped?: boolean;
   onFlip?: () => void;
   rsvpCode?: string;
@@ -635,7 +657,7 @@ interface SaveTheDateCardProps {
 }
 
 const SaveTheDateCard = ({
-  templateId, names, date, venue, design,
+  templateId, names, date, venue, design, isEditable, onDesignChange,
   isFlipped: controlledIsFlipped, onFlip, rsvpCode, storySlug,
 }: SaveTheDateCardProps) => {
   const navigate = useNavigate();
@@ -660,6 +682,49 @@ const SaveTheDateCard = ({
   const isFlipped = controlledIsFlipped !== undefined ? controlledIsFlipped : internalIsFlipped;
   const baseRotation = isFlipped ? 180 : 0;
   const align: CardAlign = design?.align || "center";
+  const layout = clampDesign(design || {});
+
+  // Moving the text is separate from the card's own drag-to-flip, so a nudge
+  // of the wording must never be read as a flip gesture.
+  const [movingText, setMovingText] = useState(false);
+  const textDragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+
+  const beginTextDrag = (clientX: number, clientY: number) => {
+    if (!isEditable || !onDesignChange) return;
+    textDragStart.current = { x: clientX, y: clientY, ox: layout.offsetX, oy: layout.offsetY };
+    setMovingText(true);
+  };
+
+  const moveText = useCallback((clientX: number, clientY: number) => {
+    const start = textDragStart.current;
+    const box = cardRef.current;
+    if (!start || !box || !onDesignChange) return;
+    // Percentages, so the position survives the card being rendered at a
+    // different size on a phone, in the preview, or on a guest's screen.
+    const dx = ((clientX - start.x) / box.offsetWidth) * 100;
+    const dy = ((clientY - start.y) / box.offsetHeight) * 100;
+    onDesignChange({
+      offsetX: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, start.ox + dx)),
+      offsetY: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, start.oy + dy)),
+    });
+  }, [onDesignChange]);
+
+  const endTextDrag = useCallback(() => {
+    textDragStart.current = null;
+    setMovingText(false);
+  }, []);
+
+  useEffect(() => {
+    if (!movingText) return;
+    const onMove = (e: MouseEvent) => moveText(e.clientX, e.clientY);
+    const onUp = () => endTextDrag();
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+  }, [movingText, moveText, endTextDrag]);
 
   const handleFlip = useCallback(() => {
     if (onFlip) onFlip(); else setInternalIsFlipped(f => !f);
@@ -858,8 +923,38 @@ const SaveTheDateCard = ({
 
           {/* Text — generous whitespace */}
           <div
-            className={`relative z-20 flex flex-col justify-center h-full px-8 sm:px-10 ${alignClasses}`}
-            style={template.textStyle}
+            className={`relative z-20 flex flex-col justify-center h-full px-8 sm:px-10 ${alignClasses} ${
+              isEditable && onDesignChange
+                ? `${movingText ? "cursor-grabbing" : "cursor-grab"} rounded-lg outline-dashed outline-1 outline-transparent hover:outline-current/25`
+                : ""
+            }`}
+            style={{
+              ...template.textStyle,
+              transform: `translate(${layout.offsetX}%, ${layout.offsetY}%) scale(${layout.scale})`,
+              // Snaps to the pointer while dragging; eases when set from the
+              // controls, so nudging with a slider does not feel laggy.
+              transition: movingText ? "none" : "transform 200ms ease-out",
+            }}
+            onMouseDown={(e) => {
+              if (!isEditable || !onDesignChange) return;
+              if (isInteractive(e.target)) return;
+              // Without this the card reads the same gesture as drag-to-flip.
+              e.stopPropagation();
+              e.preventDefault();
+              beginTextDrag(e.clientX, e.clientY);
+            }}
+            onTouchStart={(e) => {
+              if (!isEditable || !onDesignChange) return;
+              if (isInteractive(e.target)) return;
+              e.stopPropagation();
+              beginTextDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }}
+            onTouchMove={(e) => {
+              if (!movingText) return;
+              e.stopPropagation();
+              moveText(e.touches[0].clientX, e.touches[0].clientY);
+            }}
+            onTouchEnd={endTextDrag}
           >
             <p className="uppercase text-[9px] sm:text-[11px]"
               style={{ fontFamily: template.headerFont, letterSpacing: template.headerTracking, color: template.inkSoft }}>
