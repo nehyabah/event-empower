@@ -19,6 +19,7 @@ import visionBoardRoutes from './routes/visionBoardRoutes.js';
 import calendarRoutes from './routes/calendarRoutes.js';
 import workspaceEventRoutes from './routes/workspaceEventRoutes.js';
 import workspaceMessageRoutes from './routes/workspaceMessageRoutes.js';
+import thankYouRoutes from './routes/thankYouRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import { scheduler } from './services/scheduler.js';
@@ -117,6 +118,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/workspace-events', workspaceEventRoutes);
 app.use('/api/workspace-chat', workspaceMessageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/thank-you', thankYouRoutes);
 // Re-signing proxy for stored images; see storageService for why URLs point here.
 app.use('/api/media', mediaRoutes);
 

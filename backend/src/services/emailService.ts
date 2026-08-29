@@ -361,6 +361,46 @@ export const emailService = {
       ...(replyTo ? { replyTo } : {}),
     });
   },
+
+  /**
+   * The couple's thank-you note to one guest, after the wedding.
+   *
+   * Unlike everything else here the body is written by the couple, so it is
+   * escaped and newline-converted rather than interpolated: this is the one
+   * template where the copy is not ours.
+   */
+  async sendThankYou({
+    toEmail,
+    guestName,
+    coupleNames,
+    subject,
+    body,
+    photoUrl,
+    siteUrl,
+    replyTo,
+  }: {
+    toEmail: string;
+    guestName: string;
+    coupleNames: string;
+    subject: string;
+    body: string;
+    photoUrl?: string | null;
+    siteUrl?: string | null;
+    replyTo?: string;
+  }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured - thank you for ${toEmail}`);
+      return;
+    }
+
+    await deliver({
+      to: toEmail,
+      subject,
+      html: buildThankYouHtml({ guestName, coupleNames, body, photoUrl, siteUrl }),
+      text: buildThankYouText({ guestName, coupleNames, body, siteUrl }),
+      ...(replyTo ? { replyTo } : {}),
+    });
+  },
 };
 
 function buildRsvpReminderHtml({
@@ -616,4 +656,77 @@ function buildInviteHtml({
 </table>
 </body>
 </html>`;
+}
+
+
+/**
+ * Substitutes the one placeholder the composer offers.
+ *
+ * Only {name} - a longer merge-field language would need documenting, and a
+ * guest's name is the single thing a couple genuinely wants to vary. An
+ * unnamed guest falls back to a plain greeting rather than a blank.
+ */
+export function renderThankYouBody(body: string, guestName: string): string {
+  return body.replace(/\{name\}/gi, guestName || 'there');
+}
+
+function buildThankYouHtml({ guestName, coupleNames, body, photoUrl, siteUrl }: {
+  guestName: string;
+  coupleNames: string;
+  body: string;
+  photoUrl?: string | null;
+  siteUrl?: string | null;
+}): string {
+  // Couple-authored copy: escape first, then restore paragraph breaks.
+  const paragraphs = escapeHtml(renderThankYouBody(body, guestName))
+    .split(/\n{2,}/)
+    .map((para) => para.replace(/\n/g, '<br>'))
+    .filter(Boolean)
+    .map(
+      (para) =>
+        `<tr><td style="padding-bottom:18px;"><p style="margin:0;font-size:15px;">${para}</p></td></tr>`
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#ffffff;color:#2b2b2b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td align="center" style="padding:40px 20px 56px;">
+    <table role="presentation" width="100%" style="max-width:480px;" cellpadding="0" cellspacing="0">
+      ${photoUrl ? `<tr><td style="padding-bottom:24px;">
+        <img src="${escapeHtml(photoUrl)}" alt="" width="480" style="display:block;width:100%;max-width:480px;height:auto;border-radius:8px;">
+      </td></tr>` : ''}
+      ${paragraphs}
+      ${siteUrl ? `<tr><td style="padding-bottom:24px;">
+        <a href="${escapeHtml(siteUrl)}" style="color:#8a6a2f;text-decoration:underline;font-size:15px;">See photos from the day</a>
+      </td></tr>` : ''}
+      <tr><td style="padding-bottom:4px;">
+        <p style="margin:0;font-size:15px;">With love,<br>${escapeHtml(coupleNames)}</p>
+      </td></tr>
+      <tr><td style="padding-top:32px;border-top:1px solid #ececec;">
+        <p style="margin:0;font-family:${BRAND_FONT};font-size:15px;color:#8a8a8a;letter-spacing:1px;">${BRAND_HTML}</p>
+        <p style="margin:4px 0 0;font-size:12px;color:#a5a5a5;">Sent on behalf of ${escapeHtml(coupleNames)}</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`;
+}
+
+function buildThankYouText({ guestName, coupleNames, body, siteUrl }: {
+  guestName: string;
+  coupleNames: string;
+  body: string;
+  siteUrl?: string | null;
+}): string {
+  return [
+    renderThankYouBody(body, guestName),
+    siteUrl ? `\nSee photos from the day: ${siteUrl}` : '',
+    `\nWith love,\n${coupleNames}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

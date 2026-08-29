@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { useGuests } from "@/hooks/useGuests";
 import RsvpSettingsCard from "@/components/invitations/RsvpSettingsCard";
 import InvitationCardDesigner from "@/components/invitations/InvitationCardDesigner";
+import ThankYouComposer from "@/components/thankyou/ThankYouComposer";
 import { Guest } from "@/services/api/userService";
 import {
   Copy,
@@ -342,15 +343,17 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* One page, three jobs: design the invitation, set how RSVPs work,
-              and work the guest list. */}
+          {/* One page, the whole guest-facing side of the wedding: design the
+              invitation, set how RSVPs work, work the guest list, and — once
+              the day is done — thank everyone who came. */}
           <Tabs defaultValue="card" className="w-full">
-            <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-3 sm:max-w-md sm:h-10">
+            <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-4 sm:max-w-xl sm:h-10">
               <TabsTrigger value="card"   className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Design</TabsTrigger>
               <TabsTrigger value="rsvp"   className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Send &amp; replies</TabsTrigger>
               <TabsTrigger value="guests" className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                 Guests{stats.total ? ` (${formatNumber(stats.total)})` : ""}
               </TabsTrigger>
+              <TabsTrigger value="thanks"  className="shrink-0 whitespace-nowrap rounded-md px-3 text-xs sm:text-sm sm:px-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">Thank you</TabsTrigger>
             </TabsList>
 
             <TabsContent value="card">
@@ -529,6 +532,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
             </TabsContent>
+            <TabsContent value="thanks">
+              <ThankYouComposer />
+            </TabsContent>
+
           </Tabs>
         </div>
       </main>
