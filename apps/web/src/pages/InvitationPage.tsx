@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { decodeLayout } from "@/lib/cardLayout";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -45,17 +46,9 @@ const InvitationPage = () => {
   const textAlign: CardAlign =
     alignParam === "left" || alignParam === "right" ? alignParam : "center";
 
-  // Where the couple moved the wording. Absent params mean the default
+  // Where the couple moved each piece. An absent param means the default
   // layout, so an older link still renders exactly as it used to.
-  const num = (key: string, fallback: number) => {
-    const v = Number(searchParams.get(key));
-    return Number.isFinite(v) && searchParams.get(key) !== null ? v : fallback;
-  };
-  const cardLayout = {
-    offsetX: num("x", 0),
-    offsetY: num("y", 0),
-    scale: num("s", 1),
-  };
+  const cardLayout = decodeLayout(searchParams.get("l"));
 
   // Fetch event details from backend if we have an RSVP code
   useEffect(() => {
@@ -178,7 +171,7 @@ const InvitationPage = () => {
           names={{ partner1: partner1Name, partner2: partner2Name }}
           date={formattedDate}
           venue={venue}
-          design={{ align: textAlign, ...cardLayout }}
+          design={{ align: textAlign, layout: cardLayout }}
           isEditable={false}
           isFlipped={isFlipped}
           onFlip={() => setIsFlipped(!isFlipped)}

@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import {
+  CardElementId, CardLayout, ELEMENT_LABELS, ElementLayout,
+  SCALE_MAX, SCALE_MIN, clampElement, decodeLayout, encodeLayout,
+} from "@/lib/cardLayout";
 import SaveTheDateCard, {
   CardAlign,
   saveTheDateTemplates,
@@ -38,18 +42,15 @@ export const InvitationCardDesigner = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(
     () => localStorage.getItem("saveTheDateTemplate") || "plain-ivory",
   );
-  // Where the couple has moved the wording, and how big it is.
-  const [layout, setLayout] = useState<{ offsetX: number; offsetY: number; scale: number }>(() => {
+  // Where the couple has moved each piece of the card.
+  const [layout, setLayout] = useState<CardLayout>(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("saveTheDateLayout") || "null");
-      if (saved && typeof saved === "object") {
-        return { offsetX: saved.offsetX ?? 0, offsetY: saved.offsetY ?? 0, scale: saved.scale ?? 1 };
-      }
+      return decodeLayout(localStorage.getItem("saveTheDateLayout"));
     } catch {
-      // Corrupt or unavailable storage; the default layout is fine.
+      return {};
     }
-    return { offsetX: 0, offsetY: 0, scale: 1 };
   });
+  const [selectedElement, setSelectedElement] = useState<CardElementId | null>(null);
 
   const [textAlign, setTextAlign] = useState<CardAlign>(() => {
     const saved = localStorage.getItem("saveTheDateAlign");
@@ -105,13 +106,23 @@ export const InvitationCardDesigner = () => {
     localStorage.setItem("saveTheDateAlign", a);
   };
 
-  const updateLayout = (next: Partial<{ offsetX: number; offsetY: number; scale: number }>) => {
+  const updateElement = (id: CardElementId, next: ElementLayout) => {
     setLayout((prev) => {
-      const merged = { ...prev, ...next };
-      localStorage.setItem("saveTheDateLayout", JSON.stringify(merged));
+      const merged = { ...prev, [id]: clampElement(next) };
+      localStorage.setItem("saveTheDateLayout", encodeLayout(merged));
       return merged;
     });
   };
+
+  const resetLayout = () => {
+    setLayout({});
+    setSelectedElement(null);
+    localStorage.removeItem("saveTheDateLayout");
+  };
+
+  const selectedLayout: ElementLayout = clampElement(
+    selectedElement ? layout[selectedElement] : undefined
+  );
 
   const formattedWeddingDate =
     formatDateOnly(weddingDate, { month: "long", day: "numeric", year: "numeric" }) ?? "Date TBD";
@@ -160,8 +171,10 @@ export const InvitationCardDesigner = () => {
                       names={{ partner1: partner1Name, partner2: partner2Name }}
                       date={formattedWeddingDate}
                       venue={venue}
-                      design={{ align: textAlign, ...layout }}
-                      onDesignChange={(d) => updateLayout(d)}
+                      design={{ align: textAlign, layout }}
+                      onLayoutChange={updateElement}
+                      selectedElement={selectedElement}
+                      onSelectElement={setSelectedElement}
                       isEditable={true}
                       isFlipped={showRsvpBack}
                       onFlip={() => setShowRsvpBack(!showRsvpBack)}
@@ -213,25 +226,29 @@ export const InvitationCardDesigner = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs text-muted-foreground">Text size</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        {selectedElement ? ELEMENT_LABELS[selectedElement] : "Nothing selected"}
+                      </Label>
                       <button
                         type="button"
-                        onClick={() => updateLayout({ offsetX: 0, offsetY: 0, scale: 1 })}
+                        onClick={resetLayout}
                         className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
                       >
-                        Reset position
+                        Reset layout
                       </button>
                     </div>
                     <Slider
-                      value={[layout.scale]}
-                      min={0.7}
-                      max={1.3}
+                      value={[selectedLayout.scale]}
+                      min={SCALE_MIN}
+                      max={SCALE_MAX}
                       step={0.02}
-                      onValueChange={([v]) => updateLayout({ scale: v })}
+                      disabled={!selectedElement}
+                      onValueChange={([v]) =>
+                        selectedElement && updateElement(selectedElement, { ...selectedLayout, scale: v })
+                      }
                     />
                     <p className="text-[11px] text-muted-foreground">
-                      Drag the wording on the card to move it clear of the flowers.
-                      Easier on a laptop, where there is room to work.
+                      Tap a line or the flowers to select it, then drag to move. Arrow keys nudge; hold shift for bigger steps. Easier on a laptop, where there is room to work.
                     </p>
                   </div>
 
@@ -315,24 +332,29 @@ export const InvitationCardDesigner = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-muted-foreground">Text size</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      {selectedElement ? ELEMENT_LABELS[selectedElement] : "Nothing selected"}
+                    </Label>
                     <button
                       type="button"
-                      onClick={() => updateLayout({ offsetX: 0, offsetY: 0, scale: 1 })}
+                      onClick={resetLayout}
                       className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
                     >
-                      Reset position
+                      Reset layout
                     </button>
                   </div>
                   <Slider
-                    value={[layout.scale]}
-                    min={0.7}
-                    max={1.3}
+                    value={[selectedLayout.scale]}
+                    min={SCALE_MIN}
+                    max={SCALE_MAX}
                     step={0.02}
-                    onValueChange={([v]) => updateLayout({ scale: v })}
+                    disabled={!selectedElement}
+                    onValueChange={([v]) =>
+                      selectedElement && updateElement(selectedElement, { ...selectedLayout, scale: v })
+                    }
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Drag the wording on the card to move it clear of the flowers.
+                    Tap a line or the flowers to select it, then drag to move. Arrow keys nudge; hold shift for bigger steps.
                   </p>
                 </div>
 
@@ -373,8 +395,10 @@ export const InvitationCardDesigner = () => {
                   names={{ partner1: partner1Name, partner2: partner2Name }}
                   date={formattedWeddingDate}
                   venue={venue}
-                  design={{ align: textAlign, ...layout }}
-                      onDesignChange={(d) => updateLayout(d)}
+                  design={{ align: textAlign, layout }}
+                      onLayoutChange={updateElement}
+                      selectedElement={selectedElement}
+                      onSelectElement={setSelectedElement}
                   isEditable={true}
                   isFlipped={showRsvpBack}
                   onFlip={() => setShowRsvpBack(!showRsvpBack)}

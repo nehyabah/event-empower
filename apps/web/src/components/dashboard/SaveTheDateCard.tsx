@@ -1,6 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import MovableCardElement from "./MovableCardElement";
+import {
+  CardElementId, CardLayout, ELEMENT_LABELS, ElementLayout, clampElement,
+} from "@/lib/cardLayout";
 import { toast } from "sonner";
 import { rsvpService } from "@/services/api/rsvpService";
 
@@ -79,27 +83,9 @@ export type CardAlign = "left" | "center" | "right";
 
 export interface CardDesign {
   align?: CardAlign;
-  /**
-   * Where the text sits, as a percentage of the card. Templates put the
-   * wording dead centre, which on a heavily decorated card can land it on
-   * top of the florals — this lets a couple move it into the clear space
-   * the artwork leaves.
-   */
-  offsetX?: number;
-  offsetY?: number;
-  /** Text size relative to the template's own, 0.7–1.3. */
-  scale?: number;
+  /** Per-element offsets; see lib/cardLayout. */
+  layout?: CardLayout;
 }
-
-/** Clamped so text can be nudged clear of the art without leaving the card. */
-export const OFFSET_LIMIT = 22;
-export const SCALE_RANGE = { min: 0.7, max: 1.3 } as const;
-
-export const clampDesign = (d: CardDesign): Required<Omit<CardDesign, "align">> => ({
-  offsetX: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, d.offsetX ?? 0)),
-  offsetY: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, d.offsetY ?? 0)),
-  scale: Math.max(SCALE_RANGE.min, Math.min(SCALE_RANGE.max, d.scale ?? 1)),
-});
 
 export interface CardTemplate {
   id: string;
@@ -648,8 +634,11 @@ interface SaveTheDateCardProps {
   venue: string;
   design?: CardDesign;
   isEditable?: boolean;
-  /** Fired while the text block is dragged, so the parent can persist it. */
-  onDesignChange?: (next: { offsetX: number; offsetY: number }) => void;
+  /** Fired as an element is moved, so the parent can persist it. */
+  onLayoutChange?: (id: CardElementId, next: ElementLayout) => void;
+  /** Which element is being worked on, for the selection ring. */
+  selectedElement?: CardElementId | null;
+  onSelectElement?: (id: CardElementId) => void;
   isFlipped?: boolean;
   onFlip?: () => void;
   rsvpCode?: string;
@@ -657,7 +646,8 @@ interface SaveTheDateCardProps {
 }
 
 const SaveTheDateCard = ({
-  templateId, names, date, venue, design, isEditable, onDesignChange,
+  templateId, names, date, venue, design, isEditable,
+  onLayoutChange, selectedElement, onSelectElement,
   isFlipped: controlledIsFlipped, onFlip, rsvpCode, storySlug,
 }: SaveTheDateCardProps) => {
   const navigate = useNavigate();
@@ -682,49 +672,28 @@ const SaveTheDateCard = ({
   const isFlipped = controlledIsFlipped !== undefined ? controlledIsFlipped : internalIsFlipped;
   const baseRotation = isFlipped ? 180 : 0;
   const align: CardAlign = design?.align || "center";
-  const layout = clampDesign(design || {});
+  const layout = design?.layout || {};
+  const el = (id: CardElementId): ElementLayout => clampElement(layout[id]);
+  const peersOf = (id: CardElementId): ElementLayout[] =>
+    (Object.keys(ELEMENT_LABELS) as CardElementId[])
+      .filter((k) => k !== id && layout[k])
+      .map((k) => clampElement(layout[k]));
 
-  // Moving the text is separate from the card's own drag-to-flip, so a nudge
-  // of the wording must never be read as a flip gesture.
-  const [movingText, setMovingText] = useState(false);
-  const textDragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-
-  const beginTextDrag = (clientX: number, clientY: number) => {
-    if (!isEditable || !onDesignChange) return;
-    textDragStart.current = { x: clientX, y: clientY, ox: layout.offsetX, oy: layout.offsetY };
-    setMovingText(true);
-  };
-
-  const moveText = useCallback((clientX: number, clientY: number) => {
-    const start = textDragStart.current;
-    const box = cardRef.current;
-    if (!start || !box || !onDesignChange) return;
-    // Percentages, so the position survives the card being rendered at a
-    // different size on a phone, in the preview, or on a guest's screen.
-    const dx = ((clientX - start.x) / box.offsetWidth) * 100;
-    const dy = ((clientY - start.y) / box.offsetHeight) * 100;
-    onDesignChange({
-      offsetX: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, start.ox + dx)),
-      offsetY: Math.max(-OFFSET_LIMIT, Math.min(OFFSET_LIMIT, start.oy + dy)),
-    });
-  }, [onDesignChange]);
-
-  const endTextDrag = useCallback(() => {
-    textDragStart.current = null;
-    setMovingText(false);
-  }, []);
-
-  useEffect(() => {
-    if (!movingText) return;
-    const onMove = (e: MouseEvent) => moveText(e.clientX, e.clientY);
-    const onUp = () => endTextDrag();
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-  }, [movingText, moveText, endTextDrag]);
+  const movable = (id: CardElementId, className: string, children: React.ReactNode) => (
+    <MovableCardElement
+      id={id}
+      layout={el(id)}
+      peers={peersOf(id)}
+      editable={!!isEditable && !!onLayoutChange}
+      selected={selectedElement === id}
+      onSelect={(i) => onSelectElement?.(i)}
+      onChange={(i, next) => onLayoutChange?.(i, next)}
+      cardRef={cardRef}
+      className={className}
+    >
+      {children}
+    </MovableCardElement>
+  );
 
   const handleFlip = useCallback(() => {
     if (onFlip) onFlip(); else setInternalIsFlipped(f => !f);
@@ -918,83 +887,92 @@ const SaveTheDateCard = ({
             pointerEvents: isFlipped ? "none" : "auto",
           }}
         >
-          <Decor />
+          {isEditable && onLayoutChange ? (
+            <MovableCardElement
+              id="decor"
+              layout={el("decor")}
+              peers={peersOf("decor")}
+              editable
+              selected={selectedElement === "decor"}
+              onSelect={(i) => onSelectElement?.(i)}
+              onChange={(i, next) => onLayoutChange(i, next)}
+              cardRef={cardRef}
+              className="absolute inset-0 z-10"
+            >
+              <Decor />
+            </MovableCardElement>
+          ) : (
+            <div
+              className="absolute inset-0"
+              style={{
+                transform: `translate(${el("decor").x}%, ${el("decor").y}%) scale(${el("decor").scale})`,
+              }}
+            >
+              <Decor />
+            </div>
+          )}
           {!template.noFrame && <Frame />}
 
           {/* Text — generous whitespace */}
           <div
-            className={`relative z-20 flex flex-col justify-center h-full px-8 sm:px-10 ${alignClasses} ${
-              isEditable && onDesignChange
-                ? `${movingText ? "cursor-grabbing" : "cursor-grab"} rounded-lg outline-dashed outline-1 outline-transparent hover:outline-current/25`
-                : ""
-            }`}
-            style={{
-              ...template.textStyle,
-              transform: `translate(${layout.offsetX}%, ${layout.offsetY}%) scale(${layout.scale})`,
-              // Snaps to the pointer while dragging; eases when set from the
-              // controls, so nudging with a slider does not feel laggy.
-              transition: movingText ? "none" : "transform 200ms ease-out",
-            }}
-            onMouseDown={(e) => {
-              if (!isEditable || !onDesignChange) return;
-              if (isInteractive(e.target)) return;
-              // Without this the card reads the same gesture as drag-to-flip.
-              e.stopPropagation();
-              e.preventDefault();
-              beginTextDrag(e.clientX, e.clientY);
-            }}
-            onTouchStart={(e) => {
-              if (!isEditable || !onDesignChange) return;
-              if (isInteractive(e.target)) return;
-              e.stopPropagation();
-              beginTextDrag(e.touches[0].clientX, e.touches[0].clientY);
-            }}
-            onTouchMove={(e) => {
-              if (!movingText) return;
-              e.stopPropagation();
-              moveText(e.touches[0].clientX, e.touches[0].clientY);
-            }}
-            onTouchEnd={endTextDrag}
+            className={`relative z-20 flex flex-col justify-center h-full px-8 sm:px-10 ${alignClasses}`}
+            style={template.textStyle}
           >
-            <p className="uppercase text-[9px] sm:text-[11px]"
-              style={{ fontFamily: template.headerFont, letterSpacing: template.headerTracking, color: template.inkSoft }}>
-              Save the Date
-            </p>
-            <p className="text-base sm:text-xl mt-1"
-              style={{ fontFamily: template.scriptFont, color: template.accent }}>
-              for the wedding of
-            </p>
+            {movable("header", "", (
+              <p className="uppercase text-[9px] sm:text-[11px]"
+                style={{ fontFamily: template.headerFont, letterSpacing: template.headerTracking, color: template.inkSoft }}>
+                Save the Date
+              </p>
+            ))}
+            {movable("script", "", (
+              <p className="text-base sm:text-xl mt-1"
+                style={{ fontFamily: template.scriptFont, color: template.accent }}>
+                for the wedding of
+              </p>
+            ))}
 
             <Rule />
 
-            <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
-              style={{ fontFamily: template.nameFont, color: template.ink }}>
-              {formatName(names.partner1 || "Partner One")}
-            </h2>
-            <p className="text-xl sm:text-3xl leading-snug my-0.5"
-              style={{ fontFamily: template.scriptFont, color: template.accent }}>
-              &amp;
-            </p>
-            <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
-              style={{ fontFamily: template.nameFont, color: template.ink }}>
-              {formatName(names.partner2 || "Partner Two")}
-            </h2>
+            {movable("name1", "", (
+              <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
+                style={{ fontFamily: template.nameFont, color: template.ink }}>
+                {formatName(names.partner1 || "Bride")}
+              </h2>
+            ))}
+            {movable("amp", "", (
+              <p className="text-xl sm:text-3xl leading-snug my-0.5"
+                style={{ fontFamily: template.scriptFont, color: template.accent }}>
+                &amp;
+              </p>
+            ))}
+            {movable("name2", "", (
+              <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
+                style={{ fontFamily: template.nameFont, color: template.ink }}>
+                {formatName(names.partner2 || "Groom")}
+              </h2>
+            ))}
 
             <Rule />
 
-            <p className="tracking-[0.2em] uppercase text-[10px] sm:text-xs"
-              style={{ fontFamily: template.bodyFont, color: template.ink }}>
-              {formatDate(date)}
-            </p>
-            <p className="text-base sm:text-lg mt-1"
-              style={{ fontFamily: template.scriptFont, color: template.inkSoft }}>
-              {venue || "Venue TBD"}
-            </p>
+            {movable("date", "", (
+              <p className="tracking-[0.2em] uppercase text-[10px] sm:text-xs"
+                style={{ fontFamily: template.bodyFont, color: template.ink }}>
+                {formatDate(date)}
+              </p>
+            ))}
+            {movable("venue", "", (
+              <p className="text-base sm:text-lg mt-1"
+                style={{ fontFamily: template.scriptFont, color: template.inkSoft }}>
+                {venue || "Venue TBD"}
+              </p>
+            ))}
 
-            <p className="uppercase mt-4 sm:mt-6 text-[7px] sm:text-[8px]"
-              style={{ fontFamily: template.headerFont, letterSpacing: "0.3em", color: template.inkSoft, opacity: 0.75 }}>
-              Invitation to Follow
-            </p>
+            {movable("footer", "", (
+              <p className="uppercase mt-4 sm:mt-6 text-[7px] sm:text-[8px]"
+                style={{ fontFamily: template.headerFont, letterSpacing: "0.3em", color: template.inkSoft, opacity: 0.75 }}>
+                Invitation to Follow
+              </p>
+            ))}
           </div>
 
           <p className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 text-[7px] sm:text-[8px] whitespace-nowrap"
