@@ -100,8 +100,8 @@ export const ClientCalendarTab = () => {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-3">
-      <div className="space-y-4 lg:col-span-2">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <div className="min-w-0 space-y-4 lg:col-span-2">
         <div className="flex items-center justify-between gap-3 lg:hidden">
           <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
             {(["agenda", "month"] as const).map((view) => (
@@ -170,7 +170,7 @@ export const ClientCalendarTab = () => {
       </Card>
       </div>
 
-      <div className="flex flex-col gap-5">
+      <div className="flex min-w-0 flex-col gap-5">
         {/* On a phone, tapping a day should put that day's events directly
             beneath the calendar. On a wide screen the sidebar reads better
             with what is coming up at the top, so the order swaps back. */}
