@@ -105,6 +105,14 @@ export const emailLoginService = {
     await query('UPDATE email_login_codes SET used_at = NOW() WHERE id = $1', [row.id]);
     query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]).catch(() => {});
 
+    // Receiving a code at this address proves they control the inbox, which
+    // is exactly what verification asks for — so a successful sign-in settles
+    // it. Only on success: a failed attempt proves nothing.
+    await query(
+      'UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE id = $1',
+      [user.id]
+    );
+
     const tokens = await tokenService.generateTokenPair(user);
 
     return {
@@ -115,6 +123,7 @@ export const emailLoginService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        emailVerified: true,
         onboardingSubmittedAt: user.onboarding_submitted_at
           ? new Date(user.onboarding_submitted_at).toISOString()
           : null,

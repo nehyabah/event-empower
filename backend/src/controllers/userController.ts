@@ -5,6 +5,7 @@ import { vendorService } from '../services/vendorService.js';
 import { storageService } from '../services/storageService.js';
 import { reminderService } from '../services/reminderService.js';
 import { UserModel } from '../models/User.js';
+import { emailVerificationService } from '../services/emailVerificationService.js';
 import { checkMessage, recordFlag, violationMessage } from '../services/contentSafety.js';
 
 
@@ -22,6 +23,7 @@ function toAuthUserJson(user: import('../models/User.js').User) {
     notifyReminders: user.notify_reminders,
     notifyProductUpdates: user.notify_product_updates,
     notifyNewsletter: user.notify_newsletter,
+    emailVerified: !!user.email_verified_at,
   };
 }
 
@@ -601,6 +603,39 @@ export const userController = {
   },
 
   // ========== DASHBOARD ==========
+
+  async sendEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await emailVerificationService.sendCode(req.user!.userId);
+      res.json({ message: 'Verification code sent.' });
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (status === 400) {
+        res.status(400).json({ error: (error as Error).message });
+        return;
+      }
+      next(error);
+    }
+  },
+
+  async confirmEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const parsed = z.object({ code: z.string().trim().length(6) }).safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: 'Enter the 6-digit code from your email.' });
+        return;
+      }
+      await emailVerificationService.verify(req.user!.userId, parsed.data.code);
+      res.json({ message: 'Email confirmed.' });
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (status === 400) {
+        res.status(400).json({ error: (error as Error).message });
+        return;
+      }
+      next(error);
+    }
+  },
 
   async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

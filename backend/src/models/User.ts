@@ -26,6 +26,7 @@ export interface User {
   city: string | null;
   rejection_reason: string | null;
   approved_at: Date | null;
+  email_verified_at: Date | null;
   notify_reminders: boolean;
   notify_product_updates: boolean;
   notify_newsletter: boolean;
@@ -45,6 +46,7 @@ export interface CreateUserInput {
   instagram_handle?: string;
   whatsapp_phone?: string;
   city?: string;
+  email_verified_at?: Date;
 }
 
 export interface UpdateUserInput {
@@ -93,8 +95,8 @@ export const UserModel = {
   async create(input: CreateUserInput): Promise<User> {
     const result = await queryOne<User>(
       `INSERT INTO users (email, phone, password_hash, name, user_type, avatar_url, auth_provider, google_id,
-        approval_status, business_name, instagram_handle, whatsapp_phone, city)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        approval_status, business_name, instagram_handle, whatsapp_phone, city, email_verified_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         input.email?.toLowerCase() || null,
@@ -110,6 +112,7 @@ export const UserModel = {
         input.instagram_handle || null,
         input.whatsapp_phone || null,
         input.city || null,
+        input.email_verified_at || null,
       ]
     );
 

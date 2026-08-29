@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { UserModel, User, UserType } from '../models/User.js';
 import { tokenService, TokenPair } from './tokenService.js';
 import { query } from '../config/database.js';
+import { emailVerificationService } from './emailVerificationService.js';
 
 const SALT_ROUNDS = 12;
 
@@ -29,6 +30,7 @@ export interface AuthResult {
     userType: UserType;
     avatarUrl: string | null;
     approvalStatus: string;
+    emailVerified: boolean;
     /** Null until the professional first saves their profile for review. */
     onboardingSubmittedAt: string | null;
   };
@@ -68,6 +70,12 @@ export const authService = {
       city: input.city,
     });
 
+    // Best-effort: a mail outage must not fail a signup that has already
+    // created the account. They can ask for another code from the banner.
+    void emailVerificationService.sendCode(user.id).catch((err) => {
+      console.error('[auth] verification code send failed:', err);
+    });
+
     // Generate tokens
     const tokens = await tokenService.generateTokenPair(user);
 
@@ -79,6 +87,7 @@ export const authService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        emailVerified: !!user.email_verified_at,
         onboardingSubmittedAt: user.onboarding_submitted_at
           ? new Date(user.onboarding_submitted_at).toISOString()
           : null,
@@ -123,6 +132,7 @@ export const authService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        emailVerified: !!user.email_verified_at,
         onboardingSubmittedAt: user.onboarding_submitted_at
           ? new Date(user.onboarding_submitted_at).toISOString()
           : null,
@@ -163,6 +173,7 @@ export const authService = {
         userType: user.user_type,
         avatarUrl: user.avatar_url,
         approvalStatus: user.approval_status,
+        emailVerified: !!user.email_verified_at,
         onboardingSubmittedAt: user.onboarding_submitted_at
           ? new Date(user.onboarding_submitted_at).toISOString()
           : null,

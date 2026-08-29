@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { storyService } from '../services/storyService.js';
+import { queryOne } from '../config/database.js';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$/;
 
@@ -20,6 +21,23 @@ export const storyController = {
     if (!userId) {
       res.status(401).json({ error: 'Authentication required' });
       return;
+    }
+
+    // Publishing puts a page in front of guests, so it needs a confirmed
+    // address behind it. Editing does not — a couple should be able to build
+    // their site while the code is still sitting in their inbox.
+    if (req.body.site_published === true) {
+      const owner = await queryOne<{ email: string | null; email_verified_at: Date | null }>(
+        'SELECT email, email_verified_at FROM users WHERE id = $1',
+        [userId]
+      );
+      if (owner?.email && !owner.email_verified_at) {
+        res.status(403).json({
+          error: 'Please confirm your email address before publishing your wedding site.',
+          emailVerificationRequired: true,
+        });
+        return;
+      }
     }
 
     // Validate slug if provided

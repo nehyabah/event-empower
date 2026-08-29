@@ -13,6 +13,7 @@ export interface GoogleAuthResult {
     userType: UserType;
     avatarUrl: string | null;
     approvalStatus: string;
+    emailVerified: boolean;
     onboardingSubmittedAt: string | null;
   };
   tokens: TokenPair;
@@ -32,10 +33,17 @@ export const googleAuthService = {
       throw new Error('Invalid Google token');
     }
 
-    const { sub: googleId, email, name, picture } = payload;
+    const { sub: googleId, email, name, picture, email_verified: emailVerified } = payload;
 
     if (!googleId || !email) {
       throw new Error('Google account missing required information');
+    }
+
+    // Google normally only issues a token for an address the user controls,
+    // but the claim says so explicitly and an unverified one should not be
+    // treated as proven just because it arrived via Google.
+    if (!emailVerified) {
+      throw new Error('Please confirm your email address with Google first, then try again.');
     }
 
     // Check if user exists by Google ID
@@ -64,6 +72,7 @@ export const googleAuthService = {
         name: name || email.split('@')[0],
         avatar_url: picture,
         auth_provider: 'google',
+        email_verified_at: new Date(),
         google_id: googleId,
         user_type: resolvedType,
         approval_status: needsApproval ? 'pending' : 'approved',
@@ -92,6 +101,7 @@ export const googleAuthService = {
         // approved one: no banner, no disabled actions, and every write
         // failing with a 403 the page never predicted.
         approvalStatus: user.approval_status,
+        emailVerified: !!user.email_verified_at,
         onboardingSubmittedAt: user.onboarding_submitted_at
           ? new Date(user.onboarding_submitted_at).toISOString()
           : null,

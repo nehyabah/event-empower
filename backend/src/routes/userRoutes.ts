@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { blockUnapprovedWrites } from '../middleware/requireApproved.js';
+import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail.js';
 import multer from 'multer';
 import { userController } from '../controllers/userController.js';
 import { storyController } from '../controllers/storyController.js';
@@ -21,6 +22,11 @@ router.use(blockUnapprovedWrites([/^\/me(\/|$)/]));
 // manage their own account.
 router.get('/me', userController.getMe);
 router.patch('/me', userController.updateMe);
+
+// Confirming the address this account was registered with. Exempt from the
+// approval gate for the same reason /me is: it is about the account itself.
+router.post('/me/verify-email/send', userController.sendEmailVerification);
+router.post('/me/verify-email', userController.confirmEmailVerification);
 
 // Dashboard
 router.get('/dashboard', userController.getDashboard);
@@ -131,12 +137,12 @@ router.delete('/bank-details/:id', storyController.deleteMyBankDetail);
 // Client inquiries (for messaging with vendors)
 router.get('/inquiries', userController.listMyInquiries);
 router.get('/inquiries/:id', userController.getMyInquiry);
-router.post('/inquiries/:id/messages', userController.sendMyInquiryMessage);
+router.post('/inquiries/:id/messages', requireVerifiedEmail, userController.sendMyInquiryMessage);
 
 // Conversation with one vendor, addressed by vendor rather than by inquiry
 // id - the directory knows which vendor you tapped, not which thread (if any)
 // already exists.
 router.get('/vendors/:vendorProfileId/conversation', userController.getVendorConversation);
-router.post('/vendors/:vendorProfileId/messages', userController.messageVendor);
+router.post('/vendors/:vendorProfileId/messages', requireVerifiedEmail, userController.messageVendor);
 
 export default router;

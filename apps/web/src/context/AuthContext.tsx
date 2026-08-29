@@ -20,6 +20,8 @@ export interface AuthUser {
   notifyReminders?: boolean;
   notifyProductUpdates?: boolean;
   notifyNewsletter?: boolean;
+  /** Undefined on older sessions; false only for an unconfirmed signup. */
+  emailVerified?: boolean;
 }
 
 export interface RegisterExtraFields {
@@ -39,6 +41,8 @@ interface AuthContextType {
   loginWithGoogle: (idToken: string, userType?: UserType) => Promise<{ isNewUser: boolean }>;
   /** Adopt a session obtained elsewhere — e.g. the emailed sign-in code. */
   applySession: (user: AuthUser, accessToken: string) => void;
+  /** Re-read the account, after something outside this context changed it. */
+  refreshUser: () => Promise<void>;
   sendPhoneOtp: (phone: string, channel: 'sms' | 'whatsapp') => Promise<void>;
   verifyPhoneOtp: (phone: string, code: string, userType?: UserType) => Promise<void>;
   updateUser: (updates: {
@@ -169,6 +173,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearLocalCache();
   };
 
+  const refreshUser = async () => {
+    const response = await apiClient.get<AuthUser>('/users/me');
+    if (response.data) setUser(response.data);
+  };
+
   const applySession = (nextUser: AuthUser, accessToken: string) => {
     setUser(nextUser);
     apiClient.setAccessToken(accessToken);
@@ -249,6 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         loginWithGoogle,
         applySession,
+        refreshUser,
         sendPhoneOtp,
         verifyPhoneOtp,
         updateUser,

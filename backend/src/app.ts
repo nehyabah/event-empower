@@ -25,6 +25,7 @@ import { scheduler } from './services/scheduler.js';
 import { vendorController } from './controllers/vendorController.js';
 import { userController } from './controllers/userController.js';
 import { authenticate } from './middleware/auth.js';
+import { requireVerifiedEmail } from './middleware/requireVerifiedEmail.js';
 
 const app = express();
 
@@ -122,7 +123,7 @@ app.use('/api/media', mediaRoutes);
 // Enquiries require an account. Anonymous senders left a vendor with no way
 // to reply, nothing to moderate, and no identity behind a message that the
 // safety rules are supposed to hold someone to.
-app.post('/api/inquiries', authenticate, vendorController.createInquiry);
+app.post('/api/inquiries', authenticate, requireVerifiedEmail, vendorController.createInquiry);
 
 // Public RSVP endpoints (no auth required)
 app.get('/api/rsvp/:code', userController.getEventInfo);

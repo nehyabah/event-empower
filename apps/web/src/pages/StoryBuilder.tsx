@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import VerifyEmailBanner from "@/components/auth/VerifyEmailBanner";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
@@ -109,6 +110,8 @@ const StoryBuilder = () => {
       <main className="flex-1 pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto space-y-6">
+            <VerifyEmailBanner />
+
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
                 <h1 className="text-2xl md:text-3xl font-serif font-medium tracking-tight">

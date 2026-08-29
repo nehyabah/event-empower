@@ -123,6 +123,38 @@ export const emailService = {
     });
   },
 
+  /** Six-digit code confirming a new signup owns the address they gave. */
+  async sendEmailVerification({ toEmail, toName, code, expiresInMinutes }: {
+    toEmail: string; toName: string; code: string; expiresInMinutes: number;
+  }): Promise<void> {
+    if (emailTransport === 'none') {
+      console.log(`[email] no provider configured — verification code for ${toEmail}: ${code}`);
+      return;
+    }
+    const greeting = toName ? `Hi ${toName},` : 'Hello,';
+    await deliver({
+      to: toEmail,
+      subject: `${code} is your àjọyọ confirmation code`,
+      html: buildCodeHtml({
+        heading: 'Confirm your email',
+        greeting,
+        code,
+        body: `Enter this code to confirm this address is yours. It expires in ${expiresInMinutes} minutes.`,
+      }),
+      text: [
+        greeting,
+        '',
+        `Your confirmation code is ${code}.`,
+        `It expires in ${expiresInMinutes} minutes.`,
+        '',
+        "If you didn't create an àjọyọ account, you can ignore this email — nothing has been set up in your name.",
+        '',
+        '—',
+        'àjọyọ — wedding planning',
+      ].join('\n'),
+    });
+  },
+
   /** Six-digit code for resetting a password. */
   async sendPasswordResetCode({ toEmail, toName, code, expiresInMinutes }: {
     toEmail: string; toName: string; code: string; expiresInMinutes: number;
