@@ -35,6 +35,10 @@ export interface Expense {
   dueDate: Date | null;
   paid: boolean;
   notes?: string;
+  /** The roster vendor this expense was paid to, if any. */
+  vendorId?: string | null;
+  /** Resolved server-side; display only. */
+  vendorName?: string | null;
 }
 
 /** What is still owed on an expense. */
@@ -117,6 +121,8 @@ const toLocalExpense = (apiExpense: ApiExpense): Expense => ({
   dueDate: parseDateOnly(apiExpense.due_date),
   paid: apiExpense.paid,
   notes: apiExpense.notes || undefined,
+  vendorId: apiExpense.vendor_id || undefined,
+  vendorName: apiExpense.vendor_name || undefined,
 });
 
 interface ExpenseProviderProps {
@@ -182,6 +188,7 @@ export const ExpenseProvider = ({ children, clientId }: ExpenseProviderProps) =>
         dueDate: toDateInput(expense.dueDate),
         paid: expense.paid,
         notes: expense.notes,
+        vendorId: expense.vendorId || undefined,
       };
 
       const newExpense = await userService.createExpense(input);
@@ -218,6 +225,8 @@ export const ExpenseProvider = ({ children, clientId }: ExpenseProviderProps) =>
         if (updatedExpense.paid !== undefined) input.paid = updatedExpense.paid;
         if (updatedExpense.notes !== undefined)
           input.notes = updatedExpense.notes;
+        if (updatedExpense.vendorId !== undefined)
+          input.vendorId = updatedExpense.vendorId || undefined;
 
         const updated = await userService.updateExpense(id, input);
         setExpenses((prev) =>

@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import userService from "@/services/api/userService";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -37,6 +38,14 @@ interface ExpenseFormProps {
 
 const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
   const { addExpense, updateExpense } = useExpenses();
+  const [roster, setRoster] = useState<Array<{ vendor_profile_id: string; business_name: string | null }>>([]);
+
+  useEffect(() => {
+    // Failing to load the roster must not block adding an expense — the
+    // vendor tag is optional.
+    userService.getMyVendorRoster().then(setRoster).catch(() => setRoster([]));
+  }, []);
+
   const [date, setDate] = useState<Date | undefined>(expense?.date || new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>(expense?.dueDate || undefined);
 
@@ -50,6 +59,7 @@ const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
       dueDate: null,
       paid: false,
       notes: "",
+      vendorId: undefined,
     },
   });
   const amountValue = form.watch("amount");
@@ -164,6 +174,37 @@ const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
             </FormItem>
           )}
         />
+
+        {roster.length > 0 && (
+          <FormField
+            control={form.control}
+            name="vendorId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Vendor (optional)</FormLabel>
+                <Select
+                  onValueChange={(v) => field.onChange(v === "none" ? undefined : v)}
+                  value={field.value || "none"}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Not tied to a vendor" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">Not tied to a vendor</SelectItem>
+                    {roster.map((v) => (
+                      <SelectItem key={v.vendor_profile_id} value={v.vendor_profile_id}>
+                        {v.business_name || "Vendor"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Running balance, so "amount paid" and the due date read together */}
         <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">

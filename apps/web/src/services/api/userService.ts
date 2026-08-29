@@ -107,6 +107,8 @@ export interface Expense {
   paid: boolean;
   notes: string | null;
   vendor_id: string | null;
+  /** Resolved server-side for display. */
+  vendor_name?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -582,6 +584,21 @@ export const userService = {
   },
 
   // ========== VENDOR REVIEWS ==========
+
+  /**
+   * The couple's vendor roster, for tagging an expense.
+   *
+   * Deliberately not getReviewableVendors, which only returns booked or
+   * confirmed vendors — a deposit is often paid while a vendor is still
+   * only quoted, and that expense still needs tagging.
+   */
+  async getMyVendorRoster(): Promise<Array<{ vendor_profile_id: string; business_name: string | null; status: string }>> {
+    const response = await apiClient.get<{
+      vendors: Array<{ vendor_profile_id: string; business_name: string | null; status: string }>;
+    }>('/users/project');
+    if (response.error) throw new Error(response.error);
+    return response.data?.vendors || [];
+  },
 
   async getReviewableVendors(): Promise<ReviewableVendor[]> {
     const response = await apiClient.get<ReviewableVendor[]>('/users/reviewable-vendors');

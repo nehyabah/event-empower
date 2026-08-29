@@ -28,6 +28,8 @@ export interface Expense {
   paid: boolean;
   notes: string | null;
   vendor_id: string | null;
+  /** Resolved from vendor_profiles for display; not a stored column. */
+  vendor_name?: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -67,14 +69,22 @@ export const ExpenseModel = {
 
   async findByUserId(userId: string): Promise<Expense[]> {
     return query<Expense>(
-      'SELECT * FROM expenses WHERE user_id = $1 ORDER BY expense_date DESC NULLS LAST, created_at DESC',
+      `SELECT e.*, vp.business_name AS vendor_name
+         FROM expenses e
+         LEFT JOIN vendor_profiles vp ON vp.id = e.vendor_id
+        WHERE e.user_id = $1
+        ORDER BY e.expense_date DESC NULLS LAST, e.created_at DESC`,
       [userId]
     );
   },
 
   async findByUserIdAndCategory(userId: string, category: ExpenseCategory): Promise<Expense[]> {
     return query<Expense>(
-      'SELECT * FROM expenses WHERE user_id = $1 AND category = $2 ORDER BY expense_date DESC NULLS LAST',
+      `SELECT e.*, vp.business_name AS vendor_name
+         FROM expenses e
+         LEFT JOIN vendor_profiles vp ON vp.id = e.vendor_id
+        WHERE e.user_id = $1 AND e.category = $2
+        ORDER BY e.expense_date DESC NULLS LAST`,
       [userId, category]
     );
   },

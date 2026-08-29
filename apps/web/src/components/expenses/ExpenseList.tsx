@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { format } from "date-fns";
-import { Calendar, ChevronDown, ChevronUp, Clock, Edit2, Tag, Trash2 } from "lucide-react";
+import { Calendar, ChevronDown, ChevronUp, Clock, Edit2, Store, Tag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -87,6 +87,12 @@ const ExpenseCard = ({
                 <Tag className="h-3 w-3" />
                 {getCategoryLabel(expense.category)}
               </span>
+              {expense.vendorName && (
+                <span className="flex items-center gap-1 max-w-[10rem]">
+                  <Store className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{expense.vendorName}</span>
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 {format(new Date(expense.date), "MMM d, yyyy")}
@@ -244,7 +250,14 @@ const ExpenseList = () => {
                         <span className="text-emerald-600">Settled</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">{getCategoryLabel(expense.category)}</td>
+                    <td className="px-4 py-3">
+                      {getCategoryLabel(expense.category)}
+                      {expense.vendorName && (
+                        <span className="block text-xs text-muted-foreground truncate max-w-[12rem]">
+                          {expense.vendorName}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3"><DueDate expense={expense} /></td>
                     <td className="px-4 py-3">
                       <span className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${status.className}`}>

@@ -100,8 +100,8 @@ const MobileNav = ({ isAuthenticated, isOpen, onClose }: MobileNavProps) => {
               <NavLink to="/my-inquiries" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<MessageSquare className="w-5 h-5" />}>
                 My Inquiries
               </NavLink>
-              <NavLink to="/couple-story" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<BookOpen className="w-5 h-5" />}>
-                Our Story
+              <NavLink to="/story-builder" className="px-4 py-3 rounded-lg hover:bg-muted" showIcon icon={<BookOpen className="w-5 h-5" />}>
+                Wedding Site
               </NavLink>
             </>
           )}
