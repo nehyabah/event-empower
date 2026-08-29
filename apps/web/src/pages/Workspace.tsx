@@ -231,7 +231,7 @@ const Workspace = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="container mx-auto px-4 pt-24 pb-16">
+      <main className="container mx-auto px-3 sm:px-4 pt-24 pb-16">
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="flex w-full justify-start overflow-x-auto no-scrollbar mb-6 h-auto p-1 gap-1 bg-muted/60 rounded-lg sm:grid sm:grid-cols-6 sm:h-10">
@@ -261,15 +261,15 @@ const Workspace = () => {
             {/* Hero banner */}
             <div className="relative rounded-2xl overflow-hidden text-white" style={{ background: "linear-gradient(135deg, #1c1917 0%, #292524 50%, #1c1917 100%)" }}>
               <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(ellipse at 15% 60%, rgba(180,130,80,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 20%, rgba(120,90,55,0.14) 0%, transparent 50%)" }} />
-              <div className="relative px-8 py-8">
+              <div className="relative px-5 py-6 sm:px-8 sm:py-8">
                 <p className="text-xs uppercase tracking-[0.2em] text-stone-400 mb-2 font-medium">Your Wedding</p>
-                <h2 className="text-3xl md:text-4xl font-serif font-medium tracking-tight mb-4">{coupleNames}</h2>
-                <div className="flex flex-wrap items-center gap-5 text-sm text-stone-300">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-medium tracking-tight mb-3 sm:mb-4 break-words">{coupleNames}</h2>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-stone-300">
                   {event.event_date && (
                     <span className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5 text-stone-400 shrink-0" />{formatDate(event.event_date)}</span>
                   )}
                   {event.venue && (
-                    <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" />{event.venue}</span>
+                    <span className="flex items-center gap-1.5 min-w-0"><MapPin className="h-3.5 w-3.5 text-stone-400 shrink-0" /><span className="truncate">{event.venue}</span></span>
                   )}
                   {event.guest_count_estimate > 0 && (
                     <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-stone-400 shrink-0" />{formatNumber(event.guest_count_estimate)} guests</span>
@@ -278,7 +278,7 @@ const Workspace = () => {
                 {event.event_date && (() => {
                   const days = daysUntilDate(event.event_date) ?? 0;
                   if (days > 0) return (
-                    <div className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <div className="mt-4 sm:mt-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
                       <span className="text-lg font-bold" style={{ color: "#e4b96a" }}>{days}</span>
                       <span className="text-stone-300">days to go</span>
                     </div>
@@ -295,18 +295,18 @@ const Workspace = () => {
               const allItems = sharedTodos.flatMap(l => l.items);
               const doneItems = allItems.filter(i => i.completed).length;
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                  <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Guests RSVP'd</p>
-                    <p className="text-2xl font-bold">{formatNumber(guestStats.confirmed)}<span className="text-sm font-normal text-muted-foreground"> / {formatNumber(guestStats.total)}</span></p>
+                    <p className="text-xl sm:text-2xl font-bold">{formatNumber(guestStats.confirmed)}<span className="text-sm font-normal text-muted-foreground"> / {formatNumber(guestStats.total)}</span></p>
                     <div className="h-1 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: guestStats.total > 0 ? `${(guestStats.confirmed / guestStats.total) * 100}%` : "0%" }} />
                     </div>
                   </div>
                   {/* Budget with the outstanding balance, not just the allocation */}
-                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                  <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Budget</p>
-                    <p className="text-2xl font-bold">{event.total_budget ? formatCurrency(event.total_budget) : "—"}</p>
+                    <p className="text-xl sm:text-2xl font-bold">{event.total_budget ? formatCurrency(event.total_budget) : "—"}</p>
                     {expenseSummary && expenseSummary.total_unpaid > 0 ? (
                       <p className={`text-xs font-medium ${expenseSummary.overdue_count > 0 ? "text-red-600" : "text-amber-600"}`}>
                         {formatCurrency(expenseSummary.total_unpaid)} balance owed
@@ -318,14 +318,14 @@ const Workspace = () => {
                       </p>
                     )}
                   </div>
-                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                  <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Vendors</p>
-                    <p className="text-2xl font-bold">{bookedVendors}<span className="text-sm font-normal text-muted-foreground"> / {vendors.length}</span></p>
+                    <p className="text-xl sm:text-2xl font-bold">{bookedVendors}<span className="text-sm font-normal text-muted-foreground"> / {vendors.length}</span></p>
                     <p className="text-xs text-muted-foreground">booked or confirmed</p>
                   </div>
-                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                  <div className="rounded-xl border border-border/60 bg-card p-3 sm:p-4 space-y-1">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Tasks</p>
-                    <p className="text-2xl font-bold">{doneItems}<span className="text-sm font-normal text-muted-foreground"> / {allItems.length}</span></p>
+                    <p className="text-xl sm:text-2xl font-bold">{doneItems}<span className="text-sm font-normal text-muted-foreground"> / {allItems.length}</span></p>
                     <div className="h-1 rounded-full bg-muted overflow-hidden">
                       <div className="h-full bg-primary rounded-full" style={{ width: allItems.length > 0 ? `${(doneItems / allItems.length) * 100}%` : "0%" }} />
                     </div>
@@ -474,7 +474,7 @@ const Workspace = () => {
 
           {/* ── Vision Board ─────────────────────────────────────────────── */}
           <TabsContent value="visionboard" className="mt-0">
-            <div style={{ height: "calc(100vh - 220px)", minHeight: 500, borderRadius: 12, overflow: "hidden", border: "1px solid hsl(var(--border))" }}>
+            <div className="h-[calc(100dvh-230px)] min-h-[360px] sm:min-h-[500px] rounded-xl overflow-hidden border">
               <VisionBoardCanvas />
             </div>
           </TabsContent>

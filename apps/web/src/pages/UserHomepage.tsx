@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import VerifyEmailBanner from "@/components/auth/VerifyEmailBanner";
 import Navbar from "@/components/layout/Navbar";
 import WeddingCountdown from "@/components/dashboard/WeddingCountdown";
 import { Button } from "@/components/ui/button";
@@ -148,7 +147,6 @@ const UserHomepage = () => {
       <Navbar />
       <main className="flex-grow pt-20 pb-12">
         <div className="container mx-auto px-4 space-y-6 max-w-5xl">
-          <VerifyEmailBanner />
 
           {/* The couple's names, in the same script the invitation card uses,
               so opening the app feels like theirs rather than a dashboard.
