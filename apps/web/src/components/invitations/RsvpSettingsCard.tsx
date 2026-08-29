@@ -200,7 +200,7 @@ export const RsvpSettingsCard = () => {
         <CardContent className="space-y-4">
           {rsvpUrl && (
             <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded-md border bg-muted/50 px-3 py-2 text-xs">
+              <code className="min-w-0 flex-1 truncate rounded-md border bg-muted/50 px-3 py-2 text-xs">
                 {rsvpUrl}
               </code>
               <Button size="sm" variant="outline" onClick={copyLink} className="shrink-0">
