@@ -107,6 +107,31 @@
     }
   }
 
+  /* 100vh on a phone is the viewport with the browser chrome hidden, which is
+     taller than what you can actually see — so a page that exactly fits still
+     scrolls, with nothing underneath. dvh is the visible height and follows
+     the chrome as it collapses.
+
+     Redefined here rather than edited across thirty-eight files, and guarded
+     so a browser without dvh keeps Tailwind's original value. */
+  /* Safari gives a date input an intrinsic width from its own chrome and will
+     not shrink below it, so the field ran past its container on a narrow
+     phone. Dropping the native appearance lets it take the width it is given.
+     The picker still opens; only the built-in decoration goes. */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  @supports (min-height: 100dvh) {
+    .min-h-screen { min-height: 100dvh; }
+    .h-screen { height: 100dvh; }
+  }
+
   /* ── Scroll-driven scenes ──────────────────────────────────────────────
      Sections previously just stacked and faded in. These are driven by how
      far the reader has scrolled through them (--p, set by useScrollScene),

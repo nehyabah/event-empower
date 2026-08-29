@@ -95,6 +95,11 @@ const BottomNav = () => {
   // navigation drawing over that preview makes it look like the published
   // site has edit controls on it, which it does not.
   const inPreviewFrame = typeof window !== "undefined" && window.self !== window.top;
+
+  // Every destination is gated until the address is confirmed, so the bar
+  // would be a row of dead ends — and the padding it reserves is why that
+  // screen scrolled with nothing beneath it.
+  const awaitingVerification = user?.emailVerified === false;
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [accountOpen, setAccountOpen] = useState(false);
@@ -107,11 +112,14 @@ const BottomNav = () => {
   // usually a submit button. A class on <body> lets one CSS rule reserve the
   // space, rather than every page remembering to add padding.
   useEffect(() => {
-    document.body.classList.toggle("has-bottom-nav", visible && !inPreviewFrame);
+    document.body.classList.toggle(
+      "has-bottom-nav",
+      visible && !inPreviewFrame && !awaitingVerification
+    );
     return () => document.body.classList.remove("has-bottom-nav");
-  }, [visible, inPreviewFrame]);
+  }, [visible, inPreviewFrame, awaitingVerification]);
 
-  if (!visible || !items || inPreviewFrame) return null;
+  if (!visible || !items || inPreviewFrame || awaitingVerification) return null;
 
   return (
     <nav
