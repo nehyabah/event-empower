@@ -2,17 +2,42 @@ import { Request, Response, NextFunction } from 'express';
 import { queryOne } from '../config/database.js';
 
 /**
- * Blocks the actions that reach other people until an address is confirmed.
+ * Blocks a new account until it has confirmed its address.
  *
- * Deliberately narrow. Signing up, planning a wedding and filling in a
- * profile are all fine unverified — a wall on first use would cost more than
- * it protects. What is gated is anything that leaves the account: messaging a
- * vendor, and publishing a public wedding site. Those are where an
- * unverifiable identity actually costs somebody else something.
+ * A hard gate: nothing is created or changed under an account whose address
+ * has not been proven. The UI stands the verification screen in front of every
+ * authenticated route, and this is what makes that a rule rather than a
+ * routing decision — the API is reachable directly.
  *
  * Accounts created before verification existed were backfilled as verified,
- * so this only ever applies to new signups.
+ * and Google and passwordless sign-ins arrive already proven, so this only
+ * ever catches a fresh email signup.
  */
+
+/**
+ * Router-level guard: blocks every write by an unverified account.
+ *
+ * Applied with router.use so routes added later are covered by default —
+ * annotating each one means the next route added is unprotected and nobody
+ * notices. Reads pass through, as does anything the account needs in order to
+ * become verified.
+ *
+ * Only safe on a router that has already run authenticate.
+ */
+export function blockUnverifiedWrites(exempt: RegExp[] = []) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      next();
+      return;
+    }
+    if (exempt.some((pattern) => pattern.test(req.path))) {
+      next();
+      return;
+    }
+    await requireVerifiedEmail(req, res, next);
+  };
+}
+
 export async function requireVerifiedEmail(
   req: Request,
   res: Response,

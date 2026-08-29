@@ -936,7 +936,7 @@ const SaveTheDateCard = ({
             {movable("name1", "", (
               <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
                 style={{ fontFamily: template.nameFont, color: template.ink }}>
-                {formatName(names.partner1 || "Bride")}
+                {formatName(names.partner1 || "Ada")}
               </h2>
             ))}
             {movable("amp", "", (
@@ -948,7 +948,7 @@ const SaveTheDateCard = ({
             {movable("name2", "", (
               <h2 className="leading-tight text-xl sm:text-3xl md:text-4xl"
                 style={{ fontFamily: template.nameFont, color: template.ink }}>
-                {formatName(names.partner2 || "Groom")}
+                {formatName(names.partner2 || "Femi")}
               </h2>
             ))}
 

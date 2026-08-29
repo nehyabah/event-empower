@@ -116,7 +116,7 @@ const EventSetup = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="p2">Partner's name</Label>
-                      <Input id="p2" value={partner2} onChange={(e) => setPartner2(e.target.value)} placeholder="Obi" />
+                      <Input id="p2" value={partner2} onChange={(e) => setPartner2(e.target.value)} placeholder="Femi" />
                     </div>
                   </div>
 

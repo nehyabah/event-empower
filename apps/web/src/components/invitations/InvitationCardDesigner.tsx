@@ -28,10 +28,10 @@ import { formatDateOnly } from "@/lib/dates";
  */
 export const InvitationCardDesigner = () => {
   const [partner1Name, setPartner1Name] = useState(
-    () => localStorage.getItem("partner1Name") || "Bride",
+    () => localStorage.getItem("partner1Name") || "Ada",
   );
   const [partner2Name, setPartner2Name] = useState(
-    () => localStorage.getItem("partner2Name") || "Partner",
+    () => localStorage.getItem("partner2Name") || "Femi",
   );
   const [venue, setVenue] = useState(
     () => localStorage.getItem("venue") || "",

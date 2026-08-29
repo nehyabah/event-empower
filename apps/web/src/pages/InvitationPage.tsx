@@ -33,8 +33,8 @@ const InvitationPage = () => {
         year: "numeric",
       })
     : "Date TBD";
-  const localPartner1Name = localStorage.getItem("partner1Name") || "Partner 1";
-  const localPartner2Name = localStorage.getItem("partner2Name") || "Partner 2";
+  const localPartner1Name = localStorage.getItem("partner1Name") || "Ada";
+  const localPartner2Name = localStorage.getItem("partner2Name") || "Femi";
   const localVenue = localStorage.getItem("venue") || "";
   // Design comes from the link the couple shared; localStorage is only a
   // fallback for the couple previewing their own card
@@ -71,8 +71,8 @@ const InvitationPage = () => {
             : "Date TBD";
 
           setEventData({
-            partner1Name: info.partner1Name || "Partner 1",
-            partner2Name: info.partner2Name || "Partner 2",
+            partner1Name: info.partner1Name || "Ada",
+            partner2Name: info.partner2Name || "Femi",
             eventDate,
             venue: info.venue || "Venue TBD",
             storySlug: info.storySlug || null,

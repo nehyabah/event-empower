@@ -412,7 +412,7 @@ const VendorCalendar = () => {
                 <Input
                   value={form.clientName}
                   onChange={(e) => setForm((p) => ({ ...p, clientName: e.target.value }))}
-                  placeholder="Ada & Chidi"
+                  placeholder="Ada & Femi"
                 />
               </div>
             )}

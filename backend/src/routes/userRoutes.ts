@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { blockUnapprovedWrites } from '../middleware/requireApproved.js';
-import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail.js';
+import { blockUnverifiedWrites, requireVerifiedEmail } from '../middleware/requireVerifiedEmail.js';
 import multer from 'multer';
 import { userController } from '../controllers/userController.js';
 import { storyController } from '../controllers/storyController.js';
@@ -15,6 +15,7 @@ router.use(authenticate);
 
 // No requireUserType here, so a pending vendor or planner can otherwise reach
 // every write below. Couples and admins pass straight through.
+router.use(blockUnverifiedWrites([/^\/me\/verify-email(\/|$)/]));
 router.use(blockUnapprovedWrites([/^\/me(\/|$)/]));
 
 // Account settings - name, email, notification preferences. Exempted from

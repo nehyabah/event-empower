@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { blockUnapprovedWrites } from '../middleware/requireApproved.js';
+import { blockUnverifiedWrites } from '../middleware/requireVerifiedEmail.js';
 import multer from 'multer';
 import { plannerController } from '../controllers/plannerController.js';
 import { authenticate, requireUserType } from '../middleware/auth.js';
@@ -14,6 +15,7 @@ router.use(requireUserType('planner'));
 
 // An unapproved planner can read, and can edit their own profile — that is the
 // thing we are asking them to do. Everything else waits for approval.
+router.use(blockUnverifiedWrites());
 router.use(blockUnapprovedWrites([/^\/profile(\/|$)/]));
 
 // Profile

@@ -36,6 +36,7 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Settings from "./pages/Settings";
+import VerifyEmail from "./pages/VerifyEmail";
 import StoryBuilder from "./pages/StoryBuilder";
 import VendorMessages from "./pages/VendorMessages";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -82,6 +83,16 @@ const RequireAuth = ({ children, allowedTypes }: { children: React.ReactNode; al
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
+  }
+
+  // A hard gate, in front of every authenticated route. Until the address is
+  // confirmed there is nothing useful to do in the app, and letting someone
+  // fill in their whole wedding first only makes the eventual block worse.
+  // Accounts predating verification were backfilled, and Google and
+  // passwordless sign-ins arrive already proven, so this only ever catches a
+  // fresh email signup.
+  if (user?.emailVerified === false) {
+    return <VerifyEmail />;
   }
 
   // Check if user type is allowed (if specified)

@@ -43,7 +43,7 @@ const FIELDS: Partial<
   >
 > = {
   hero: [
-    { key: "title", label: "Headline", placeholder: "Ada & Obi" },
+    { key: "title", label: "Headline", placeholder: "Ada & Femi" },
     { key: "banner_image_url", label: "Banner photo", type: "image", help: "The large photo behind your names." },
     { key: "hashtag", label: "Hashtag", placeholder: "#AdaWedsObi" },
   ],
@@ -60,7 +60,7 @@ const FIELDS: Partial<
     { key: "bride_name", label: "Bride's name", placeholder: "Ada" },
     { key: "bride_bio", label: "About her", multiline: true },
     { key: "bride_image_url", label: "Her photo", type: "image" },
-    { key: "groom_name", label: "Groom's name", placeholder: "Obi" },
+    { key: "groom_name", label: "Groom's name", placeholder: "Femi" },
     { key: "groom_bio", label: "About him", multiline: true },
     { key: "groom_image_url", label: "His photo", type: "image" },
   ],
