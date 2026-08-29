@@ -12,8 +12,12 @@ import { useAuth } from "@/context/AuthContext";
 import userService from "@/services/api/userService";
 
 /**
- * Account settings: name, email, and which optional email categories to
- * receive.
+ * Account settings: name, and which optional email categories to receive.
+ *
+ * The email address is shown but not editable. It is the account's identity —
+ * it signs you in and receives login codes — so changing it needs the new
+ * address verified before the old one stops working, which is a flow of its
+ * own rather than a field on this form.
  *
  * Login codes, password resets and booking updates are never listed as a
  * toggle here - they are the account functioning, not a preference, and
@@ -64,7 +68,6 @@ const Settings = () => {
     try {
       await updateUser({
         name: name.trim(),
-        email: email.trim(),
         notifyReminders,
         notifyProductUpdates,
         notifyNewsletter,
@@ -114,16 +117,19 @@ const Settings = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="settings-email">Email</Label>
-                      <Input
-                        id="settings-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                      />
+                      <Label>Email</Label>
+                      {/* Read-only: this address is the account's identity — it
+                          signs you in, receives login codes, and is what a
+                          vendor replies to. Changing it needs verification of
+                          the new address before the old one stops working, so
+                          it is not something to do from a form that saves on a
+                          button press. */}
+                      <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/40 px-3 text-base md:text-sm text-muted-foreground">
+                        {email || "—"}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         Used to sign in and to receive login codes and booking updates.
+                        Contact us if you need it changed.
                       </p>
                     </div>
                   </CardContent>

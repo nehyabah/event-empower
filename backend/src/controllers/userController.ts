@@ -25,9 +25,18 @@ function toAuthUserJson(user: import('../models/User.js').User) {
   };
 }
 
+/**
+ * Email is deliberately absent.
+ *
+ * The address is the account's identity: it signs the user in, receives
+ * login codes, and is what a vendor replies to. Changing it needs the new
+ * address verified before the old one stops working — otherwise a typo, or
+ * anyone with a borrowed session, locks the owner out permanently. The
+ * settings form no longer offers it, and this makes that a rule rather than
+ * a UI convention.
+ */
 const updateMeSchema = z.object({
   name: z.string().trim().min(1).max(255).optional(),
-  email: z.string().trim().toLowerCase().email().optional(),
   notifyReminders: z.boolean().optional(),
   notifyProductUpdates: z.boolean().optional(),
   notifyNewsletter: z.boolean().optional(),
@@ -610,17 +619,8 @@ export const userController = {
     try {
       const input = updateMeSchema.parse(req.body);
 
-      if (input.email) {
-        const existing = await UserModel.findByEmail(input.email);
-        if (existing && existing.id !== req.user!.userId) {
-          res.status(409).json({ error: 'That email is already in use.' });
-          return;
-        }
-      }
-
       const updated = await UserModel.update(req.user!.userId, {
         ...(input.name !== undefined ? { name: input.name } : {}),
-        ...(input.email !== undefined ? { email: input.email } : {}),
         ...(input.notifyReminders !== undefined ? { notify_reminders: input.notifyReminders } : {}),
         ...(input.notifyProductUpdates !== undefined ? { notify_product_updates: input.notifyProductUpdates } : {}),
         ...(input.notifyNewsletter !== undefined ? { notify_newsletter: input.notifyNewsletter } : {}),

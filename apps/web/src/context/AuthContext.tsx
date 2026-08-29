@@ -43,7 +43,7 @@ interface AuthContextType {
   verifyPhoneOtp: (phone: string, code: string, userType?: UserType) => Promise<void>;
   updateUser: (updates: {
     name?: string;
-    email?: string;
+    /** Email is not self-editable — it is the account's identity. */
     userType?: UserType;
     notifyReminders?: boolean;
     notifyProductUpdates?: boolean;
@@ -222,7 +222,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = async (updates: {
     name?: string;
-    email?: string;
     userType?: UserType;
     notifyReminders?: boolean;
     notifyProductUpdates?: boolean;
