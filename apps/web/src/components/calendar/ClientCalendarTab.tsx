@@ -81,7 +81,7 @@ export const ClientCalendarTab = () => {
       <Card className="lg:col-span-2">
         <CardContent className="p-4 sm:p-5">
           {isLoading ? (
-            <div className="flex h-[480px] items-center justify-center">
+            <div className="flex h-[320px] sm:h-[480px] items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
@@ -100,10 +100,15 @@ export const ClientCalendarTab = () => {
         </CardContent>
       </Card>
 
-      <div className="space-y-5">
-        <NextEventCard entry={nextEvent} isLoading={isLoading} />
+      <div className="flex flex-col gap-5">
+        {/* On a phone, tapping a day should put that day's events directly
+            beneath the calendar. On a wide screen the sidebar reads better
+            with what is coming up at the top, so the order swaps back. */}
+        <div className="order-2 lg:order-1">
+          <NextEventCard entry={nextEvent} isLoading={isLoading} />
+        </div>
 
-        <Card>
+        <Card className="order-1 lg:order-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">
               {selectedDate
@@ -173,7 +178,9 @@ export const ClientCalendarTab = () => {
           </CardContent>
         </Card>
 
-        <CalendarSyncCard feedUrl={feedUrl} webcalUrl={webcalUrl} onRotated={applyFeedUrls} />
+        <div className="order-3">
+          <CalendarSyncCard feedUrl={feedUrl} webcalUrl={webcalUrl} onRotated={applyFeedUrls} />
+        </div>
       </div>
 
       <AddWorkspaceEventDialog

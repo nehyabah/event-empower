@@ -128,11 +128,11 @@ export const MonthCalendar = ({
   return (
     <div className={cn("flex flex-col", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-medium">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <h2 className="text-base sm:text-lg font-medium truncate">
           {month.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
         </h2>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <Button
             size="sm"
             variant="outline"
@@ -155,7 +155,7 @@ export const MonthCalendar = ({
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="border-r border-b bg-muted/50 px-2 py-1.5 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+            className="border-r border-b bg-muted/50 px-0.5 sm:px-2 py-1.5 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
           >
             <span className="hidden sm:inline">{day}</span>
             <span className="sm:hidden">{day[0]}</span>
@@ -178,7 +178,7 @@ export const MonthCalendar = ({
               key={key}
               onClick={() => onSelectDate?.(key)}
               className={cn(
-                "border-r border-b min-h-[58px] sm:min-h-[110px] p-1 sm:p-1.5 flex flex-col gap-1 transition-colors",
+                "border-r border-b min-h-[64px] sm:min-h-[110px] p-1 sm:p-1.5 flex flex-col gap-1 transition-colors",
                 onSelectDate && "cursor-pointer hover:bg-muted/40",
                 !inMonth && "bg-muted/20",
                 isSelected && "bg-primary/5 ring-1 ring-inset ring-primary/40",
