@@ -10,6 +10,8 @@ import { CalendarEntry } from "@/services/api/calendarService";
 import AddWorkspaceEventDialog from "./AddWorkspaceEventDialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import AgendaList from "./AgendaList";
+import { cn } from "@/lib/utils";
 
 const SOURCE_LABELS: Record<string, string> = {
   wedding: "Wedding",
@@ -29,6 +31,17 @@ const SOURCE_BADGES: Record<string, string> = {
   expense_due: "bg-amber-100 text-amber-900",
   rsvp_deadline: "bg-rose-100 text-rose-800",
   workspace_event: "bg-indigo-100 text-indigo-800",
+};
+
+/** Solid fills for the agenda's accent bar; the badge tints are too pale at 4px. */
+const SOURCE_ACCENTS: Record<string, string> = {
+  wedding: "bg-pink-500",
+  planner_event: "bg-blue-500",
+  vendor_booking: "bg-violet-500",
+  todo_due: "bg-emerald-500",
+  expense_due: "bg-amber-500",
+  rsvp_deadline: "bg-rose-500",
+  workspace_event: "bg-indigo-500",
 };
 
 const formatTime = (time: string | null): string => {
@@ -55,6 +68,16 @@ export const ClientCalendarTab = () => {
   const [viewing, setViewing] = useState<CalendarEntry | null>(null);
   // Day the user clicked "add" on; also drives the dialog being open.
   const [addingOn, setAddingOn] = useState<string | null>(null);
+  // Below lg the month grid gives each day about 43px, which is not enough to
+  // show anything but a dot. The running list is the default there; the grid
+  // stays one tap away. Ignored from lg up, where both would fit but the grid
+  // is the better read.
+  const [mobileView, setMobileView] = useState<"agenda" | "month">("agenda");
+
+  const todayKey = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }, []);
 
   const dayEntries = useMemo(
     () => (selectedDate ? entries.filter((e) => e.date === selectedDate) : []),
@@ -78,7 +101,53 @@ export const ClientCalendarTab = () => {
 
   return (
     <div className="grid gap-5 lg:grid-cols-3">
-      <Card className="lg:col-span-2">
+      <div className="space-y-4 lg:col-span-2">
+        <div className="flex items-center justify-between gap-3 lg:hidden">
+          <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
+            {(["agenda", "month"] as const).map((view) => (
+              <button
+                key={view}
+                type="button"
+                onClick={() => setMobileView(view)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors",
+                  mobileView === view
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground",
+                )}
+              >
+                {view}
+              </button>
+            ))}
+          </div>
+          {mobileView === "agenda" && (
+            <Button size="sm" variant="outline" onClick={() => setAddingOn(todayKey)}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              Add
+            </Button>
+          )}
+        </div>
+
+        {mobileView === "agenda" && (
+          <div className="lg:hidden">
+            {isLoading ? (
+              <div className="flex h-40 items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <AgendaList
+                entries={upcoming}
+                labels={SOURCE_LABELS}
+                accents={SOURCE_ACCENTS}
+                onSelectEntry={(gridEntry) =>
+                  setViewing(entries.find((e) => e.id === gridEntry.id) || null)
+                }
+              />
+            )}
+          </div>
+        )}
+
+      <Card className={cn(mobileView === "agenda" && "hidden lg:block")}>
         <CardContent className="p-4 sm:p-5">
           {isLoading ? (
             <div className="flex h-[320px] sm:h-[480px] items-center justify-center">
@@ -99,16 +168,17 @@ export const ClientCalendarTab = () => {
           )}
         </CardContent>
       </Card>
+      </div>
 
       <div className="flex flex-col gap-5">
         {/* On a phone, tapping a day should put that day's events directly
             beneath the calendar. On a wide screen the sidebar reads better
             with what is coming up at the top, so the order swaps back. */}
-        <div className="order-2 lg:order-1">
+        <div className={cn("order-2 lg:order-1", mobileView === "agenda" && "hidden lg:block")}>
           <NextEventCard entry={nextEvent} isLoading={isLoading} />
         </div>
 
-        <Card className="order-1 lg:order-2">
+        <Card className={cn("order-1 lg:order-2", mobileView === "agenda" && "hidden lg:block")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold">
               {selectedDate
