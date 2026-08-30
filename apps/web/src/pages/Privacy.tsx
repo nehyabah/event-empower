@@ -76,7 +76,7 @@ const Privacy = () => {
                 address, phone number, party size and dietary notes. When a guest responds to an
                 invitation we record their reply and the email address they give.
               </p>
-              <p className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900">
+              <p>
                 Your guests' details are personal data belonging to them, not to you. You are
                 responsible for having a proper reason to share them with us, and for telling your
                 guests that you have. We use them only to run your wedding — to record replies and
@@ -88,7 +88,7 @@ const Privacy = () => {
                 If you set up a gift registry you can add bank account details — account name and
                 number, and where relevant sort code, IBAN or SWIFT.
               </p>
-              <p className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900">
+              <p>
                 These are published on your wedding website so guests can send gifts, which means
                 anyone with your website link can see them. That is what they are for, but please
                 add them knowing they are public.

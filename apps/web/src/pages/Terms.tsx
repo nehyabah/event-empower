@@ -48,7 +48,7 @@ const Terms = () => {
             </Section>
 
             <Section title="The service is still in testing">
-              <p className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900">
+              <p>
                 àjọyọ is early software. Features may change or be withdrawn, data may occasionally
                 be lost, and the service may be unavailable without notice. Please keep your own
                 copy of anything you cannot afford to lose — particularly your guest list.
@@ -92,7 +92,7 @@ const Terms = () => {
             </Section>
 
             <Section title="Your guests' details">
-              <p className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900">
+              <p>
                 When you add guests, you are giving us other people's personal data. You are
                 responsible for having a proper basis to do that and for telling them. We use it
                 only to run your wedding — recording replies and sending the reminders you schedule.
@@ -105,7 +105,7 @@ const Terms = () => {
                 you reach with a vendor or planner is between you and them. We are not a party to
                 it, we do not vet the work, and we cannot resolve a dispute about it.
               </p>
-              <p className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-900">
+              <p>
                 No money moves through àjọyọ. Booking amounts and budgets you record here are your
                 notes, not transactions. If you add bank details to your gift registry, they are
                 published on your wedding website and guests pay you directly — we never see, hold
