@@ -1,0 +1,92 @@
+# Checks every push, and deploys main without anyone clicking anything.
+#
+# Railway's own GitHub trigger is what this replaces. It deployed e0babed on
+# 29 Aug and then silently stopped firing for the three commits after it, with
+# no failed build to look at — the deploy simply never happened. Driving the
+# deploy from here makes it observable: if it does not run, there is a red run
+# to point at.
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  # Deploys queue rather than cancel. Cancelling would reintroduce exactly the
+  # failure being fixed: a push that never reaches production.
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Matches backend/Dockerfile, so CI cannot pass on a version production
+      # does not run.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # Same scoping as the Dockerfile: npm workspaces resolves the whole tree,
+      # but apps/mobile is not built here and pulling Expo in costs minutes.
+      - name: Install
+        run: npm ci --workspace=backend --workspace=apps/web --include-workspace-root
+
+      # vite build uses esbuild, which strips types without checking them, so
+      # nothing else in this pipeline would notice a type error.
+      - name: Typecheck backend
+        run: npx tsc --noEmit
+        working-directory: backend
+
+      # Advisory, not blocking. The web app carries ~60 pre-existing type errors,
+      # nearly all of them react-query v4 syntax (`keepPreviousData`) left behind
+      # by the v5 upgrade, plus a few admin response fields that no longer exist.
+      # They were invisible until Aug 2026 because a corrupted node_modules had
+      # dropped every .d.ts from @tanstack/query-core, so the whole library
+      # resolved to nothing and none of these calls were checked.
+      #
+      # Nothing here reaches users: vite builds with esbuild, which strips types
+      # without checking them. Blocking on this today would just mean no deploys.
+      # Flip to blocking once the admin pages are cleaned up.
+      - name: Typecheck web (advisory)
+        run: npx tsc -p tsconfig.app.json --noEmit
+        working-directory: apps/web
+        continue-on-error: true
+
+      # Correctness rules only; see scripts/ci-lint-gate.mjs for why not all.
+      - name: Lint gate
+        run: node ../../scripts/ci-lint-gate.mjs src
+        working-directory: apps/web
+
+      - name: Build
+        run: npm run build:backend && npm run build:web
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      # `up` uploads this checkout as the build context and waits for the
+      # build, so a broken image fails the run instead of passing quietly.
+      # Railway still builds it with backend/Dockerfile per railway.toml, and
+      # still injects service variables as build args, so VITE_GOOGLE_CLIENT_ID
+      # is unaffected. Migrations run from the container's own start command.
+      - name: Deploy
+        run: railway up --service "$RAILWAY_SERVICE"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
