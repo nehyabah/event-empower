@@ -53,6 +53,7 @@ export const RsvpSettingsCard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingDeadline, setIsSavingDeadline] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const [deadline, setDeadline] = useState("");
@@ -140,6 +141,26 @@ export const RsvpSettingsCard = () => {
   const mode: ReminderScheduleMode = settings?.schedule_mode ?? "recurring";
   const today = toDateInput(new Date()) ?? "";
 
+  const sendInvitations = async () => {
+    setIsInviting(true);
+    try {
+      const result = await userService.sendInvitations();
+      if (result.reason) toast.info(result.reason);
+      else if (result.sent === 0 && result.skipped > 0)
+        toast.info(`Nobody could be emailed — ${result.skipped} guest${result.skipped === 1 ? " has" : "s have"} no email address on file.`);
+      else {
+        toast.success(`Invitation sent to ${result.sent} guest${result.sent === 1 ? "" : "s"}`);
+        if (result.skipped > 0) toast.info(`${result.skipped} skipped — no email address on file.`);
+        if (result.failed > 0) toast.warning(`${result.failed} could not be delivered.`);
+      }
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send the invitations");
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   const sendNow = async () => {
     setIsSending(true);
     try {
@@ -160,7 +181,7 @@ export const RsvpSettingsCard = () => {
     try {
       await navigator.clipboard.writeText(rsvpUrl);
       setCopied(true);
-      toast.success("Invitation link copied");
+      toast.success("Link copied — share it with your guests yourself");
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Couldn't copy the link");
@@ -438,6 +459,13 @@ export const RsvpSettingsCard = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" onClick={sendInvitations} disabled={isInviting}>
+              {isInviting ? (
+                <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Sending…</>
+              ) : (
+                <><Send className="mr-1.5 h-3.5 w-3.5" />Send invitations</>
+              )}
+            </Button>
             <Button size="sm" variant="outline" onClick={sendNow} disabled={isSending}>
               {isSending ? (
                 <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Sending…</>

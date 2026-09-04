@@ -950,6 +950,16 @@ export const userController = {
   },
 
   /** Fire a round of reminders immediately, independent of the schedule. */
+  /** Sends the invitation to everyone not yet invited. */
+  async sendInvitations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const resendAll = req.body?.resendAll === true;
+      res.json(await reminderService.sendInvitations(req.user!.userId, { resendAll }));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async sendRemindersNow(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await reminderService.sendReminders(req.user!.userId, 'manual');

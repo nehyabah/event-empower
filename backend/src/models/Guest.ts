@@ -17,6 +17,8 @@ export interface Guest {
   guest_count: number;
   /** When this guest answered, or null if they never have. */
   rsvp_responded_at: Date | null;
+  /** When the invitation was emailed, or null if it never was. */
+  invitation_sent_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -49,6 +51,11 @@ export interface UpdateGuestInput {
 }
 
 export const GuestModel = {
+  /** Records that the invitation reached this guest, so a resend skips them. */
+  async markInvited(id: string): Promise<void> {
+    await query('UPDATE guests SET invitation_sent_at = NOW() WHERE id = $1', [id]);
+  },
+
   async findById(id: string): Promise<Guest | null> {
     return queryOne<Guest>(
       'SELECT * FROM guests WHERE id = $1',

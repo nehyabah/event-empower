@@ -124,6 +124,97 @@ export const reminderService = {
    * Used by both the scheduler and the "send now" button; `trigger` only
    * affects how the send is recorded.
    */
+  /**
+   * Sends the invitation to guests who have not had one.
+   *
+   * Separate from sendReminders on purpose. A reminder chases people who have
+   * not replied and repeats on a cadence; an invitation goes out once, to
+   * everyone, and must not be sent twice — so it is keyed off
+   * invitation_sent_at rather than RSVP status, and a resend picks up only the
+   * guests added since.
+   *
+   * Email only. An invitation carries a date, a venue and a link, which is more
+   * than an SMS should be asked to hold.
+   */
+  async sendInvitations(userId: string, options: { resendAll?: boolean } = {}): Promise<ReminderRunResult> {
+    const settings = await GuestReminderModel.getOrCreate(userId);
+    const event = await UserEventModel.findByUserId(userId);
+
+    const reason = blockingReason(event, settings);
+    if (reason || !event) {
+      return { sent: 0, skipped: 0, failed: 0, reason: reason || 'No event configured' };
+    }
+
+    const allGuests = await GuestModel.findByUserId(userId);
+    const guests = options.resendAll ? allGuests : allGuests.filter((g) => !g.invitation_sent_at);
+
+    if (guests.length === 0) {
+      return {
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        reason: allGuests.length === 0
+          ? 'There is nobody on the guest list yet'
+          : 'Everyone on the list has already been invited',
+      };
+    }
+
+    const rsvpUrl = await buildRsvpUrl(event);
+    const coupleNames = coupleNamesFor(event);
+    const eventDate = formatDate(event.event_date);
+    const deadline = formatDate(event.rsvp_deadline);
+
+    let sent = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const guest of guests) {
+      if (!guest.email) {
+        skipped++;
+        await GuestReminderModel.log({
+          user_id: userId,
+          guest_id: guest.id,
+          channel: 'email',
+          status: 'skipped',
+          error: 'No email address on file',
+          trigger: 'invitation',
+        });
+        continue;
+      }
+
+      try {
+        await emailService.sendGuestInvitation({
+          toEmail: guest.email,
+          guestName: guest.name,
+          coupleNames,
+          eventDate,
+          venue: event.venue,
+          rsvpUrl,
+          deadline,
+          customMessage: event.rsvp_message,
+        });
+        // Only marked once the send resolved, so a failure is retried next time
+        // rather than silently counted as delivered.
+        await GuestModel.markInvited(guest.id);
+        sent++;
+        await GuestReminderModel.log({
+          user_id: userId, guest_id: guest.id, channel: 'email',
+          destination: guest.email, status: 'sent', trigger: 'invitation',
+        });
+      } catch (error) {
+        failed++;
+        await GuestReminderModel.log({
+          user_id: userId, guest_id: guest.id, channel: 'email',
+          destination: guest.email, status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          trigger: 'invitation',
+        });
+      }
+    }
+
+    return { sent, skipped, failed };
+  },
+
   async sendReminders(userId: string, trigger: 'scheduled' | 'manual' = 'manual'): Promise<ReminderRunResult> {
     const settings = await GuestReminderModel.getOrCreate(userId);
     const event = await UserEventModel.findByUserId(userId);

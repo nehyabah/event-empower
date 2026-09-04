@@ -38,6 +38,8 @@ router.get('/rsvp-code', userController.getRsvpCode);
 router.get('/guest-reminders', userController.getReminderSettings);
 router.patch('/guest-reminders', userController.updateReminderSettings);
 router.post('/guest-reminders/send', userController.sendRemindersNow);
+// The invitation itself, as opposed to chasing a reply.
+router.post('/guest-invitations/send', userController.sendInvitations);
 
 // Workspace (combined view: event + planner + vendors + shared todos + guest stats)
 router.get('/workspace', userController.getWorkspace);

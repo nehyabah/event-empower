@@ -660,6 +660,13 @@ export const userService = {
     return response.data;
   },
 
+  /** Sends the invitation to guests who have not received one yet. */
+  async sendInvitations(resendAll = false): Promise<ReminderRunResult> {
+    const response = await apiClient.post<ReminderRunResult>('/users/guest-invitations/send', { resendAll });
+    if (response.error) throw new Error(response.error);
+    return response.data!;
+  },
+
   async sendRemindersNow(): Promise<ReminderRunResult> {
     const response = await apiClient.post<ReminderRunResult>('/users/guest-reminders/send', {});
     if (response.error || !response.data) {

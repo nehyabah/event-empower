@@ -3,6 +3,7 @@ import { GuestStatus } from './Guest.js';
 
 export type ReminderFrequency = 'daily' | 'every_3_days' | 'weekly' | 'biweekly' | 'monthly';
 export type ReminderChannel = 'email' | 'sms' | 'both';
+export type ReminderTrigger = 'scheduled' | 'manual' | 'invitation';
 /** Repeat on a cadence, or send only on days the couple picked. */
 export type ReminderScheduleMode = 'recurring' | 'custom_dates';
 
@@ -263,7 +264,7 @@ export const GuestReminderModel = {
     destination?: string | null;
     status?: 'sent' | 'failed' | 'skipped';
     error?: string | null;
-    trigger?: 'scheduled' | 'manual';
+    trigger?: 'scheduled' | 'manual' | 'invitation';
   }): Promise<void> {
     await query(
       `INSERT INTO guest_reminder_log (user_id, guest_id, channel, destination, status, error, trigger)
