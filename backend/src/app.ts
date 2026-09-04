@@ -160,6 +160,29 @@ app.use(errorHandler);
 
 // Start server
 const port = parseInt(env.PORT, 10);
+/**
+ * Last line of defence.
+ *
+ * Node 20 exits the process on an unhandled rejection. For a web server that
+ * trade is backwards: one request's un-caught database error should fail that
+ * request, not take the site off the air for everyone. On 2 Sep it did exactly
+ * that — a check-constraint violation on a single wedding-party row crashed the
+ * server repeatedly until Railway gave up restarting it.
+ *
+ * Handlers are wrapped so rejections should now reach the error middleware; this
+ * exists for the ones that slip through. It logs loudly rather than dying, so
+ * the failure is visible in the deploy logs without being fatal.
+ */
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection] request failed but the server is staying up:', reason);
+});
+
+// An uncaught exception leaves the process in an unknown state, so this only
+// makes the reason findable — it does not pretend recovery is safe.
+process.on('uncaughtException', (error) => {
+  console.error('[uncaughtException]', error);
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Environment: ${env.NODE_ENV}`);

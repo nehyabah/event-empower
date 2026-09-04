@@ -27,6 +27,12 @@ export interface ListFieldSpec {
   multiline?: boolean;
   /** "image" renders a file picker; anything else is passed to <input type>. */
   type?: string;
+  /**
+   * Fixed choices. Use this wherever the column is constrained — free text into
+   * a CHECK constraint is how "Bride" reached a column that only accepts
+   * lowercase and took the API down.
+   */
+  options?: { value: string; label: string }[];
   required?: boolean;
 }
 
@@ -227,6 +233,17 @@ const ListSectionEditor = <T extends { id: string }>({
                   label={f.label}
                   onChange={(url) => setDraft((d) => ({ ...d!, [f.key]: url }))}
                 />
+              ) : f.options ? (
+                <select
+                  id={`l-${f.key}`}
+                  value={draft[f.key] ?? ""}
+                  onChange={(e) => setDraft((d) => ({ ...d!, [f.key]: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  {f.options.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
               ) : f.multiline ? (
                 <Textarea
                   id={`l-${f.key}`}

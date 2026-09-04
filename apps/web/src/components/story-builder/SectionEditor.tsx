@@ -101,7 +101,15 @@ const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
         fields: [
           { key: "name", label: "Name", placeholder: "Chidinma", required: true },
           { key: "role", label: "Role", placeholder: "Chief bridesmaid", required: true },
-          { key: "side", label: "Side", placeholder: "bride or groom" },
+          {
+            key: "side",
+            label: "Side",
+            options: [
+              { value: "both", label: "Both" },
+              { value: "bride", label: "Bride" },
+              { value: "groom", label: "Groom" },
+            ],
+          },
           { key: "bio", label: "About them", multiline: true },
           { key: "image_url", label: "Photo", type: "image" },
         ],

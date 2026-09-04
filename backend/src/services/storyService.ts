@@ -53,6 +53,23 @@ export interface FaqItem {
   created_at: string;
 }
 
+/**
+ * Coerces whatever the couple typed into a value the column will accept.
+ *
+ * `side` is constrained to 'bride' | 'groom' | 'both', but the builder collects
+ * it as free text, so "Bride", "Groom's side" and "his" all arrived verbatim and
+ * were rejected by the check constraint. Since the field is descriptive rather
+ * than load-bearing, the forgiving reading is right: recognise the intent, and
+ * fall back to 'both' rather than failing someone's edit over capitalisation.
+ */
+const normaliseSide = (value?: string | null): 'bride' | 'groom' | 'both' => {
+  const v = (value || '').trim().toLowerCase();
+  if (!v) return 'both';
+  if (v.startsWith('bride') || v === 'her' || v === 'hers') return 'bride';
+  if (v.startsWith('groom') || v === 'his' || v === 'him') return 'groom';
+  return 'both';
+};
+
 export const storyService = {
   async getStoryBundle(userId: string) {
     const [story, images, comments, wishlist, bankDetails, timeline, weddingParty, travelInfo, faqItems, event] = await Promise.all([
@@ -269,7 +286,7 @@ export const storyService = {
     return queryOne<WeddingPartyMember>(
       `INSERT INTO story_wedding_party (user_id, name, role, side, bio, image_url, sort_order)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [userId, input.name, input.role, input.side || 'both', input.bio || null, input.image_url || null, (maxOrder?.max ?? -1) + 1]
+      [userId, input.name, input.role, normaliseSide(input.side), input.bio || null, input.image_url || null, (maxOrder?.max ?? -1) + 1]
     );
   },
   async updateWeddingParty(userId: string, id: string, input: { name?: string; role?: string; side?: string; bio?: string; image_url?: string }) {
@@ -280,7 +297,7 @@ export const storyService = {
 
     if (input.name !== undefined) add('name', input.name);
     if (input.role !== undefined) add('role', input.role);
-    if (input.side !== undefined) add('side', input.side);
+    if (input.side !== undefined) add('side', normaliseSide(input.side));
     if (input.bio !== undefined) add('bio', input.bio);
     if (input.image_url !== undefined) add('image_url', input.image_url);
 

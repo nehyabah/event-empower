@@ -1,10 +1,11 @@
-import { Request, Response } from 'express';
+import { Request, Response, RequestHandler } from 'express';
+import { wrapController } from '../middleware/asyncHandler.js';
 import { storyService } from '../services/storyService.js';
 import { queryOne } from '../config/database.js';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,58}[a-z0-9]$/;
 
-export const storyController = {
+const handlers = {
   async getMyStory(req: Request, res: Response) {
     const userId = req.user?.userId;
     if (!userId) {
@@ -371,3 +372,10 @@ export const storyController = {
     res.json(item);
   },
 };
+
+/**
+ * Every handler here is wrapped rather than each one growing its own try/catch.
+ * A wrapper cannot be forgotten when the 41st endpoint is added; forty separate
+ * try/catch blocks can, and that is exactly the gap that took the site down.
+ */
+export const storyController = wrapController(handlers as unknown as Record<string, RequestHandler>) as unknown as typeof handlers;
