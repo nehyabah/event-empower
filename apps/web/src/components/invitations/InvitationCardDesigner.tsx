@@ -384,7 +384,7 @@ export const InvitationCardDesigner = () => {
                   Copy Invitation Link
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-2">
-                  Tap card to preview RSVP form
+                  Swipe the card to preview the RSVP form
                 </p>
               </div>
             </div>
