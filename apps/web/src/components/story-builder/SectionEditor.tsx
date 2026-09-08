@@ -126,7 +126,16 @@ const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
         noun: "place",
         fields: [
           { key: "title", label: "Name", placeholder: "Eko Hotel", required: true },
-          { key: "category", label: "Type", placeholder: "Hotel, transport, parking…" },
+          {
+            key: "category",
+            label: "Type",
+            options: [
+              { value: "hotel", label: "Hotel / stay" },
+              { value: "transport", label: "Transport" },
+              { value: "parking", label: "Parking" },
+              { value: "other", label: "Other" },
+            ],
+          },
           { key: "description", label: "Details", multiline: true },
           { key: "address", label: "Address" },
           { key: "link", label: "Link", placeholder: "https://…" },

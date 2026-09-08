@@ -70,6 +70,23 @@ const normaliseSide = (value?: string | null): 'bride' | 'groom' | 'both' => {
   return 'both';
 };
 
+/**
+ * Same guard as normaliseSide, for the travel category.
+ *
+ * Constrained to 'hotel' | 'transport' | 'parking' | 'other', collected as free
+ * text, and the placeholder read "Hotel, transport, parking…" — so the app was
+ * actively suggesting the one capitalisation the column rejects. Anything
+ * unrecognised becomes 'other', which is what an unrecognised category is.
+ */
+const normaliseTravelCategory = (value?: string | null): 'hotel' | 'transport' | 'parking' | 'other' => {
+  const v = (value || '').trim().toLowerCase();
+  if (!v) return 'hotel';
+  if (v.startsWith('hotel') || v.startsWith('accom') || v.startsWith('stay') || v.startsWith('lodg')) return 'hotel';
+  if (v.startsWith('transport') || v.startsWith('travel') || v.startsWith('bus') || v.startsWith('car') || v.startsWith('taxi') || v.startsWith('shuttle') || v.startsWith('flight')) return 'transport';
+  if (v.startsWith('parking') || v.startsWith('park')) return 'parking';
+  return 'other';
+};
+
 export const storyService = {
   async getStoryBundle(userId: string) {
     const [story, images, comments, wishlist, bankDetails, timeline, weddingParty, travelInfo, faqItems, event] = await Promise.all([
@@ -340,7 +357,7 @@ export const storyService = {
     return queryOne<TravelInfoItem>(
       `INSERT INTO story_travel_info (user_id, title, category, description, address, link, image_url, sort_order)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [userId, input.title, input.category || 'hotel', input.description || null, input.address || null, input.link || null, input.image_url || null, (maxOrder?.max ?? -1) + 1]
+      [userId, input.title, normaliseTravelCategory(input.category), input.description || null, input.address || null, input.link || null, input.image_url || null, (maxOrder?.max ?? -1) + 1]
     );
   },
   async updateTravel(userId: string, id: string, input: { title?: string; category?: string; description?: string; address?: string; link?: string; image_url?: string }) {
@@ -350,7 +367,7 @@ export const storyService = {
     const add = (col: string, val: unknown) => { fields.push(`${col} = $${idx++}`); values.push(val); };
 
     if (input.title !== undefined) add('title', input.title);
-    if (input.category !== undefined) add('category', input.category);
+    if (input.category !== undefined) add('category', normaliseTravelCategory(input.category));
     if (input.description !== undefined) add('description', input.description);
     if (input.address !== undefined) add('address', input.address);
     if (input.link !== undefined) add('link', input.link);
