@@ -44,7 +44,20 @@ async function deliver(message: {
   /** Mail with no text/plain alternative is a long-standing spam signal. */
   text: string;
   replyTo?: string;
+  /**
+   * Overrides the display name only — the address stays on the verified
+   * domain, because that is what the SPF/DKIM records cover. Lets an
+   * invitation arrive from the couple rather than from us.
+   */
+  fromName?: string;
 }): Promise<void> {
+  // Resolved once: Brevo wants the pair as JSON fields, Resend and SMTP want
+  // an RFC 5322 header, and only the latter needs the name quoted.
+  const configured = parseSender(env.EMAIL_FROM);
+  const senderName = message.fromName ?? configured.name;
+  const from = senderName
+    ? `${JSON.stringify(senderName)} <${configured.email}>`
+    : configured.email;
   if (brevoApiKey) {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -54,7 +67,7 @@ async function deliver(message: {
         accept: 'application/json',
       },
       body: JSON.stringify({
-        sender: parseSender(env.EMAIL_FROM),
+        sender: { ...(senderName ? { name: senderName } : {}), email: configured.email },
         to: [{ email: message.to }],
         subject: message.subject,
         htmlContent: message.html,
@@ -72,12 +85,12 @@ async function deliver(message: {
   }
 
   if (smtp) {
-    await smtp.sendMail({ from: env.EMAIL_FROM, ...message });
+    await smtp.sendMail({ from, ...message });
     return;
   }
 
   const { error } = await resend!.emails.send({
-    from: env.EMAIL_FROM,
+    from,
     to: message.to,
     subject: message.subject,
     html: message.html,
@@ -405,6 +418,9 @@ export const emailService = {
 
     await deliver({
       to: toEmail,
+      // The couple's names, on our verified address. A guest opening their
+      // inbox should see who is getting married, not our support persona.
+      fromName: `${coupleNames} from àjọyọ`,
       subject: `You're invited — ${coupleNames}`,
       html: buildInvitationHtml({ guestName, coupleNames, eventDate, venue, rsvpUrl, deadline, customMessage }),
       text: buildInvitationText({ guestName, coupleNames, eventDate, venue, rsvpUrl, deadline, customMessage }),
@@ -805,10 +821,10 @@ function buildInvitationHtml({ guestName, coupleNames, eventDate, venue, rsvpUrl
         <p style="margin:0;font-size:15px;">${note}</p>
       </td></tr>` : ''}
       <tr><td style="padding-bottom:8px;">
-        <p style="margin:0;font-size:15px;">Please let them know whether you can make it.</p>
+        <p style="margin:0;font-size:15px;">Open your invitation to see the card and reply.</p>
       </td></tr>
       <tr><td style="padding-bottom:24px;">
-        <a href="${rsvpUrl}" style="color:#8a6a2f;text-decoration:underline;font-size:15px;">Reply to the invitation</a>
+        <a href="${rsvpUrl}" style="display:inline-block;background:#2b2b2b;color:#ffffff;text-decoration:none;font-size:15px;padding:12px 22px;border-radius:6px;">View your invitation</a>
       </td></tr>
       ${deadline ? `<tr><td style="padding-bottom:24px;">
         <p style="margin:0;font-size:14px;color:#6a6a6a;">Kindly reply by <strong>${escapeHtml(deadline)}</strong>.</p>
@@ -835,7 +851,7 @@ function buildInvitationText({ guestName, coupleNames, eventDate, venue, rsvpUrl
     [eventDate, venue].filter(Boolean).join(' - '),
     customMessage || '',
     ``,
-    `Please let them know whether you can make it:`,
+    `Open your invitation to see the card and reply:`,
     rsvpUrl,
     deadline ? `\nKindly reply by ${deadline}.` : '',
   ].filter((line) => line !== '').join('\n');

@@ -49,6 +49,19 @@ const coupleNamesFor = (event: UserEvent): string =>
  * The form is the point of the email, and answering redirects them onward to
  * the couple's website — so this is the short path to both.
  */
+/**
+ * Where an invitation sends the guest: the card itself.
+ *
+ * A reminder is chasing a reply, so it goes straight to the form. An invitation
+ * is the first thing the guest sees, and landing them on a bare form skips the
+ * part the couple spent their time on — /invitation/:code opens the card, and
+ * swiping it reveals the same RSVP form.
+ */
+export const buildInvitationUrl = (event: UserEvent): string => {
+  const base = env.APP_URL.replace(/\/+$/, '');
+  return `${base}/invitation/${event.rsvp_code}`;
+};
+
 export const buildRsvpUrl = async (event: UserEvent): Promise<string> => {
   const base = env.APP_URL.replace(/\/+$/, '');
   return `${base}/rsvp/${event.rsvp_code}`;
@@ -159,7 +172,7 @@ export const reminderService = {
       };
     }
 
-    const rsvpUrl = await buildRsvpUrl(event);
+    const rsvpUrl = buildInvitationUrl(event);
     const coupleNames = coupleNamesFor(event);
     const eventDate = formatDate(event.event_date);
     const deadline = formatDate(event.rsvp_deadline);
