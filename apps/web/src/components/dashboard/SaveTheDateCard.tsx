@@ -1033,6 +1033,24 @@ const SaveTheDateCard = ({
                     : "You've declined this invitation."}
                 </p>
 
+                {/* Once someone has replied, the wedding site is the thing they
+                    came back for. Without this the only route to it was to change
+                    your answer, which is a strange price for looking at the venue. */}
+                {storySlug && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/s/${storySlug}`)}
+                    className="w-2/3 py-2 mt-3 text-[9px] sm:text-[10px] uppercase tracking-[0.25em] transition-opacity"
+                    style={{
+                      fontFamily: template.bodyFont,
+                      backgroundColor: template.accent,
+                      color: "white",
+                      borderRadius: "4px",
+                    }}>
+                    View the wedding website
+                  </button>
+                )}
+
                 <div className="flex items-center gap-2 my-4 w-2/3">
                   <div className="flex-1 h-px" style={{ backgroundColor: template.frame }} />
                   <div className="w-1 h-1 rotate-45" style={{ backgroundColor: template.accent, opacity: 0.6 }} />
