@@ -50,6 +50,18 @@ export interface UpdateGuestInput {
   rsvp_responded_at?: Date | null;
 }
 
+/**
+ * One spelling of an address, so a list cannot hold the same person twice.
+ *
+ * Trimmed and lowercased, matching the unique index in migration 071 exactly —
+ * if these two ever disagree the index stops catching duplicates. An empty
+ * string becomes null: a blank box is an absent address, not a shared one.
+ */
+export const normaliseEmail = (value?: string | null): string | null => {
+  const v = (value || '').trim().toLowerCase();
+  return v === '' ? null : v;
+};
+
 export const GuestModel = {
   /** Records that the invitation reached this guest, so a resend skips them. */
   async markInvited(id: string): Promise<void> {
@@ -85,7 +97,7 @@ export const GuestModel = {
       [
         input.user_id,
         input.name,
-        input.email || null,
+        normaliseEmail(input.email),
         input.phone || null,
         input.status || 'pending',
         input.guest_group || null,
@@ -115,7 +127,7 @@ export const GuestModel = {
     }
     if (input.email !== undefined) {
       fields.push(`email = $${paramIndex++}`);
-      values.push(input.email || null);
+      values.push(normaliseEmail(input.email));
     }
     if (input.phone !== undefined) {
       fields.push(`phone = $${paramIndex++}`);

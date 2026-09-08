@@ -345,6 +345,15 @@ const handlers = {
 
   async addSharedComment(req: Request, res: Response) {
     const userId = String(req.params.userId);
+
+    // Well wishes are what guests leave for the couple. A couple congratulating
+    // themselves on their own page reads as a mistake to everyone who sees it,
+    // and it is almost always a stray tap while previewing their own site.
+    if (req.user?.userId === userId) {
+      res.status(400).json({ error: 'These are for your guests to leave — you cannot post one on your own page.' });
+      return;
+    }
+
     const comment = await storyService.addComment(userId, req.body);
     res.json(comment);
   },

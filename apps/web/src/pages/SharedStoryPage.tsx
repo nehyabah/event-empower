@@ -18,6 +18,7 @@ import {
   Pin,
 } from "lucide-react";
 import { type Comment } from "@/components/couple-story/CommentsSection";
+import { useAuth } from "@/context/AuthContext";
 import { StoryImage } from "@/components/couple-story/StoryEditor";
 import WishlistItem from "@/components/wishlist/WishlistItem";
 import BankDetailCard from "@/components/wishlist/BankDetailCard";
@@ -108,6 +109,7 @@ const SharedStoryPage = () => {
 
   const [coupleStory, setCoupleStory] = useState<any>(null);
   const [storyImages, setStoryImages] = useState<StoryImage[]>([]);
+  const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [wishlistItems, setWishlistItems] = useState<WishlistItemType[]>([]);
   const [bankDetails, setBankDetails] = useState<BankDetail[]>([]);
@@ -301,6 +303,9 @@ const SharedStoryPage = () => {
 
   const visibleSections = sectionOrder.filter((id) => !hiddenSections.includes(id));
   const storyUserId = coupleStory.userId || coupleId;
+  // Well wishes are for guests. The couple previewing their own site should not
+  // be offered a form that the server will refuse anyway.
+  const isOwnPage = Boolean(user?.id && storyUserId && user.id === storyUserId);
 
   /**
    * Anchor for the builder preview to scroll to, and the scroll-reveal
@@ -463,8 +468,11 @@ const SharedStoryPage = () => {
                 <div className={`p-8 md:p-10 ${s.card} ${s.cardHover}`}>
                   <div className="text-center mb-8">
                     <h4 className={`text-2xl ${s.fontHeading} ${s.text}`}>Send Your Love</h4>
-                    <p className={`text-sm mt-2 ${s.subtext}`}>Write a message for the happy couple</p>
+                    <p className={`text-sm mt-2 ${s.subtext}`}>
+                      {isOwnPage ? "This is how your guests will leave you a message" : "Write a message for the happy couple"}
+                    </p>
                   </div>
+                  {isOwnPage ? null : (
                   <form onSubmit={handleAddComment} className="space-y-6">
                     <div className="space-y-2">
                       <label className={`text-xs font-bold uppercase tracking-widest ml-1 ${s.subtext}`}>Your Name</label>
@@ -478,6 +486,7 @@ const SharedStoryPage = () => {
                       {isSubmittingComment ? <span className="animate-pulse">Sending...</span> : <>Send Wish <Send className="w-4 h-4 ml-2" /></>}
                     </Button>
                   </form>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { UserEventModel, UserEvent, CreateUserEventInput, UpdateUserEventInput } from '../models/UserEvent.js';
 import { notificationService } from './notificationService.js';
 import { query } from '../config/database.js';
-import { GuestModel, Guest, CreateGuestInput, UpdateGuestInput, GuestStatus } from '../models/Guest.js';
+import { normaliseEmail,GuestModel, Guest, CreateGuestInput, UpdateGuestInput, GuestStatus } from '../models/Guest.js';
 import { ExpenseModel, Expense, CreateExpenseInput, UpdateExpenseInput, ExpenseCategory } from '../models/Expense.js';
 import { TodoListModel, TodoItemModel, TodoList, TodoItem, CreateTodoListInput, UpdateTodoListInput, CreateTodoItemInput, UpdateTodoItemInput } from '../models/TodoList.js';
 import { PlannerClientModel, PlannerLink } from '../models/PlannerClient.js';
@@ -513,9 +513,18 @@ export const userService = {
 
     // Check if guest already exists by name (case-insensitive)
     const existingGuests = await GuestModel.findByUserId(event.user_id);
-    const existingGuest = existingGuests.find(
-      g => g.name.toLowerCase() === input.name.toLowerCase()
-    );
+
+    // Email first, name only as a fallback. The invitation was addressed to an
+    // email, so that is the identity we actually know a guest by — matching on
+    // name alone meant replying as "Neh" when the list said "Nehemiah" created a
+    // second row, and the couple saw a stranger accept while the person they
+    // invited still showed as pending.
+    const normalisedEmail = normaliseEmail(input.email);
+    const existingGuest =
+      (normalisedEmail
+        ? existingGuests.find((g) => normaliseEmail(g.email) === normalisedEmail)
+        : undefined) ??
+      existingGuests.find((g) => g.name.trim().toLowerCase() === input.name.trim().toLowerCase());
 
     if (existingGuest) {
       // A guest may only flip their response (accept → decline or vice versa)
