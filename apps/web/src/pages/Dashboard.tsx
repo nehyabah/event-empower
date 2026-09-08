@@ -40,6 +40,7 @@ import { useGuests } from "@/hooks/useGuests";
 import RsvpSettingsCard from "@/components/invitations/RsvpSettingsCard";
 import InvitationCardDesigner from "@/components/invitations/InvitationCardDesigner";
 import ThankYouComposer from "@/components/thankyou/ThankYouComposer";
+import UninvitedPrompt from "@/components/invitations/UninvitedPrompt";
 import { Guest } from "@/services/api/userService";
 import {
   Copy,
@@ -220,7 +221,7 @@ const Dashboard = () => {
   const [newGuestGroup, setNewGuestGroup] = useState("Family");
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const { guests, stats, createGuest, updateGuest, deleteGuest } = useGuests();
+  const { guests, stats, createGuest, updateGuest, deleteGuest, fetchGuests } = useGuests();
 
   const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
 
@@ -365,6 +366,10 @@ const Dashboard = () => {
             </TabsContent>
 
             <TabsContent value="guests" className="space-y-6">
+              {/* Adding a guest does not email them, and the send lived on another
+                  tab entirely — so this states the position where the list is built. */}
+              <UninvitedPrompt guests={guests} onSent={fetchGuests} />
+
           {/* Stats Cards - Mobile */}
           <div className="grid grid-cols-3 gap-2 md:hidden">
             <div className="bg-green-50 rounded-lg p-3 text-center">

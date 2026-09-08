@@ -61,6 +61,8 @@ export interface Guest {
   plus_one: boolean;
   dietary_restrictions: string | null;
   notes: string | null;
+  /** When the invitation was emailed. Null means they have not been invited. */
+  invitation_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
