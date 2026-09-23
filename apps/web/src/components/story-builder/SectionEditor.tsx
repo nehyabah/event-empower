@@ -82,13 +82,13 @@ const listSpec = (sectionId: SectionId): ListSectionSpec<never> | null => {
       return {
         noun: "moment",
         fields: [
-          { key: "title", label: "What happened", placeholder: "We met", required: true },
+          { key: "title", label: "What happened", placeholder: "We met" },
           { key: "date", label: "When", type: "date" },
           { key: "description", label: "Tell the story", multiline: true },
           { key: "image_url", label: "Photo", type: "image" },
         ],
-        primary: (i: any) => i.title,
-        secondary: (i: any) => i.description || i.date || null,
+        primary: (i: any) => i.title || i.date || i.description || "Untitled moment",
+        secondary: (i: any) => (i.title ? i.description || i.date : i.description) || null,
         add: (v) => storyService.addTimeline({ title: v.title, date: v.date || undefined, description: v.description || undefined, image_url: v.image_url || undefined }),
         update: (id, v) => storyService.updateTimeline(id, { title: v.title, date: v.date || undefined, description: v.description || undefined, image_url: v.image_url || undefined }),
         remove: (id) => storyService.deleteTimeline(id),

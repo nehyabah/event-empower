@@ -11,7 +11,8 @@ import { query, queryOne } from '../config/database.js';
 export interface TimelineEvent {
   id: string;
   user_id: string;
-  title: string;
+  /** Optional: a moment may be just a date and a photo. */
+  title: string | null;
   date: string | null;
   description: string | null;
   image_url: string | null;
@@ -242,7 +243,7 @@ export const storyService = {
       [userId]
     );
   },
-  async addTimeline(userId: string, input: { title: string; date?: string; description?: string; image_url?: string }) {
+  async addTimeline(userId: string, input: { title?: string; date?: string; description?: string; image_url?: string }) {
     const maxOrder = await queryOne<{ max: number }>(
       'SELECT COALESCE(MAX(sort_order), -1) as max FROM story_timeline_events WHERE user_id = $1',
       [userId]
@@ -250,7 +251,7 @@ export const storyService = {
     return queryOne<TimelineEvent>(
       `INSERT INTO story_timeline_events (user_id, title, date, description, image_url, sort_order)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [userId, input.title, input.date || null, input.description || null, input.image_url || null, (maxOrder?.max ?? -1) + 1]
+      [userId, input.title?.trim() || null, input.date || null, input.description || null, input.image_url || null, (maxOrder?.max ?? -1) + 1]
     );
   },
   async updateTimeline(userId: string, id: string, input: { title?: string; date?: string; description?: string; image_url?: string }) {
@@ -259,7 +260,7 @@ export const storyService = {
     let idx = 1;
     const add = (col: string, val: unknown) => { fields.push(`${col} = $${idx++}`); values.push(val); };
 
-    if (input.title !== undefined) add('title', input.title);
+    if (input.title !== undefined) add('title', input.title?.trim() || null);
     if (input.date !== undefined) add('date', input.date);
     if (input.description !== undefined) add('description', input.description);
     if (input.image_url !== undefined) add('image_url', input.image_url);

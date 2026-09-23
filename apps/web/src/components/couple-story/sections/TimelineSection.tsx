@@ -40,9 +40,11 @@ const TimelineSection = ({ timeline, styles: s }: Props) => {
                           {event.date}
                         </span>
                       )}
-                      <h3 className={`text-xl font-bold mt-1 ${s.fontHeading} ${s.text}`}>
-                        {event.title}
-                      </h3>
+                      {event.title && (
+                        <h3 className={`text-xl font-bold mt-1 ${s.fontHeading} ${s.text}`}>
+                          {event.title}
+                        </h3>
+                      )}
                       {event.description && (
                         <p className={`mt-2 leading-relaxed ${s.subtext}`}>
                           {event.description}
@@ -51,7 +53,7 @@ const TimelineSection = ({ timeline, styles: s }: Props) => {
                       {event.image_url && (
                         <img
                           src={event.image_url}
-                          alt={event.title}
+                          alt={event.title || ""}
                           className={`mt-4 w-full h-40 object-cover ${s.image}`}
                         />
                       )}

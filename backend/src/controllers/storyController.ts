@@ -181,7 +181,7 @@ const handlers = {
   async addTimeline(req: Request, res: Response) {
     const userId = req.user?.userId;
     if (!userId) { res.status(401).json({ error: 'Authentication required' }); return; }
-    if (!req.body.title) { res.status(400).json({ error: 'Title is required' }); return; }
+    // A timeline moment may be just a date and a photo; see migration 072.
     const item = await storyService.addTimeline(userId, req.body);
     res.json(item);
   },

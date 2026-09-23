@@ -302,13 +302,9 @@ export const RsvpSettingsCard = () => {
           <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
             <div className="space-y-0.5">
               <p className="text-sm font-medium">Send reminders automatically</p>
-              <p className="text-xs text-muted-foreground">
-                {settings?.enabled && settings.next_send_at
-                  ? `Next batch ${new Date(settings.next_send_at).toLocaleDateString("en-GB", {
-                      day: "numeric", month: "short",
-                    })}`
-                  : "Currently off"}
-              </p>
+              {!settings?.enabled && (
+                <p className="text-xs text-muted-foreground">Currently off</p>
+              )}
             </div>
             <Switch
               checked={Boolean(settings?.enabled)}

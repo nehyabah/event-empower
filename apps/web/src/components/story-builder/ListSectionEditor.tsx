@@ -91,8 +91,14 @@ const ListSectionEditor = <T extends { id: string }>({
     ? spec.fields.filter((f) => f.required && !(draft[f.key] ?? "").trim())
     : [];
 
+  // With nothing required — a timeline moment may be just a date and a photo —
+  // the only thing left to refuse is an entry with nothing in it at all.
+  const isBlank = draft
+    ? spec.fields.every((f) => !(draft[f.key] ?? "").trim())
+    : true;
+
   const save = async () => {
-    if (!draft || missingRequired.length > 0) return;
+    if (!draft || missingRequired.length > 0 || isBlank) return;
     setIsBusy(true);
     try {
       if (editingId && spec.update) {
@@ -264,7 +270,7 @@ const ListSectionEditor = <T extends { id: string }>({
             </div>
           ))}
 
-          <Button onClick={save} disabled={isBusy || missingRequired.length > 0} size="sm">
+          <Button onClick={save} disabled={isBusy || missingRequired.length > 0 || isBlank} size="sm">
             {isBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
             {editingId ? "Save changes" : `Add ${spec.noun}`}
           </Button>
