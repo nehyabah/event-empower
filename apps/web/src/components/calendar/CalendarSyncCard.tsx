@@ -63,7 +63,9 @@ export const CalendarSyncCard = ({ feedUrl, webcalUrl, onRotated }: CalendarSync
         </CardTitle>
         <CardDescription>
           Subscribe once and your àjọyọ dates stay up to date in Google, Apple or
-          Outlook Calendar — and those apps handle the reminders.
+          Outlook Calendar — and those apps handle the reminders. They refresh a
+          subscribed calendar on their own schedule, so new dates can take a few
+          hours to appear.
         </CardDescription>
       </CardHeader>
 
@@ -83,10 +85,13 @@ export const CalendarSyncCard = ({ feedUrl, webcalUrl, onRotated }: CalendarSync
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {/* Google takes the https URL through its "from URL" flow. */}
+              {/* Google's add-by-URL settings page, not /calendar/r?cid=.
+                  The cid form is meant for Google's own calendar ids; handed an
+                  external ICS URL it usually drops you on your calendar having
+                  added nothing, which looks exactly like the sync failing. */}
               <Button size="sm" variant="outline" asChild>
                 <a
-                  href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(feedUrl)}`}
+                  href={`https://calendar.google.com/calendar/u/0/r/settings/addbyurl?url=${encodeURIComponent(feedUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
