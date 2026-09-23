@@ -215,7 +215,9 @@ const ExpenseForm = ({ expense, onCancel }: ExpenseFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label>Date</Label>
+          {/* Two dates on one form need to say which is which: this is when
+              the cost was agreed, the other is when the money is owed. */}
+          <Label>Date agreed</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button

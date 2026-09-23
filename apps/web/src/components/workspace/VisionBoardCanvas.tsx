@@ -99,10 +99,18 @@ export const VisionBoardCanvas = ({ filter = null, service }: Props) => {
 
   const addItem = useCallback(async (type: VisionBoardItemType) => {
     const scroll = scrollRef.current;
-    const cx = scroll ? scroll.scrollLeft + scroll.clientWidth / 2 : 400;
-    const cy = scroll ? scroll.scrollTop  + scroll.clientHeight / 2 : 300;
+    // clientWidth/Height are 0 until the container has laid out, which is the
+    // normal state the first time this tab is opened. Falling back to the
+    // scroll offset alone dropped the new card outside the visible area: it
+    // was created, the editor opened on it, and nothing appeared to happen.
+    const viewW = scroll?.clientWidth || 0;
+    const viewH = scroll?.clientHeight || 0;
+    const cx = viewW > 0 ? scroll!.scrollLeft + viewW / 2 : 400;
+    const cy = viewH > 0 ? scroll!.scrollTop + viewH / 2 : 300;
     const { w, h } = DEFAULT_SIZES[type];
-    const jitter = () => (Math.random() - 0.5) * 120;
+    // Keep the jitter inside the viewport rather than potentially outside it.
+    const spread = Math.min(120, Math.max(0, Math.min(viewW, viewH) - Math.max(w, h)));
+    const jitter = () => (Math.random() - 0.5) * spread;
     try {
       const item = await svc.create({
         type,
@@ -116,6 +124,18 @@ export const VisionBoardCanvas = ({ filter = null, service }: Props) => {
       setEditTitle(item.title ?? "");
       setEditContent(item.content ?? "");
       if (type === "image") setAddingImageUrl(item.id);
+
+      // Bring it into view regardless of where the board was scrolled to, so
+      // adding something always visibly adds something.
+      requestAnimationFrame(() => {
+        const el = scrollRef.current;
+        if (!el || !el.clientHeight) return;
+        el.scrollTo({
+          left: Math.max(0, item.position_x + item.width / 2 - el.clientWidth / 2),
+          top: Math.max(0, item.position_y + item.height / 2 - el.clientHeight / 2),
+          behavior: "smooth",
+        });
+      });
     } catch {
       toast.error("Failed to add item");
     }

@@ -324,7 +324,10 @@ export const userService = {
     return {
       ...summary,
       total_budget: userEvent?.total_budget || 0,
-      remaining_budget: (userEvent?.total_budget || 0) - summary.total_spent,
+      // Against committed, not paid. Money owed on an expense you have already
+      // agreed to is not money left to spend, and counting it as remaining told
+      // a couple with £1.3m committed that they still had it available.
+      remaining_budget: (userEvent?.total_budget || 0) - summary.total_committed,
     };
   },
 
@@ -354,7 +357,12 @@ export const userService = {
     if (!list) {
       return null;
     }
-    return TodoListModel.update(id, input);
+    await TodoListModel.update(id, input);
+    // Re-read with items. TodoListModel.update returns the bare row, and the
+    // client replaces its copy of the list with whatever comes back — so
+    // renaming a list or reopening it emptied every task out of it on screen
+    // until the next refresh.
+    return this.getTodoList(id, userId);
   },
 
   async deleteTodoList(id: string, userId: string): Promise<boolean> {

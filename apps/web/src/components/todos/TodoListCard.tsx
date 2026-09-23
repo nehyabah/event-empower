@@ -3,7 +3,8 @@ import { TodoListItem, useTodo } from "@/context/TodoContext";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Lock, MoreVertical, PlusCircle, Trash2, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CheckCircle2, Lock, MoreVertical, Pencil, PlusCircle, Trash2, Users } from "lucide-react";
 import TodoItemComponent from "./TodoItem";
 import {
   DropdownMenu,
@@ -54,6 +55,19 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
     const status = itemFilter === "all" ? "todo" : itemFilter;
     addTodoItem(todoList.id, trimmed, status);
     setNewItemText("");
+  };
+
+  // Renaming was the one thing the backend already supported and the card
+  // never offered, so a list typed with a typo stayed that way for good.
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(todoList.title);
+  const [draftDescription, setDraftDescription] = useState(todoList.description || "");
+
+  const saveRename = async () => {
+    const title = draftTitle.trim();
+    if (!title) return;
+    await updateTodoList(todoList.id, { title, description: draftDescription.trim() || undefined });
+    setIsRenaming(false);
   };
 
   const handleMarkCompleted = () => {
@@ -128,6 +142,34 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
           {/* Title and Menu */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
+              {isRenaming ? (
+                <div className="space-y-2">
+                  <Input
+                    value={draftTitle}
+                    onChange={(e) => setDraftTitle(e.target.value)}
+                    placeholder="List name"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void saveRename();
+                      if (e.key === "Escape") setIsRenaming(false);
+                    }}
+                  />
+                  <Input
+                    value={draftDescription}
+                    onChange={(e) => setDraftDescription(e.target.value)}
+                    placeholder="Description (optional)"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void saveRename();
+                      if (e.key === "Escape") setIsRenaming(false);
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => void saveRename()} disabled={!draftTitle.trim()}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => setIsRenaming(false)}>Cancel</Button>
+                  </div>
+                </div>
+              ) : (
+              <>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base sm:text-lg font-medium truncate">{todoList.title}</h3>
                 {todoList.isShared ? (
@@ -147,6 +189,8 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
                   {todoList.description}
                 </p>
               )}
+              </>
+              )}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -155,6 +199,14 @@ const TodoListCard = ({ todoList }: TodoListCardProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => {
+                  setDraftTitle(todoList.title);
+                  setDraftDescription(todoList.description || "");
+                  setIsRenaming(true);
+                }}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit list
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleMarkCompleted}>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   {todoList.isCompleted ? "Mark as Active" : "Mark as Completed"}
