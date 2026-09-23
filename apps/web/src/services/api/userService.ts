@@ -148,7 +148,8 @@ export interface ExpenseSummary {
   overdue_total: number;
   overdue_count: number;
   due_soon_total: number;
-  next_due: { id: string; name: string; due_date: string; balance: number } | null;
+  /** Everything due on the earliest outstanding date, not just one. */
+  next_due: { id: string; name: string; due_date: string; balance: number }[];
   total_budget: number;
   remaining_budget: number;
   by_category: Record<string, number>;
@@ -163,7 +164,7 @@ export const EMPTY_EXPENSE_SUMMARY: ExpenseSummary = {
   overdue_total: 0,
   overdue_count: 0,
   due_soon_total: 0,
-  next_due: null,
+  next_due: [],
   total_budget: 0,
   remaining_budget: 0,
   by_category: {},

@@ -288,15 +288,22 @@ export const userService = {
     nextAmountPaid = Math.min(Math.max(nextAmountPaid, 0), nextAmount);
     const nextPaid = nextAmountPaid >= nextAmount;
 
+    // `??` is wrong for anything nullable: it treats an explicit null — the
+    // user clearing the field — as "unchanged" and puts the old value back.
+    // Only `undefined` means unchanged, so these three read the key instead.
+    const keep = <T,>(next: T | undefined, current: T): T => (next !== undefined ? next : current);
+
     return ExpenseModel.update(id, {
       name: input.name ?? expense.name,
       amount: nextAmount,
       amount_paid: nextAmountPaid,
       category: input.category ?? expense.category,
       expense_date: input.expense_date ?? expense.expense_date,
+      // Was missing entirely, so editing a payment due date did nothing at all.
+      due_date: keep(input.due_date, expense.due_date),
       paid: nextPaid,
-      notes: input.notes ?? expense.notes,
-      vendor_id: input.vendor_id ?? expense.vendor_id,
+      notes: keep(input.notes, expense.notes),
+      vendor_id: keep(input.vendor_id, expense.vendor_id),
     });
   },
 

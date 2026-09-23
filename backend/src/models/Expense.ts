@@ -189,7 +189,8 @@ export const ExpenseModel = {
     overdue_total: number;
     overdue_count: number;
     due_soon_total: number;
-    next_due: { id: string; name: string; due_date: string; balance: number } | null;
+    /** Everything falling due on the earliest outstanding date, not just one. */
+    next_due: { id: string; name: string; due_date: string; balance: number }[];
     by_category: Record<string, number>;
   }> {
     const totals = await queryOne<{
@@ -219,12 +220,17 @@ export const ExpenseModel = {
       [userId]
     );
 
-    const nextDue = await queryOne<{ id: string; name: string; due_date: string; balance: string }>(
+    // LIMIT 1 hid the rest: a couple with two payments due the same day was
+    // shown one of them and had no way to know the other existed.
+    const nextDue = await query<{ id: string; name: string; due_date: string; balance: string }>(
       `SELECT id, name, due_date, (amount - amount_paid) AS balance
        FROM expenses
        WHERE user_id = $1 AND due_date IS NOT NULL AND amount_paid < amount
-       ORDER BY due_date ASC
-       LIMIT 1`,
+         AND due_date = (
+           SELECT MIN(due_date) FROM expenses
+            WHERE user_id = $1 AND due_date IS NOT NULL AND amount_paid < amount
+         )
+       ORDER BY (amount - amount_paid) DESC, name ASC`,
       [userId]
     );
 
@@ -248,14 +254,12 @@ export const ExpenseModel = {
       overdue_total: parseFloat(totals?.overdue_total || '0'),
       overdue_count: parseInt(totals?.overdue_count || '0', 10),
       due_soon_total: parseFloat(totals?.due_soon_total || '0'),
-      next_due: nextDue
-        ? {
-            id: nextDue.id,
-            name: nextDue.name,
-            due_date: String(nextDue.due_date).split('T')[0],
-            balance: parseFloat(nextDue.balance),
-          }
-        : null,
+      next_due: nextDue.map((row) => ({
+        id: row.id,
+        name: row.name,
+        due_date: String(row.due_date).split('T')[0],
+        balance: parseFloat(row.balance),
+      })),
       by_category: categoryTotals,
     };
   },

@@ -108,15 +108,24 @@ const ExpenseSummary = () => {
             </p>
           </div>
         </div>
-      ) : nextDue ? (
+      ) : nextDue.length > 0 ? (
         <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-card px-4 py-3">
           <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <div className="text-sm">
+          <div className="text-sm min-w-0">
+            {/* Several payments can fall on the same day. Showing one of them
+                and silently dropping the rest is how a couple misses a bill. */}
             <p className="font-medium">
-              Next payment: {nextDue.name} — {fmt(nextDue.balance)}
+              {nextDue.length === 1 ? "Next payment" : `Next payments (${nextDue.length})`}
             </p>
-            <p className="text-muted-foreground text-xs mt-0.5">
-              Due {formatDateOnly(nextDue.due_date)}
+            <ul className="mt-1 space-y-0.5">
+              {nextDue.map((item) => (
+                <li key={item.id} className="truncate">
+                  {item.name} — {fmt(item.balance)}
+                </li>
+              ))}
+            </ul>
+            <p className="text-muted-foreground text-xs mt-1">
+              Due {formatDateOnly(nextDue[0].due_date)}
             </p>
           </div>
         </div>
@@ -144,8 +153,8 @@ const ExpenseSummary = () => {
             value: fmt(totalOwed),
             sub: overdueCount > 0
               ? `${fmt(overdueTotal)} overdue`
-              : nextDue
-                ? `Next due ${formatDateOnly(nextDue.due_date, { day: "numeric", month: "short" })}`
+              : nextDue.length > 0
+                ? `Next due ${formatDateOnly(nextDue[0].due_date, { day: "numeric", month: "short" })}`
                 : totalOwed > 0 ? "across vendors" : "all settled",
             accent: overdueCount > 0
               ? "text-red-600"

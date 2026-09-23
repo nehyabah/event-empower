@@ -96,9 +96,7 @@ const normalizeSummary = (data: ExpenseSummary): ExpenseSummary => ({
   overdue_total: toNumber(data.overdue_total),
   overdue_count: toNumber(data.overdue_count),
   due_soon_total: toNumber(data.due_soon_total),
-  next_due: data.next_due
-    ? { ...data.next_due, balance: toNumber(data.next_due.balance) }
-    : null,
+  next_due: (data.next_due ?? []).map((d) => ({ ...d, balance: toNumber(d.balance) })),
   total_budget: toNumber(data.total_budget),
   remaining_budget: toNumber(data.remaining_budget),
   by_category: Object.fromEntries(

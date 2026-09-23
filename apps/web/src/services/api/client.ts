@@ -104,7 +104,18 @@ class ApiClient {
           if (response.ok) {
             return { data: undefined as T };
           }
-          return { error: 'Invalid response from server' };
+          // A non-OK response whose body is not JSON did not come from us —
+          // our own errors are always JSON. In practice it is the platform's
+          // edge returning plain text while the container restarts, which is
+          // every deploy. "Invalid response from server" told the user nothing
+          // and read like data loss; this says what actually happened and that
+          // trying again will work.
+          return {
+            error:
+              response.status === 502 || response.status === 503 || response.status === 504
+                ? 'The server is restarting — please try that again in a moment.'
+                : `Something went wrong (${response.status}). Please try again.`,
+          };
         }
       }
 
