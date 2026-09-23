@@ -45,8 +45,17 @@ const SitePreview = ({ userId, focusSection, reloadKey }: SitePreviewProps) => {
     const frame = frameRef.current;
     try {
       const doc = frame?.contentDocument;
+      const win = frame?.contentWindow;
       const el = doc?.getElementById(`section-${focusSection}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!el || !win) return;
+
+      // Deliberately not scrollIntoView. That scrolls every scrollable
+      // ancestor of the element — and the iframe's ancestors are in the
+      // *parent* document, so focusing a section dragged the builder itself
+      // down to the preview and the editor you were typing in went off
+      // screen. Scrolling the frame's own window cannot reach the parent.
+      const top = el.getBoundingClientRect().top + win.scrollY;
+      win.scrollTo({ top, behavior: "smooth" });
     } catch {
       // Same-origin, so this should not throw — but a preview that cannot
       // scroll must never take the builder down with it.
